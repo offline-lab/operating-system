@@ -1,0 +1,10 @@
+Acquire::Languages "none";
+Acquire::Queue-Mode "access";
+Acquire::Check-Valid-Until "false";
+Acquire::Check-Date "false";
+
+APT::Acquire::Retries "3";
+APT::Install-Suggests "0";
+APT::Install-Recommends "0";
+
+#APT::Key::GPGVCommand "/usr/bin/gpgv";

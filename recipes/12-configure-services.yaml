@@ -1,0 +1,75 @@
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#                                                                              #
+#      SPDX-License-Identifier: GPL-2.0-only                                   #
+#                                                                              #
+################################################################################
+---
+
+{{- $architecture := .architecture }}
+
+architecture: {{ $architecture }}
+
+actions:
+- action: overlay
+  description: Copy configuration files and service configuration
+  source: ../overlays/configure-services/
+
+################################################################################
+## SSH                                                                        ##
+################################################################################
+
+- action: run
+  description: Remove weak DH moduli
+  chroot: false
+  command: |
+    awk '$5 >= 3071' "$ROOTDIR/etc/ssh/moduli" > /tmp/moduli.safe
+    mv /tmp/moduli.safe "$ROOTDIR/etc/ssh/moduli"
+
+- action: run
+  description: Start ssh services on boot
+  chroot: true
+  command: |
+    systemctl enable ssh.service
+    systemctl enable sshd-keygen.service
+
+################################################################################
+## Services                                                                   ##
+################################################################################
+
+- action: run
+  description: Disable services at boot time
+  chroot: true
+  command: |
+    for unit in \
+      apt-daily-upgrade.service apt-daily-upgrade.timer \
+      apt-daily.service apt-daily.timer \
+      dhcpcd.service \
+      NetworkManager.service NetworkManager-wait-online.service \
+      regenerate_ssh_host_keys.service rsyslog.service \
+      systemd-resolved.service \
+      systemd-networkd-wait-online.service \
+      systemd-networkd-wait-online@.service; do
+      systemctl mask --now "${unit}" 2>/dev/null || true
+    done
+
+- action: run
+  description: Enable services at boot time
+  chroot: true
+  command: |
+    systemctl is-enabled --quiet tmp.mount                || systemctl enable --no-reload tmp.mount
+    systemctl is-enabled --quiet growfs-data.service      || systemctl enable --no-reload growfs-data.service
+    systemctl is-enabled --quiet systemd-networkd.service || systemctl enable --no-reload systemd-networkd.service
+    systemctl is-enabled --quiet rfkill-unblock.service   || systemctl enable --no-reload rfkill-unblock.service
+    systemctl is-enabled --quiet zramswap.service         || systemctl enable --no-reload zramswap.service
+
+################################################################################
+##                                                                            ##
+################################################################################

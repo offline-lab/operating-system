@@ -1,0 +1,87 @@
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#                                                                              #
+#      SPDX-License-Identifier: GPL-2.0-only                                   #
+#                                                                              #
+################################################################################
+---
+
+{{ $architecture := .architecture }}
+{{- $suite       := .suite }}
+{{- $apt_proxy   := .apt_proxy }}
+
+architecture: {{ $architecture }}
+
+actions:
+- action: overlay
+  description: Copy configuration files and sources for apt
+  source: ../overlays/configure-apt/
+
+- action: run
+  description: Setup apt-proxy configuration if proxy not set
+  chroot: false
+  command:
+  {{- if $apt_proxy }}
+    sed -i -e 's#APT_PROXY#{{ $apt_proxy }}#g' "$ROOTDIR"/etc/apt/apt.conf.d/51cache
+  {{- else }}
+    rm "$ROOTDIR"/etc/apt/apt.conf.d/51cache
+  {{- end }}
+
+- action: run
+  description: Setup sources for suite {{ $suite }}
+  chroot: false
+  command:
+    sed -i -e 's/SUITE/{{ $suite }}/g' "$ROOTDIR"/etc/apt/sources.list.d/*.sources
+
+- action: run
+  description: Remove /etc/apt/sources.list as its not used anymore
+  chroot: false
+  command:
+    rm "$ROOTDIR"/etc/apt/sources.list
+
+- action: run
+  description: Apply the debconf selection to the system
+  chroot: true
+  command:
+    debconf-set-selections /etc/offline-lab/debconf-selections
+
+- action: apt
+  update: true
+  unauthenticated: false
+  recommends: false
+  packages:
+  - offline-lab-archive-keyring
+  - raspberrypi-archive-keyring
+
+- action: run
+  description: Use raspis keyring from the raspberrypi-archive-keyring package
+  chroot: false
+  command:
+    sed -i -e 's,_\(raspberrypi-archive-keyring.gpg\),\1,g'
+      "$ROOTDIR"/etc/apt/sources.list.d/raspi.sources
+
+- action: run
+  description: Remove temporary bootstrap repository files
+  chroot: false
+  command:
+    rm -f
+      "$ROOTDIR"/etc/apt/sources.list.d/_offline-lab.sources
+      "$ROOTDIR"/usr/share/keyrings/_offline-lab-archive-keyring.asc
+      "$ROOTDIR"/usr/share/keyrings/_raspberrypi-archive-keyring.gpg
+
+- action: apt
+  update: true
+  unauthenticated: false
+  recommends: false
+  packages:
+  - offline-lab-base
+  - offline-lab-utils
+  - offline-lab-raspi-core
+  - raspi-firmware

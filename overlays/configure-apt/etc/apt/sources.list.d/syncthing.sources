@@ -1,0 +1,5 @@
+Types: deb
+URIs: https://apt.syncthing.net/
+Suites: syncthing
+Components: stable-v2
+Signed-By: /usr/share/keyrings/syncthing-archive-keyring.gpg

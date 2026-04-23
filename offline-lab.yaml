@@ -1,0 +1,161 @@
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#                                                                              #
+#      SPDX-License-Identifier: GPL-2.0-only                                   #
+#                                                                              #
+################################################################################
+---
+
+{{- $architecture := or .architecture "arm64"                  }}
+{{- $suite        := or .suite "trixie"                        }}
+{{- $mirror       := or .mirror "http://deb.debian.org/debian" }}
+{{- $apt_proxy    := or .APT_PROXY "http://10.20.0.2:3142/"    }}
+{{- $user         := or .user "admin"                          }}
+{{- $passwd       := or .passwd "offlinepi"                    }}
+{{- $hostname     := or .hostname "offline-node"               }}
+{{- $sshkey       := or .sshkey "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJD+VxVjk4oIb7vPMUNbaL5QHpeE2FhmLP0EWs7rFpo7 info@offline-lab.com" }}
+{{- $timezone     := or .timezone "Europe/Amsterdam"           }}
+{{- $version      := or .version "v0.0.1"                      }}
+{{- $source       := or .source "Debian GNU/Linux 13 LTS"      }}
+{{- $config_dir   := or .config_dir "etc/offline-lab"          }}
+{{- $image_dir    := or .image_dir "/artifacts"                }}
+{{- $image_size   := or .image_size "6GB"                      }}
+{{- $image_file   := or .image_file (printf "%s-%s-%s" "offline-lab" $suite $architecture) }}
+
+
+architecture: {{ $architecture }}
+
+actions:
+- action: recipe
+  description: "[RECIPE 00]: Prepare base install with debootstrap"
+  recipe: recipes/00-debian-bootstrap.yaml
+  variables:
+    architecture: {{ $architecture }}
+    suite: {{ $suite }}
+    mirror: {{ $mirror }}
+    apt_proxy: {{ $apt_proxy }}
+
+- action: recipe
+  description: "[RECIPE 01] Configure apt repositories"
+  recipe: recipes/01-configure-apt.yaml
+  variables:
+    architecture: {{ $architecture }}
+    suite: {{ $suite }}
+    apt_proxy: {{ $apt_proxy }}
+
+- action: recipe
+  description: "[RECIPE 03] Configure initramfs"
+  recipe: recipes/03-configure-initramfs.yaml
+  variables:
+    architecture: {{ $architecture }}
+
+- action: recipe
+  description: "[RECIPE 04] Configure raspberry pi firmware and config files"
+  recipe: recipes/04-install-firmware.yaml
+  variables:
+    architecture: {{ $architecture }}
+
+- action: recipe
+  description: "[RECIPE 05] Configure system"
+  recipe: recipes/05-configure-system.yaml
+  variables:
+    architecture: {{ $architecture }}
+
+- action: recipe
+  description: "[RECIPE 06] Create users and groups"
+  recipe: recipes/06-configure-users.yaml
+  variables:
+    architecture: {{ $architecture }}
+    user: {{ $user }}
+    passwd: {{ $passwd }}
+    sshkey: {{ $sshkey }}
+
+- action: recipe
+  description: "[RECIPE 07] Configure system hostname"
+  recipe: recipes/07-configure-hostname.yaml
+  variables:
+    architecture: {{ $architecture }}
+    hostname: {{ $hostname }}
+
+- action: recipe
+  description: "[RECIPE 08] Set the system timezone"
+  recipe: recipes/08-configure-timezone.yaml
+  variables:
+    architecture: {{ $architecture }}
+    timezone: {{ $timezone }}
+
+- action: recipe
+  description: "[RECIPE 09] Configure networking"
+  recipe: recipes/09-configure-network.yaml
+  variables:
+    architecture: {{ $architecture }}
+
+- action: recipe
+  description: "[RECIPE 10] Configure bluetooth"
+  recipe: recipes/10-configure-bluetooth.yaml
+  variables:
+    architecture: {{ $architecture }}
+
+- action: recipe
+  description: "[RECIPE 11] Configure console and keyboard"
+  recipe: recipes/11-configure-keyboard.yaml
+  variables:
+    architecture: {{ $architecture }}
+
+- action: recipe
+  description: "[RECIPE 12] Configure services"
+  recipe: recipes/12-configure-services.yaml
+  variables:
+    architecture: {{ $architecture }}
+
+- action: recipe
+  description: "[RECIPE 13] Configure utils and tools"
+  recipe: recipes/13-configure-utils.yaml
+  variables:
+    architecture: {{ $architecture }}
+
+- action: recipe
+  description: "[RECIPE 96] Update build metadata"
+  recipe: recipes/96-update-issue.yaml
+  variables:
+    architecture: {{ $architecture }}
+    suite: {{ $suite }}
+    version: {{ $version }}
+    source: {{ $source }}
+    config_dir: {{ $config_dir }}
+
+- action: recipe
+  description: "[RECIPE 97] Clean up image"
+  recipe: recipes/97-cleanup.yaml
+  variables:
+    architecture: {{ $architecture }}
+    suite: {{ $suite }}
+
+- action: recipe
+  description: "[RECIPE 98] Create disk image"
+  recipe: recipes/98-create-image.yaml
+  variables:
+    architecture: {{ $architecture }}
+    suite: {{ $suite }}
+    source: {{ $source }}
+    image_dir: {{ $image_dir }}
+    image_file: {{ $image_file }}
+    image_size: {{ $image_size }}
+
+- action: recipe
+  description: "[RECIPE 99] Create sbom, bmap etc"
+  recipe: recipes/99-image-metadata.yaml
+  variables:
+    architecture: {{ $architecture }}
+    suite: {{ $suite }}
+    source: {{ $source }}
+    image_dir: {{ $image_dir }}
+    image_file: {{ $image_file }}
+    image_size: {{ $image_size }}

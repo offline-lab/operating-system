@@ -1,0 +1,41 @@
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#                                                                              #
+#      SPDX-License-Identifier: GPL-2.0-only                                   #
+#                                                                              #
+################################################################################
+---
+
+{{- $architecture := .architecture }}
+
+architecture: {{ $architecture }}
+
+actions:
+- action: run
+  description: Disable updating initramfs kernel hooks as pi does not use initramfs
+  chroot: false
+  command: |
+    if [ -f "$ROOTDIR"/etc/initramfs-tools/update-initramfs.conf ]; then
+      sed -i 's/^update_initramfs=.*/update_initramfs=no/' "$ROOTDIR"/etc/initramfs-tools/update-initramfs.conf;
+    fi
+
+- action: run
+  description: Disable updating kernel hooks for symlink creation as we do not use those either
+  chroot: false
+  command: |
+    if [ ! -f "$ROOTDIR"/etc/kernel-img.conf ]; then
+      echo "do_symlinks=0" >> "$ROOTDIR"/etc/kernel-img.conf;
+    fi
+
+- action: run
+  description: Remove any existing kernels, symlinks and initrd
+  chroot: false
+  command:
+    rm -f "$ROOTDIR"/{vmlinuz,initrd.img}*

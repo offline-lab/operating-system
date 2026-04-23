@@ -1,0 +1,5 @@
+Types: deb
+URIs: https://repo.offline-lab.com
+Suites: stable
+Components: main
+Signed-By: /usr/share/keyrings/_offline-lab-archive-keyring.asc

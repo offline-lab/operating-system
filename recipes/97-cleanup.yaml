@@ -1,0 +1,112 @@
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#                                                                              #
+#      SPDX-License-Identifier: GPL-2.0-only                                   #
+#                                                                              #
+################################################################################
+---
+
+{{- $architecture := .architecture }}
+{{- $suite        := .suite  }}
+{{- $output       := .output }}
+{{- $image        := .image  }}
+{{- $size         := .size   }}
+
+architecture: {{ $architecture }}
+
+actions:
+- action: run
+  description: Run a full upgrade, purge, autoremove and clean apt cycle
+  chroot: true
+  command: |
+    apt-get --yes update --allow-releaseinfo-change;
+    apt-get --yes dist-upgrade --no-install-recommends --auto-remove --purge;
+    apt-get --yes autoremove;
+    apt-get --yes clean;
+
+- action: run
+  description: Set /etc/machine-id to uninitialized
+  chroot: false
+  command:
+    printf 'uninitialized\n' > "$ROOTDIR"/etc/machine-id
+
+- action: run
+  description: Remove /var/lib/dbus/machine-id
+  chroot: false
+  command:
+    rm -f "$ROOTDIR"/var/lib/dbus/machine-id
+
+- action: run
+  description: Delete /var/lib/systemd/random-seed
+  chroot: false
+  command:
+    rm -f "$ROOTDIR"/var/lib/systemd/random-seed
+
+- action: run
+  description: Delete /var/lib/systemd/credential.secret
+  chroot: false
+  command:
+    rm -f "$ROOTDIR"/var/lib/systemd/credential.secret
+
+- action: run
+  description: Unload LD_PRELOAD
+  chroot: false
+  command: |
+    if [ -e "$ROOTDIR"/etc/ld.so.preload ]; then
+        mv "$ROOTDIR"/etc/ld.so.preload "$ROOTDIR"/etc/ld.so.preload.disabled
+    fi
+
+- action: run
+  description: Clean up image
+  chroot: false
+  command:
+    rm -rf
+      "$ROOTDIR"/boot/*-rpi-2712
+      "$ROOTDIR"/boot/*-rpi-v8
+      "$ROOTDIR"/boot/config*
+      "$ROOTDIR"/boot/initrd.img*
+      "$ROOTDIR"/boot/System.map*
+      "$ROOTDIR"/boot/vmlinuz*
+      "$ROOTDIR"/etc/apt/apt.conf.d/51cache
+      "$ROOTDIR"/etc/apt/keyrings/raspberrypi.pgp
+      "$ROOTDIR"/etc/apt/sources.list~
+      "$ROOTDIR"/etc/apt/sources.list
+      "$ROOTDIR"/etc/apt/sources.list.d/*-temp.list
+      "$ROOTDIR"/etc/apt/trusted.gpg
+      "$ROOTDIR"/etc/apt/trusted.gpg~
+      "$ROOTDIR"/etc/apt/trusted.gpg.d/raspberrypi.pgp
+      "$ROOTDIR"/etc/network/interfaces.dpkg-old
+      "$ROOTDIR"/etc/passwd-
+      "$ROOTDIR"/etc/group-
+      "$ROOTDIR"/etc/shadow-
+      "$ROOTDIR"/etc/gshadow-
+      "$ROOTDIR"/etc/subuid-
+      "$ROOTDIR"/etc/subgid-
+      "$ROOTDIR"/etc/ssh/ssh_host_*_key*
+      "$ROOTDIR"/tmp/*
+      "$ROOTDIR"/usr/bin/qemu-arm-static
+      "$ROOTDIR"/usr/bin/qemu-arm-binfmt
+      "$ROOTDIR"/usr/share/icons/*/icon-theme.cache
+      "$ROOTDIR"/var/cache/apt/archives/*.deb
+      "$ROOTDIR"/var/cache/apt/*.bin
+      "$ROOTDIR"/var/cache/debconf/*-old
+      "$ROOTDIR"/var/lib/apt/lists/*
+      "$ROOTDIR"/var/lib/dpkg/*-old
+      "$ROOTDIR"/var/lib/dbus/machine-id
+      "$ROOTDIR"/var/lib/man-db/auto-update
+      "$ROOTDIR"/var/tmp/*
+
+- action: run
+  description: Clear out all log files
+  chroot: false
+  command: |
+    find "$ROOTDIR"/var/log/ -type f -exec cp /dev/null {} \; ;
+    cat /dev/null >"$ROOTDIR"/var/log/wtmp;
+    cat /dev/null >"$ROOTDIR"/var/log/lastlog;

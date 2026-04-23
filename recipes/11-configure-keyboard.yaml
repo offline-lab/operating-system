@@ -1,0 +1,45 @@
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#                                                                              #
+#      SPDX-License-Identifier: GPL-2.0-only                                   #
+#                                                                              #
+################################################################################
+---
+
+{{- $architecture := .architecture }}
+
+architecture: {{ $architecture }}
+
+actions:
+- action: run
+  description: Replace debconf set-selections placeholder in keyboard config
+  chroot: false
+  command:
+    sed -i -e 's/PLACEHOLDER//'
+    "$ROOTDIR"/etc/default/keyboard
+
+- action: run
+  description: Execute keyboard configuration
+  chroot: true
+  command:
+    dpkg-reconfigure -fnoninteractive keyboard-configuration console-setup
+
+- action: run
+  description: Setup font and keyboard settings for console
+  chroot: true
+  command:
+    setupcon --force --save-only -v
+
+- action: run
+  description: Fix fontface and fontsize in console-setup
+  chroot: false
+  command:
+    sed -i 's/^FONTFACE=.*/FONTFACE=""/;s/^FONTSIZE=.*/FONTSIZE=""/'
+        "$ROOTDIR"/etc/default/console-setup

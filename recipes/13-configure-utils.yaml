@@ -1,0 +1,27 @@
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#                                                                              #
+#      SPDX-License-Identifier: GPL-2.0-only                                   #
+#                                                                              #
+################################################################################
+---
+
+{{- $architecture := .architecture }}
+
+architecture: {{ $architecture }}
+
+actions:
+- action: run
+  description: "[YQ] Install latest yq"
+  chroot: false
+  command: |
+    YQ=$(curl -fsSL https://api.github.com/repos/mikefarah/yq/releases/latest | jq -r .tag_name)
+    curl -fsSL "https://github.com/mikefarah/yq/releases/download/${YQ}/yq_linux_{{ $architecture }}" > /tmp/yq;
+    install -m 755 -o 0 -g 0 /tmp/yq "$ROOTDIR"/usr/local/bin/yq

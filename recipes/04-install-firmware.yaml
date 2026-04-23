@@ -1,0 +1,57 @@
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#                                                                              #
+#      SPDX-License-Identifier: GPL-2.0-only                                   #
+#                                                                              #
+################################################################################
+---
+
+{{- $architecture := .architecture }}
+
+architecture: {{ $architecture }}
+
+actions:
+- action: overlay
+  description: Copy files for rasperry pi boot
+  source: ../overlays/install-firmware
+
+- action: run
+  description: Install RPi boot firmware (Debian)
+  chroot: false
+  command:
+    cp -av "${ROOTDIR}"/usr/lib/raspi-firmware/* "${ROOTDIR}"/boot/firmware/
+
+- action: run
+  description: Install U-Boot
+  chroot: false
+  command:
+    cp -av "${ROOTDIR}"/usr/lib/u-boot/rpi_arm64/u-boot.bin "${ROOTDIR}"/boot/firmware/
+
+- action: run
+  description: Copy DTBs for the kernel
+  chroot: false
+  command:
+    cp -rav "${ROOTDIR}"/usr/lib/linux-image-*-rpi-v8/broadcom/* "${ROOTDIR}"/boot/firmware/
+
+- action: run
+  description: Remove RPi firmware package
+  chroot: true
+  command:
+    dpkg -P raspi-firmware
+
+- action: run
+  chroot: false
+  command:
+    mkimage
+      -C none
+      -A arm64
+      -T script
+      -d "${ROOTDIR}"/boot/firmware/boot.cmd
+      "${ROOTDIR}"/boot/firmware/boot.scr

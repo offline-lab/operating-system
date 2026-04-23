@@ -1,0 +1,15 @@
+[Unit]
+Description=Resize /data partition (once, on first boot)
+DefaultDependencies=no
+After=systemd-remount-fs.service
+Before=local-fs.target
+ConditionFirstBoot=true
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/resize2fs /dev/mmcblk0p3
+TimeoutSec=0
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

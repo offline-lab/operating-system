@@ -1,0 +1,7 @@
+## Ignore everything
+**
+
+## Allow these directories
+!offline-lab.yaml
+!overlays
+!recipes

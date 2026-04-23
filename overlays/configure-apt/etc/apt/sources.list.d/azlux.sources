@@ -1,0 +1,5 @@
+Types: deb
+URIs: http://packages.azlux.fr/debian/
+Suites: SUITE
+Components: main
+Signed-By: /usr/share/keyrings/azlux-archive-keyring.gpg

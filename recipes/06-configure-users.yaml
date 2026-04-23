@@ -1,0 +1,80 @@
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#                                                                              #
+#      SPDX-License-Identifier: GPL-2.0-only                                   #
+#                                                                              #
+################################################################################
+---
+
+{{- $architecture := .architecture }}
+{{- $user         := .user   }}
+{{- $passwd       := .passwd }}
+{{- $sshkey       := .sshkey }}
+
+architecture: {{ $architecture }}
+
+actions:
+- action: run
+  description: Lock down the root account
+  chroot: true
+  command:
+    usermod --pass='*' root
+
+- action: run
+  description: Create missing system groups
+  chroot: true
+  command: |
+    for GRP in input spi i2c gpio sshusers; do
+       groupadd -f -r "$GRP";
+    done
+
+- action: run
+  description: Configure sudo for sudo group
+  chroot: false
+  command: |
+    printf '%%sudo ALL=(ALL) ALL\n' > /tmp/050-passwordless;
+    install -m 0440 /tmp/050-passwordless "$ROOTDIR"/etc/sudoers.d/
+
+- action: run
+  description: Remove sudo permissions from pi user
+  chroot: false
+  command: |
+    if [ -f "$ROOTDIR"/etc/sudoers.d/010_pi-nopasswd ]; then
+        sed -e '/^pi/ s/^#*/#/' -i "$ROOTDIR"/etc/sudoers.d/010_pi-nopasswd;
+    fi
+
+- action: run
+  description: Create default user {{ $user }}
+  chroot: true
+  command: useradd -m -u 1000 -U -s /bin/bash "{{ $user }}"
+
+- action: run
+  description: Set password for default user {{ $user }}
+  chroot: true
+  command:
+    printf "%s:%s\n" "{{ $user }}" "{{ $passwd }}" | chpasswd
+
+- action: run
+  description: Add user {{ $user }} to basic groups
+  chroot: true
+  command:
+    usermod -aG adm,dialout,cdrom,audio,users,sudo,video,games,plugdev,input,gpio,spi,i2c,netdev,render,sshusers "{{ $user }}"
+
+- action: run
+  description: Create /home/{{ $user }}/.ssh directory
+  chroot: false
+  command: install -m 0700 -o 1000 -g 1000 -d "$ROOTDIR/home/{{ $user }}/.ssh"
+
+- action: run
+  description: Install authorized_keys for {{ $user }}
+  chroot: false
+  command: |
+    printf "{{ $sshkey }}\n" > /tmp/authorized_keys;
+    install -m 0600 -o 1000 -g 1000 /tmp/authorized_keys "$ROOTDIR"/home/{{ $user }}/.ssh/

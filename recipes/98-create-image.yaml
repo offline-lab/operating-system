@@ -1,0 +1,76 @@
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#                                                                              #
+#      SPDX-License-Identifier: GPL-2.0-only                                   #
+#                                                                              #
+################################################################################
+---
+
+{{- $architecture := .architecture }}
+{{- $suite        := .suite }}
+{{- $image_dir    := .image_dir }}
+{{- $image_size   := .image_size }}
+{{- $image_file   := .image_file }}
+
+architecture: {{ $architecture }}
+
+actions:
+- action: image-partition
+  imagename: {{ $image_file }}.img
+  imagesize: {{ $image_size }}
+  partitiontype: msdos
+  partitions:
+  - name: boot
+    fs: fat32
+    start: 1MB
+    end: 270MB
+    flags: [ boot ]
+  - name: uboot_env
+    fs: none
+    start: 270MB
+    end: 271MB
+  - name: root_a
+    fs: ext4
+    start: 271MB
+    end: 2419MB
+  - name: root_b
+    fs: ext4
+    start: 2419MB
+    end: 4567MB
+  - name: data
+    fs: ext4
+    start: 4567MB
+    end: 100%
+  mountpoints:
+  - mountpoint: /boot/firmware
+    partition: boot
+    buildtime: true
+    options: [ x-systemd.automount ]
+  - mountpoint: /
+    partition: root_a
+    buildtime: true
+  - mountpoint: /data
+    partition: data
+    buildtime: true
+
+- action: filesystem-deploy
+  description: Deploy file system onto image
+  setup-fstab: false
+  setup-kernel-cmdline: false
+
+- action: run
+  description: Sparsify image before creating block map
+  postprocess: true
+  command: |
+    cp --sparse=always \
+      "$ARTIFACTDIR"/"{{ $image_file }}".img \
+      "$ARTIFACTDIR"/"{{ $image_file }}".img.sparse;
+    mv "$ARTIFACTDIR"/"{{ $image_file }}".img.sparse \
+       "$ARTIFACTDIR"/"{{ $image_file }}".img
