@@ -6,5 +6,3 @@ Acquire::Check-Date "false";
 APT::Acquire::Retries "3";
 APT::Install-Suggests "0";
 APT::Install-Recommends "0";
-
-#APT::Key::GPGVCommand "/usr/bin/gpgv";

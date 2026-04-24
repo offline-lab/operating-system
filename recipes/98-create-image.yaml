@@ -68,9 +68,4 @@ actions:
 - action: run
   description: Sparsify image before creating block map
   postprocess: true
-  command: |
-    cp --sparse=always \
-      "$ARTIFACTDIR"/"{{ $image_file }}".img \
-      "$ARTIFACTDIR"/"{{ $image_file }}".img.sparse;
-    mv "$ARTIFACTDIR"/"{{ $image_file }}".img.sparse \
-       "$ARTIFACTDIR"/"{{ $image_file }}".img
+  command: fallocate --dig-holes "$ARTIFACTDIR"/"{{ $image_file }}".img
