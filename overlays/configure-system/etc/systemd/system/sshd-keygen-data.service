@@ -1,0 +1,16 @@
+[Unit]
+Description=Generate SSH host keys on persistent storage
+After=data.mount
+Before=ssh.service
+Requires=data.mount
+ConditionPathExists=!/data/etc/ssh/ssh_host_ed25519_key
+
+[Service]
+Type=oneshot
+ExecStartPre=/bin/mkdir -p /data/etc/ssh
+ExecStart=/usr/bin/ssh-keygen -t ecdsa -f /data/etc/ssh/ssh_host_ecdsa_key -N ""
+ExecStart=/usr/bin/ssh-keygen -t ed25519 -f /data/etc/ssh/ssh_host_ed25519_key -N ""
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

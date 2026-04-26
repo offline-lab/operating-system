@@ -24,7 +24,7 @@ actions:
   chroot: false
   command: |
     printf "%s\n" "{{ $timezone }}" > /tmp/timezone;
-    install -m 0644 -o 0 -g 1000 /tmp/timezone "$ROOTDIR"/etc/
+    install -m 0644 -o 0 -g 0 /tmp/timezone "$ROOTDIR"/etc/
 
 - action: run
   description: Set timezone

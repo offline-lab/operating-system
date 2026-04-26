@@ -19,7 +19,7 @@ architecture: {{ $architecture }}
 
 actions:
 - action: run
-  description: Disable updating initramfs kernel hooks as pi does not use initramfs
+  description: Disable automatic initramfs rebuilds (initramfs is firmware-managed)
   chroot: false
   command: |
     if [ -f "$ROOTDIR"/etc/initramfs-tools/update-initramfs.conf ]; then

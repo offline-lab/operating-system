@@ -19,8 +19,25 @@ architecture: {{ $architecture }}
 
 actions:
 - action: overlay
-  description: Install default settings (timezone, locale, keyboard, fstab, motd)
+  description: Install default settings (timezone, locale, keyboard, motd)
   source: ../overlays/configure-system/
+
+- action: run
+  description: Generate /etc/fstab
+  chroot: false
+  command: |
+    cat > "$ROOTDIR"/etc/fstab << 'FSTAB'
+    proc            /proc              proc   defaults                                           0  0
+    sysfs           /sys               sysfs  defaults                                           0  0
+    tmpfs           /tmp               tmpfs  defaults,noatime,nosuid,nodev                      0  0
+    /dev/mmcblk0p1  /boot/firmware     vfat   defaults,noatime                                   0  2
+    /dev/mmcblk0p4  /data              ext4   defaults,noatime                                   0  0
+    /data/home      /home              none   bind,nofail,x-systemd.requires=data.mount          0  0
+    /data/root      /root              none   bind,nofail,x-systemd.requires=data.mount          0  0
+    /data/var/log   /var/log           none   bind,nofail,x-systemd.requires=data.mount          0  0
+    /data/var/tmp   /var/tmp           none   bind,nofail,x-systemd.requires=data.mount          0  0
+    /data/var/lib/bluetooth  /var/lib/bluetooth  none  bind,nofail,x-systemd.requires=data.mount 0  0
+    FSTAB
 
 - action: run
   description: "Create /etc/mtab symlink to /proc/mounts"
@@ -55,3 +72,58 @@ actions:
   chroot: false
   command:
     printf "HARDWARE_VENDOR=\"OFFLINE LABS\"\n" >> "$ROOTDIR"/etc/machine-info
+
+- action: run
+  description: Create persistent directories on data partition
+  chroot: false
+  command: |
+    install -d -m 0755 "$ROOTDIR"/data/etc
+    install -d -m 0755 "$ROOTDIR"/data/var/log
+    install -d -m 1777 "$ROOTDIR"/data/var/tmp
+    install -d -m 0755 "$ROOTDIR"/data/var/lib/bluetooth
+    install -d -m 0755 "$ROOTDIR"/data/home
+    install -d -m 0700 "$ROOTDIR"/data/root
+
+################################################################################
+## SSH                                                                        ##
+################################################################################
+
+- action: run
+  description: Remove weak DH moduli
+  chroot: false
+  command: |
+    awk '$5 >= 3071' "$ROOTDIR/etc/ssh/moduli" > /tmp/moduli.safe
+    mv /tmp/moduli.safe "$ROOTDIR/etc/ssh/moduli"
+
+- action: run
+  description: Start ssh services on boot
+  chroot: true
+  command: |
+    systemctl enable ssh.service
+    systemctl enable sshd-keygen-data.service
+    systemctl mask sshd-keygen.service
+
+- action: run
+  description: Enable services at boot time
+  chroot: true
+  command: |
+    systemctl is-enabled --quiet growfs-data.service      || systemctl enable --no-reload growfs-data.service
+    systemctl is-enabled --quiet systemd-networkd.service || systemctl enable --no-reload systemd-networkd.service
+    systemctl is-enabled --quiet rfkill-unblock.service   || systemctl enable --no-reload rfkill-unblock.service
+    systemctl is-enabled --quiet zramswap.service         || systemctl enable --no-reload zramswap.service
+
+- action: run
+  description: Disable services at boot time
+  chroot: true
+  command: |
+    for unit in \
+      apt-daily-upgrade.service apt-daily-upgrade.timer \
+      apt-daily.service apt-daily.timer \
+      dhcpcd.service \
+      NetworkManager.service NetworkManager-wait-online.service \
+      regenerate_ssh_host_keys.service rsyslog.service \
+      systemd-resolved.service \
+      systemd-networkd-wait-online.service \
+      systemd-networkd-wait-online@.service; do
+      systemctl mask --now "${unit}" 2>/dev/null || true
+    done

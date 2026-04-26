@@ -15,6 +15,8 @@
 
 {{- $architecture := or .architecture "arm64"                  }}
 {{- $suite        := or .suite "trixie"                        }}
+{{- $version      := or .version "v0.0.1"                      }}
+{{- $githash      := or .githash "unset"                       }}
 {{- $mirror       := or .mirror "http://deb.debian.org/debian" }}
 {{- $apt_proxy    := or .APT_PROXY "http://10.20.0.2:3142/"    }}
 {{- $user         := or .user "admin"                          }}
@@ -22,12 +24,15 @@
 {{- $hostname     := or .hostname "offline-node"               }}
 {{- $sshkey       := or .sshkey "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJD+VxVjk4oIb7vPMUNbaL5QHpeE2FhmLP0EWs7rFpo7 info@offline-lab.com" }}
 {{- $timezone     := or .timezone "Europe/Amsterdam"           }}
-{{- $version      := or .version "v0.0.1"                      }}
 {{- $source       := or .source "Debian GNU/Linux 13 LTS"      }}
 {{- $config_dir   := or .config_dir "etc/offline-lab"          }}
+
 {{- $image_dir    := or .image_dir "/artifacts"                }}
 {{- $image_size   := or .image_size "6GB"                      }}
-{{- $image_file   := or .image_file (printf "%s-%s-%s" "offline-lab" $suite $architecture) }}
+{{- $image_name   := or .image_name (printf "offline-lab-%s-%s-%s-%s" $suite $architecture $githash $version) }}
+{{- $image_file   := or .image_file (printf "%s.img" $image_name) }}
+
+{{- $output_dir   := or .output_dir "/output"                  }}
 
 
 architecture: {{ $architecture }}
@@ -110,52 +115,39 @@ actions:
     architecture: {{ $architecture }}
 
 - action: recipe
-  description: "[RECIPE 12] Configure services"
-  recipe: recipes/12-configure-services.yaml
+  description: "[RECIPE 12] Configure utils and tools"
+  recipe: recipes/12-configure-utils.yaml
   variables:
     architecture: {{ $architecture }}
 
 - action: recipe
-  description: "[RECIPE 13] Configure utils and tools"
-  recipe: recipes/13-configure-utils.yaml
-  variables:
-    architecture: {{ $architecture }}
-
-- action: recipe
-  description: "[RECIPE 96] Update build metadata"
-  recipe: recipes/96-update-issue.yaml
+  description: "[RECIPE 13] Update build metadata"
+  recipe: recipes/13-update-issue.yaml
   variables:
     architecture: {{ $architecture }}
     suite: {{ $suite }}
     version: {{ $version }}
+    githash: {{ $githash }}
     source: {{ $source }}
     config_dir: {{ $config_dir }}
 
 - action: recipe
-  description: "[RECIPE 97] Clean up image"
-  recipe: recipes/97-cleanup.yaml
+  description: "[RECIPE 14] Clean up image"
+  recipe: recipes/14-cleanup.yaml
   variables:
     architecture: {{ $architecture }}
     suite: {{ $suite }}
 
 - action: recipe
-  description: "[RECIPE 98] Create disk image"
-  recipe: recipes/98-create-image.yaml
+  description: "[RECIPE 99] Create disk image"
+  recipe: recipes/99-create-image.yaml
   variables:
     architecture: {{ $architecture }}
     suite: {{ $suite }}
-    source: {{ $source }}
+    version: {{ $version }}
+    githash: {{ $githash }}
     image_dir: {{ $image_dir }}
     image_file: {{ $image_file }}
+    image_name: {{ $image_name }}
     image_size: {{ $image_size }}
-
-- action: recipe
-  description: "[RECIPE 99] Create sbom, bmap etc"
-  recipe: recipes/99-image-metadata.yaml
-  variables:
-    architecture: {{ $architecture }}
-    suite: {{ $suite }}
-    source: {{ $source }}
-    image_dir: {{ $image_dir }}
-    image_file: {{ $image_file }}
-    image_size: {{ $image_size }}
+    output_dir: {{ $output_dir }}

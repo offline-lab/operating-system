@@ -39,8 +39,8 @@ actions:
   description: Configure sudo for sudo group
   chroot: false
   command: |
-    printf '%%sudo ALL=(ALL) ALL\n' > /tmp/050-passwordless;
-    install -m 0440 /tmp/050-passwordless "$ROOTDIR"/etc/sudoers.d/
+    printf '%%sudo ALL=(ALL) ALL\n' > /tmp/050-sudo-group;
+    install -m 0440 /tmp/050-sudo-group "$ROOTDIR"/etc/sudoers.d/
 
 - action: run
   description: Remove sudo permissions from pi user

@@ -1,0 +1,17 @@
+[Unit]
+Description=Grow data partition and filesystem (once, on first boot)
+DefaultDependencies=no
+After=systemd-remount-fs.service
+Before=data.mount local-fs.target
+ConditionFirstBoot=true
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c 'echo ", +" | sfdisk --no-reread --force -N 4 /dev/mmcblk0'
+ExecStart=/usr/bin/partx -u -n 4 /dev/mmcblk0
+ExecStart=/usr/sbin/resize2fs /dev/mmcblk0p4
+TimeoutSec=0
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

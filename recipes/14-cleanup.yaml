@@ -15,9 +15,6 @@
 
 {{- $architecture := .architecture }}
 {{- $suite        := .suite  }}
-{{- $output       := .output }}
-{{- $image        := .image  }}
-{{- $size         := .size   }}
 
 architecture: {{ $architecture }}
 
@@ -32,30 +29,9 @@ actions:
     apt-get --yes clean;
 
 - action: run
-  description: Full upgrade, purge unneeded packages and clean apt
+  description: Full clean
   chroot: true
   command: |
-    apt-get purge -y --autoremove \
-      apt \
-      apt-utils \
-      apt-transport-https \
-      debconf \
-      debconf-i18n \
-      ucf \
-      adduser \
-      passwd \
-      login \
-      cron \
-      at \
-      tasksel \
-      tasksel-data \
-      gcc \
-      cpp \
-      make \
-      binutils \
-      || true
-
-    apt-get purge -y dpkg || true
     apt-get clean || true
 
 - action: run
@@ -82,27 +58,12 @@ actions:
     # Boot artefacts
     # -------------------------------------------------------------------------
     rm -rf \
-      "$ROOTDIR/boot/*-rpi-2712" \
-      "$ROOTDIR/boot/*-rpi-v8" \
-      "$ROOTDIR/boot/config"* \
-      "$ROOTDIR/boot/initrd.img"* \
-      "$ROOTDIR/boot/System.map"* \
-      "$ROOTDIR/boot/vmlinuz"*
-
-    # -------------------------------------------------------------------------
-    # Package manager state — all of it
-    # -------------------------------------------------------------------------
-    rm -rf \
-      "$ROOTDIR/etc/apt" \
-      "$ROOTDIR/etc/dpkg" \
-      "$ROOTDIR/usr/lib/apt" \
-      "$ROOTDIR/usr/lib/dpkg" \
-      "$ROOTDIR/var/lib/apt" \
-      "$ROOTDIR/var/lib/dpkg" \
-      "$ROOTDIR/var/cache/apt" \
-      "$ROOTDIR/var/log/apt" \
-      "$ROOTDIR/var/log/dpkg.log" \
-      "$ROOTDIR/var/cache/debconf"
+      "$ROOTDIR"/boot/*-rpi-2712 \
+      "$ROOTDIR"/boot/*-rpi-v8 \
+      "$ROOTDIR"/boot/config* \
+      "$ROOTDIR"/boot/initrd.img* \
+      "$ROOTDIR"/boot/System.map* \
+      "$ROOTDIR"/boot/vmlinuz*
 
     # -------------------------------------------------------------------------
     # /usr/share baggage
@@ -113,7 +74,6 @@ actions:
       "$ROOTDIR/usr/share/info" \
       "$ROOTDIR/usr/share/lintian" \
       "$ROOTDIR/usr/share/bug" \
-      "$ROOTDIR/usr/share/keyrings" \
       "$ROOTDIR/usr/share/common-licenses" \
       "$ROOTDIR/usr/share/pixmaps" \
       "$ROOTDIR/usr/share/applications" \
@@ -137,9 +97,7 @@ actions:
       "$ROOTDIR/etc/cron.monthly" \
       "$ROOTDIR/etc/cron.weekly" \
       "$ROOTDIR/etc/crontab" \
-      "$ROOTDIR/etc/at.deny" \
-      "$ROOTDIR/etc/adduser.conf" \
-      "$ROOTDIR/etc/deluser.conf"
+      "$ROOTDIR/etc/at.deny"
 
     rm -f \
       "$ROOTDIR/etc/passwd-" \
@@ -151,7 +109,7 @@ actions:
       "$ROOTDIR/etc/network/interfaces.dpkg-old"
 
     # SSH host keys — regenerated on first boot
-    rm -f "$ROOTDIR/etc/ssh/ssh_host_"*"_key"*
+    rm -f "$ROOTDIR"/etc/ssh/ssh_host_*_key*
 
     # -------------------------------------------------------------------------
     # QEMU static binaries (build-time only)

@@ -22,6 +22,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV GOPATH=/usr/local/go
 ENV TERM=xterm-256color
 ENV INITRD=No
+ENV OUTPUTDIR=/output
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -104,8 +105,7 @@ RUN true \
         squashfs-tools=*               \
         systemd=*                      \
         systemd-container=*            \
-        systemd-resolved=*             \
-        u-boot-tools=*                 \
+        systemd-resolved=*                 \
         udev=*                         \
         unzip=*                        \
         util-linux=*                   \
@@ -121,10 +121,11 @@ RUN true \
         zstd=*                         \
  \
  && rm -rf /var/lib/apt/lists/* \
+ && mkdir -p /output /work /artifacts \
  && curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh  | sh -s -- -b /usr/local/bin \
- && curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+ && curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin \
+ && grype db update
 
 COPY --chmod=0755 --chown=0:0 --from=debos /usr/local/bin/debos /usr/local/bin/debos
-
 WORKDIR /work
-VOLUME ["/build", "/output"]
+VOLUME ["/artifacts", "/build"]

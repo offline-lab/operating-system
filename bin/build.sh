@@ -17,7 +17,7 @@ function build::is_container() {
 # Build the docker image and re-execute this script inside it
 #
 function build::run_in_docker() {
-    local repo_root
+    local repo_root githash
 
     local -a build_arguments=(
         --tag "${docker_image}"
@@ -38,18 +38,21 @@ function build::run_in_docker() {
         exit 1
     fi
 
+    githash="$(git rev-parse --short HEAD)"
+
     local -a run_arguments=(
         --rm
         --tty
         --interactive
         --privileged
         --platform linux/arm64
+        -e githash="$(git rev-parse --short HEAD)"
         -w /work
-        -v "${repo_root}/recipes:/work/recipes:ro"
         -v "${repo_root}/overlays:/work/overlays:ro"
+        -v "${repo_root}/recipes:/work/recipes:ro"
         -v "${repo_root}/offline-lab.yaml:/work/offline-lab.yaml:ro"
         -v "${repo_root}/bin/build.sh:/build.sh:ro"
-        -v "${repo_root}/build/artifacts:/artifacts"
+        -v "${repo_root}/output:/output"
     )
 
     if [[ -n "${APT_PROXY}" ]]; then
@@ -60,8 +63,6 @@ function build::run_in_docker() {
         )
     fi
 
-    echo "==> Starting build in Docker..."
-
     exec docker run "${run_arguments[@]}" "${docker_image}" /build.sh "${@}"
 }
 
@@ -69,28 +70,64 @@ function build::run_in_docker() {
 # Run the actual build inside the container
 #
 function build::run() {
-    local -a arguments=(
-        --verbose
-        --debug-shell
-        --shell=/bin/bash
-        --cpus=8
-        --memory=8192MB
-        --artifactdir=/artifacts
-    )
+    local -a command=("${@}")
 
-    echo "==> Building image..."
+    if [[ "${#command[@]}" -lt 1 ]]; then
+        local -a arguments=(
+            --verbose
+            --debug-shell
+            --shell=/bin/bash
+            --cpus=8
+            --memory=8192MB
+            --artifactdir=/artifacts
+            --template-var version:"$(date +%Y%m%d.%H%M%S.1)"
+            --template-var githash:"${githash}"
+        )
+        exec debos "${arguments[@]}" /work/offline-lab.yaml
 
-    exec debos "${arguments[@]}" /work/offline-lab.yaml
+    else
+        exec "${command[@]}"
+    fi
+
+}
+
+#
+# Exec a running container
+#
+function build::exec() {
+    local container
+
+    container="$(
+        docker ps \
+            --filter ancestor=offline-lab-debos-builder \
+            --format '{{.ID}}'
+    )"
+
+    if [[ -n "${container}" ]]; then
+        exec docker exec -ti "${container}" /bin/bash
+    fi
 }
 
 #
 # Main
 #
 function build::main() {
+    if [[ "${*}" =~ --debug ]]; then
+        set -x
+    fi
+
     if build::is_container; then
-        build::run
+        if [[ "${*}" =~ --shell ]]; then
+            /bin/bash
+        else
+            build::run "${@}"
+        fi
     else
-        build::run_in_docker "${@}"
+        if [[ "${*}" =~ --exec ]]; then
+            build::exec
+        else
+            build::run_in_docker "${@}"
+        fi
     fi
 }
 

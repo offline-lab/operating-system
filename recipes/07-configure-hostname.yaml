@@ -23,8 +23,15 @@ actions:
   description: Set hostname
   chroot: false
   command:
-    printf "%s\n" "offline-node"
+    printf "%s\n" "{{ $hostname }}"
     > "$ROOTDIR"/etc/hostname
+
+- action: run
+  description: Create hostname file on data partition
+  chroot: false
+  command: |
+    install -d -m 0755 "$ROOTDIR"/data/etc
+    printf "%s\n" "{{ $hostname }}" > "$ROOTDIR"/data/etc/hostname
 
 - action: run
   description: Add hostname to /etc/hosts

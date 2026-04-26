@@ -1,0 +1,160 @@
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#                                                                              #
+#      SPDX-License-Identifier: GPL-2.0-only                                   #
+#                                                                              #
+################################################################################
+---
+
+{{- $architecture     := .architecture }}
+{{- $suite            := .suite }}
+{{- $version          := .version }}
+{{- $githash          := .githash }}
+
+{{- $image_dir        := .image_dir }}
+{{- $image_size       := .image_size }}
+{{- $image_name       := .image_name }}
+{{- $image_file       := .image_file }}
+{{- $output_dir       := .output_dir }}
+
+{{- $root_a_start     := 270 }}
+{{- $root_a_offset    := 270000128 }}
+{{- $root_a_sizelimit := 2149000192 }}
+
+{{- $root_b_start     := 2419 }}
+{{- $root_b_offset    := 2419000320 }}
+{{- $root_b_length    := 1547999744 }}
+
+architecture: {{ $architecture }}
+
+actions:
+- action: image-partition
+  imagename: {{ $image_file }}
+  imagesize: {{ $image_size }}
+  partitiontype: msdos
+  partitions:
+  - name: boot
+    fs: fat32
+    start: 1MB
+    end: 270MB
+    flags: [ boot ]
+  - name: root_a
+    fs: ext4
+    start: {{ $root_a_start }}MB
+    end: {{ $root_b_start }}MB
+  - name: root_b
+    fs: ext4
+    start: {{ $root_b_start }}MB
+    end: 4567MB
+  - name: data
+    fs: ext4
+    start: 4567MB
+    end: 100%
+  mountpoints:
+  - mountpoint: /boot/firmware
+    partition: boot
+    buildtime: true
+    options: [ x-systemd.automount ]
+  - mountpoint: /
+    partition: root_a
+    buildtime: true
+  - mountpoint: /data
+    partition: data
+    buildtime: true
+
+- action: filesystem-deploy
+  description: Deploy file system onto image
+  setup-fstab: false
+  setup-kernel-cmdline: false
+
+- action: pack
+  description: Pack rootfs into tarball
+  file: {{ $image_name }}-rootfs.tar.gz
+
+- action: run
+  description: Convert root partitions to squashfs for A/B boot
+  command: |
+    set -euo pipefail
+    MNTDIR=$(mktemp -d)
+    IMG="$ARTIFACTDIR/{{ $image_file }}"
+
+    # Detach any loop devices still attached to this image from filesystem-deploy
+    losetup --list --output NAME,BACK-FILE --noheadings \
+      | awk -v img="$IMG" '$2 == img {print $1}' \
+      | xargs -r losetup --detach
+
+    LODEV=$(losetup --find --show \
+      --offset={{ $root_a_offset }} \
+      --sizelimit={{ $root_a_sizelimit }} \
+      "$IMG")
+
+    mount -o ro "$LODEV" "$MNTDIR"
+    mksquashfs "$MNTDIR" "$ARTIFACTDIR/root.squashfs" -comp zstd -noappend -no-xattrs
+    umount "$MNTDIR"
+    losetup --detach "$LODEV"
+    rmdir "$MNTDIR"
+
+    dd if="$ARTIFACTDIR/root.squashfs" of="$ARTIFACTDIR/{{ $image_file }}" \
+      bs=1000000 seek={{ $root_a_start }} conv=notrunc
+
+- action: run
+  description: Generate SBOM
+  command:
+    syft scan -q
+      dir:"$ROOTDIR"
+      --source-name="$ARTIFACTDIR"/{{ $image_file }}
+      --source-supplier="Offline Lab Linux <info@offline-lab.com>"
+      --source-version="{{ $version }}"
+      -o spdx-json="$ARTIFACTDIR"/{{ $image_name }}-sbom.json
+
+- action: run
+  description: Generate vulnerability report
+  postprocess: true
+  command:
+    grype -q
+      sbom:"$ARTIFACTDIR"/{{ $image_name }}-sbom.json
+      -o json="$ARTIFACTDIR"/{{ $image_name }}-vulnerability-report.json
+
+- action: run
+  description: Create block map file
+  postprocess: true
+  command:
+    bmaptool create
+    -o "$ARTIFACTDIR"/{{ $image_name }}.bmap
+    "$ARTIFACTDIR"/{{ $image_file }}
+
+- action: run
+  description: Create checksum for generated image
+  postprocess: true
+  command: |
+    sha256sum "$ARTIFACTDIR"/{{ $image_file }} \
+      > "$ARTIFACTDIR"/{{ $image_file }}.sha256sum.txt
+
+- action: run
+  description: Compress output files
+  postprocess: true
+  command: |
+    pigz --force -9 "$ARTIFACTDIR"/{{ $image_file }}
+    pigz --force -9 "$ARTIFACTDIR"/{{ $image_name }}-vulnerability-report.json
+    pigz --force -9 "$ARTIFACTDIR"/{{ $image_name }}-sbom.json
+    pigz --force -9 "$ARTIFACTDIR"/{{ $image_name }}.bmap
+
+- action: run
+  description: Create checksum for compressed image file
+  postprocess: true
+  command:
+    sha256sum "$ARTIFACTDIR"/{{ $image_file }}.gz
+      > "$ARTIFACTDIR"/{{ $image_file }}.gz.sha256sum.txt
+
+- action: run
+  description: Move all artifacts into the {{ $output_dir }} directory
+  postprocess: true
+  command:
+    mv -v "$ARTIFACTDIR"/* {{ $output_dir }}/

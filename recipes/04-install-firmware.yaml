@@ -25,33 +25,20 @@ actions:
 - action: run
   description: Install RPi boot firmware (Debian)
   chroot: false
-  command:
-    cp -av "${ROOTDIR}"/usr/lib/raspi-firmware/* "${ROOTDIR}"/boot/firmware/
-
-- action: run
-  description: Install U-Boot
-  chroot: false
-  command:
-    cp -av "${ROOTDIR}"/usr/lib/u-boot/rpi_arm64/u-boot.bin "${ROOTDIR}"/boot/firmware/
+  command: |
+    cp -av "${ROOTDIR}"/usr/lib/raspi-firmware/bootcode.bin "${ROOTDIR}"/boot/firmware/
+    cp -av "${ROOTDIR}"/usr/lib/raspi-firmware/fixup.dat    "${ROOTDIR}"/boot/firmware/
+    cp -av "${ROOTDIR}"/usr/lib/raspi-firmware/start.elf    "${ROOTDIR}"/boot/firmware/
 
 - action: run
   description: Copy DTBs for the kernel
   chroot: false
-  command:
-    cp -rav "${ROOTDIR}"/usr/lib/linux-image-*-rpi-v8/broadcom/* "${ROOTDIR}"/boot/firmware/
+  command: |
+    cp -av "${ROOTDIR}"/usr/lib/linux-image-*-rpi-v8/broadcom/bcm2710-rpi-zero-2-w.dtb "${ROOTDIR}"/boot/firmware/
+    cp -av "${ROOTDIR}"/usr/lib/linux-image-*-rpi-v8/broadcom/bcm2837-rpi-zero-2-w.dtb "${ROOTDIR}"/boot/firmware/
 
 - action: run
   description: Remove RPi firmware package
   chroot: true
   command:
     dpkg -P raspi-firmware
-
-- action: run
-  chroot: false
-  command:
-    mkimage
-      -C none
-      -A arm64
-      -T script
-      -d "${ROOTDIR}"/boot/firmware/boot.cmd
-      "${ROOTDIR}"/boot/firmware/boot.scr

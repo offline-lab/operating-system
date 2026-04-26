@@ -1,1 +1,0 @@
-# This file is not used! We use u-boot so use boot.cmd instead!

@@ -1,0 +1,30 @@
+---
+
+{{- $architecture := .architecture }}
+
+architecture: {{ $architecture }}
+
+actions:
+- action: overlay
+  description: Copy the package selections files to /tmp
+  source: ../overlays/install-packages
+  destination: /tmp
+
+- action: run
+  chroot: true
+  command: find /tmp
+
+- action: run
+  description: Apply the debconf selection to the system
+  chroot: true
+  command:
+    debconf-set-selections /tmp/debconf-selections
+
+- action: run
+  description: Install all packages
+  chroot: true
+  command:
+    xargs apt-get -qq
+    -o Acquire::Retries=3
+    install --no-install-recommends -y
+    < /tmp/packages.list

@@ -32,6 +32,7 @@ actions:
   - main
   - contrib
   - non-free
+  - non-free-firmware
   merged-usr: true
   mirror: {{ $mirror }}
   variant: minbase
