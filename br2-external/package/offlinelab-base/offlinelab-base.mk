@@ -1,0 +1,62 @@
+################################################################################
+#
+# offlinelab-base
+#
+################################################################################
+
+OFFLINELAB_BASE_VERSION = 1.0
+OFFLINELAB_BASE_SITE = $(BR2_EXTERNAL_OFFLINELAB_PATH)/package/offlinelab-base/src
+OFFLINELAB_BASE_SITE_METHOD = local
+
+OFFLINELAB_BASE_DEPENDENCIES = \
+	bash \
+	coreutils \
+	e2fsprogs \
+	parted \
+	systemd
+
+define OFFLINELAB_BASE_INSTALL_TARGET_CMDS
+	mkdir -p $(TARGET_DIR)/etc/systemd/system/local-fs.target.wants
+	mkdir -p $(TARGET_DIR)/etc/systemd/system/multi-user.target.wants
+	mkdir -p $(TARGET_DIR)/etc/systemd/system/sysinit.target.wants
+	mkdir -p $(TARGET_DIR)/etc/systemd/system/getty.target.wants
+	mkdir -p $(TARGET_DIR)/etc/systemd/network
+
+	$(INSTALL) -D -m 0644 $(@D)/systemd/mount/boot-firmware.mount \
+		$(TARGET_DIR)/etc/systemd/system/boot-firmware.mount
+	ln -sf /etc/systemd/system/boot-firmware.mount \
+		$(TARGET_DIR)/etc/systemd/system/local-fs.target.wants/boot-firmware.mount
+
+	$(INSTALL) -D -m 0644 $(@D)/systemd/service/expand-data.service \
+		$(TARGET_DIR)/etc/systemd/system/expand-data.service
+	ln -sf /etc/systemd/system/expand-data.service \
+		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/expand-data.service
+
+	$(INSTALL) -D -m 0644 $(@D)/systemd/service/fake-hwclock.service \
+		$(TARGET_DIR)/etc/systemd/system/fake-hwclock.service
+	ln -sf /etc/systemd/system/fake-hwclock.service \
+		$(TARGET_DIR)/etc/systemd/system/sysinit.target.wants/fake-hwclock.service
+
+	$(INSTALL) -D -m 0755 $(@D)/config/expand-data/expand-data.sh \
+		$(TARGET_DIR)/usr/local/bin/expand-data.sh
+	$(INSTALL) -D -m 0755 $(@D)/config/fake-hwclock/fake-hwclock.sh \
+		$(TARGET_DIR)/usr/local/bin/fake-hwclock.sh
+
+	ln -sf /lib/systemd/system/serial-getty@.service \
+		"$(TARGET_DIR)/etc/systemd/system/getty.target.wants/serial-getty@ttyS0.service"
+	ln -sf /lib/systemd/system/getty@.service \
+		"$(TARGET_DIR)/etc/systemd/system/getty.target.wants/getty@tty1.service"
+
+	echo ""                                          >  $(@D)/issue
+	echo "Offline Lab OS"                            >> $(@D)/issue
+	echo "---------------------------------------"   >> $(@D)/issue
+	echo "Kernel:  $(LINUX_VERSION_PROBED)"          >> $(@D)/issue
+	echo "Built:   $$(date +"%Y-%m-%d %H:%M")"      >> $(@D)/issue
+	printf 'wlan0:   \\4{wlan0}\n'                   >> $(@D)/issue
+	printf 'usb0:    \\4{usb0}\n'                    >> $(@D)/issue
+	echo ""                                          >> $(@D)/issue
+	$(INSTALL) -D -m 644 $(@D)/issue $(TARGET_DIR)/etc/issue
+	$(INSTALL) -D -m 644 $(@D)/issue $(TARGET_DIR)/etc/issue.net
+endef
+
+$(eval $(generic-package))

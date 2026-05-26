@@ -1,0 +1,12 @@
+[Unit]
+Description=Setup USB composite gadget (ACM + ECM)
+After=sys-kernel-config.mount
+Requires=sys-kernel-config.mount
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/usb-gadget.sh
+
+[Install]
+WantedBy=sysinit.target

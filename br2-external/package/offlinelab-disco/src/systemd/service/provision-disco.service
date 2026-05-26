@@ -1,0 +1,12 @@
+[Unit]
+Description=Provision disco config from boot partition
+After=boot-firmware.mount expand-data.service
+Wants=boot-firmware.mount
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/provision-disco.sh
+
+[Install]
+WantedBy=multi-user.target

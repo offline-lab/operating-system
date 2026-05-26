@@ -1,0 +1,7 @@
+**
+!.config
+!.env
+!.packages.list
+!Dockerfile
+!/br2-external/**
+!/bin/**

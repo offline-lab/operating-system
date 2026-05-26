@@ -1,0 +1,5 @@
+config BR2_PACKAGE_BOARD_PI_ZERO_2W
+	bool "Raspberry Pi Zero 2W board support"
+	select BR2_PACKAGE_RPI_FIRMWARE
+	help
+	  Offline Lab board support for Raspberry Pi Zero 2W

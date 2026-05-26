@@ -1,0 +1,9 @@
+menu "Offline Lab board options"
+	source "$BR2_EXTERNAL_OFFLINELAB_PATH/boards/pi-zero-2w/Config.in"
+	source "$BR2_EXTERNAL_OFFLINELAB_PATH/package/offlinelab-base/Config.in"
+	source "$BR2_EXTERNAL_OFFLINELAB_PATH/package/offlinelab-usb-gadget/Config.in"
+	source "$BR2_EXTERNAL_OFFLINELAB_PATH/package/offlinelab-wifi/Config.in"
+	source "$BR2_EXTERNAL_OFFLINELAB_PATH/package/offlinelab-ssh/Config.in"
+	source "$BR2_EXTERNAL_OFFLINELAB_PATH/package/offlinelab-zram/Config.in"
+	source "$BR2_EXTERNAL_OFFLINELAB_PATH/package/offlinelab-disco/Config.in"
+endmenu

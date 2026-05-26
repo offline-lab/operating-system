@@ -1,0 +1,13 @@
+[Unit]
+Description=Mount boot firmware partition
+DefaultDependencies=no
+After=dev-mmcblk0p1.device
+
+[Mount]
+What=/dev/mmcblk0p1
+Where=/boot/firmware
+Type=vfat
+Options=ro,noatime
+
+[Install]
+WantedBy=local-fs.target

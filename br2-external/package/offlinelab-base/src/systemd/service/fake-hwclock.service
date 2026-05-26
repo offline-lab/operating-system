@@ -1,0 +1,15 @@
+[Unit]
+Description=Restore/save system clock from file
+DefaultDependencies=no
+Before=sysinit.target time-set.target shutdown.target
+After=local-fs.target
+Conflicts=shutdown.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/fake-hwclock.sh load
+ExecStop=/usr/local/bin/fake-hwclock.sh save
+
+[Install]
+WantedBy=sysinit.target

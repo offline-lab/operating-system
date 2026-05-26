@@ -1,0 +1,12 @@
+[Unit]
+Description=Provision WiFi config from boot partition
+After=boot-firmware.mount expand-data.service
+Wants=boot-firmware.mount
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/provision-wifi.sh
+
+[Install]
+WantedBy=multi-user.target

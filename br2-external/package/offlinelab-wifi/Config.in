@@ -1,0 +1,40 @@
+config BR2_PACKAGE_OFFLINELAB_WIFI
+	bool "offlinelab-wifi"
+	default y
+	depends on BR2_INIT_SYSTEMD
+	select BR2_PACKAGE_WPA_SUPPLICANT
+	select BR2_PACKAGE_IW
+	select BR2_PACKAGE_UTIL_LINUX
+	select BR2_PACKAGE_UTIL_LINUX_RFKILL
+	help
+	  WiFi support with wpa_supplicant.
+	  Config provisioned from /boot/firmware/wpa_supplicant.conf
+	  to /data/config/wifi/ on first boot.
+
+config BR2_PACKAGE_OFFLINELAB_WIFI_WPA_CREATE
+	bool "Create WPA supplicant config at build time"
+	default n
+	depends on BR2_PACKAGE_OFFLINELAB_WIFI
+	help
+	  Create a wpa_supplicant.conf on the boot partition at build time.
+
+config BR2_PACKAGE_OFFLINELAB_WIFI_WPA_SSID
+	string "WiFi SSID"
+	depends on BR2_PACKAGE_OFFLINELAB_WIFI_WPA_CREATE
+	help
+	  The SSID of the WiFi AP to connect to.
+
+config BR2_PACKAGE_OFFLINELAB_WIFI_WPA_PASSWORD
+	string "WiFi Password"
+	default ""
+	depends on BR2_PACKAGE_OFFLINELAB_WIFI_WPA_CREATE
+	help
+	  The password of the WiFi AP to connect to.
+
+config BR2_PACKAGE_OFFLINELAB_WIFI_WPA_COUNTRY
+	string "WiFi regulatory country code"
+	default "00"
+	depends on BR2_PACKAGE_OFFLINELAB_WIFI_WPA_CREATE
+	help
+	  ISO 3166-1 alpha-2 country code for regulatory domain.
+	  Use "00" for world/default. Examples: NL, US, GB, DE.
