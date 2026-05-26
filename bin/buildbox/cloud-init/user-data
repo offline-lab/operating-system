@@ -1,0 +1,75 @@
+#cloud-config
+
+hostname: buildbox
+manage_etc_hosts: true
+
+users:
+  - name: builder
+    gecos: Buildroot Builder
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    lock_passwd: false
+    passwd: $6$buildbox$Kk96OzWiNLk1ExQ0.zF4efiUgZf/ZTFdqLxjfn4vqYlNcUjsgBByJ4Bjz6OItJU1CYJUVzcKqdnY4fYJ0WcLT1
+    ssh_authorized_keys:
+      - ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBCY1/jmHp/cSIPfG388BbaP/kISOKnsvPiMgLYm/vUsOFIvXfxqPo5Xh5r8wfwUQrjw1iLb3DYp6FWKEzAGpJRs= flip@bigmac.local
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - bc
+  - bison
+  - build-essential
+  - bzip2
+  - ca-certificates
+  - ccache
+  - cmake
+  - coreutils
+  - cpio
+  - curl
+  - device-tree-compiler
+  - dosfstools
+  - e2fsprogs
+  - fakeroot
+  - fdisk
+  - file
+  - flex
+  - g++
+  - gawk
+  - gcc
+  - genimage
+  - git
+  - grep
+  - gzip
+  - jq
+  - kmod
+  - less
+  - libncurses-dev
+  - libssl-dev
+  - make
+  - moreutils
+  - mtools
+  - ncdu
+  - parted
+  - pigz
+  - pkg-config
+  - procps
+  - rsync
+  - squashfs-tools
+  - sudo
+  - u-boot-tools
+  - unzip
+  - util-linux
+  - vim
+  - wget
+  - wpasupplicant
+  - xz-utils
+  - zip
+  - zstd
+
+runcmd:
+  - su - builder -c 'git clone --depth 1 https://github.com/offline-lab/buildroot.git /home/builder/buildroot'
+  - su - builder -c 'mkdir -p /home/builder/work /home/builder/downloads /home/builder/artifacts /home/builder/.ccache'
+  - su - builder -c 'ccache --max-size=15G'
+
+final_message: "buildbox ready after $UPTIME seconds"

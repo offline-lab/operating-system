@@ -1,0 +1,27 @@
+arm_64bit=1
+device_tree=bcm2710-rpi-zero-2-w.dtb
+start_file=start.elf
+fixup_file=fixup.dat
+
+# Direct kernel boot (no U-Boot)
+kernel=Image
+initramfs initramfs.cpio.gz followkernel
+
+# Media: keep audio, BT, GPU for portable service use cases
+dtparam=audio=on
+gpu_mem=64
+disable_overscan=1
+max_framebuffers=2
+disable_fw_kms_setup=1
+
+# Performance
+arm_boost=1
+
+[all]
+dtoverlay=dwc2,dr_mode=otg
+dtoverlay=vc4-kms-v3d
+dtparam=act_led_trigger=actpwr
+
+# Serial: mini UART on GPIO (BT keeps ttyAMA0/PL011)
+enable_uart=1
+init_uart_baud=115200

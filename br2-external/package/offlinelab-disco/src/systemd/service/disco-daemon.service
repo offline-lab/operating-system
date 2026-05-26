@@ -1,0 +1,16 @@
+[Unit]
+Description=Disco discovery daemon
+After=network-online.target provision-disco.service
+Wants=network-online.target provision-disco.service
+
+[Service]
+Type=simple
+User=disco
+Group=disco
+ExecStart=/usr/bin/disco-daemon --config /data/config/disco/config.yaml
+Restart=on-failure
+RestartSec=10
+AmbientCapabilities=CAP_NET_RAW CAP_NET_BIND_SERVICE CAP_SYS_TIME
+
+[Install]
+WantedBy=multi-user.target

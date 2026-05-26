@@ -1,0 +1,21 @@
+config BR2_PACKAGE_OFFLINELAB_BASE
+	bool "offlinelab-base"
+	default y
+	depends on BR2_INIT_SYSTEMD
+	select BR2_PACKAGE_BASH
+	select BR2_PACKAGE_CA_CERTIFICATES
+	select BR2_PACKAGE_COREUTILS
+	select BR2_PACKAGE_E2FSPROGS
+	select BR2_PACKAGE_E2FSPROGS_RESIZE2FS
+	select BR2_PACKAGE_KMOD
+	select BR2_PACKAGE_KMOD_TOOLS
+	select BR2_PACKAGE_PARTED
+	select BR2_PACKAGE_SUDO
+	select BR2_PACKAGE_SYSTEMD_NETWORKD
+	select BR2_PACKAGE_UTIL_LINUX
+	select BR2_PACKAGE_UTIL_LINUX_BINARIES
+	select BR2_PACKAGE_UTIL_LINUX_NOLOGIN
+	help
+	  Base system package for Offline Lab OS.
+	  Installs boot-firmware mount, data partition expansion,
+	  fake hardware clock, serial console, and /etc/issue.

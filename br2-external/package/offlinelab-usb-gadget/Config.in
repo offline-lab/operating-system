@@ -1,0 +1,9 @@
+config BR2_PACKAGE_OFFLINELAB_USB_GADGET
+	bool "offlinelab-usb-gadget"
+	default y
+	depends on BR2_INIT_SYSTEMD
+	select BR2_PACKAGE_SYSTEMD_NETWORKD
+	help
+	  USB composite gadget (ACM serial + ECM ethernet).
+	  Provides serial console on ttyGS0 and ethernet on usb0
+	  when connected to a host via USB.

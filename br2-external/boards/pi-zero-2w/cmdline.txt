@@ -1,0 +1,1 @@
+console=ttyS0,115200 console=tty1 loglevel=4 fbcon=nodefer usbcore.autosuspend=-1

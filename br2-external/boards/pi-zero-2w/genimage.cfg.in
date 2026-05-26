@@ -1,0 +1,40 @@
+image bootfs.vfat {
+    size = 128M
+    vfat {
+        label = "bootfs"
+        files = {
+#BOOT_FILES#
+        }
+    }
+}
+
+image sdcard.img {
+    hdimage {
+        fill = "true"
+    }
+
+    partition boot {
+        partition-type = 0xC
+        bootable = "true"
+        image = "bootfs.vfat"
+        offset = 4M
+    }
+
+    partition rootfs-a {
+        partition-type = 0x83
+        image = "rootfs.ext4"
+        offset = 132M
+    }
+
+    partition rootfs-b {
+        partition-type = 0x83
+        image = "rootfs-b.ext4"
+        offset = 644M
+    }
+
+    partition data {
+        partition-type = 0x83
+        image = "data.ext4"
+        offset = 1156M
+    }
+}

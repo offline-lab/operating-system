@@ -1,0 +1,12 @@
+[Unit]
+Description=Expand data partition to fill SD card
+After=local-fs.target
+ConditionPathExists=/data
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/expand-data.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

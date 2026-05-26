@@ -1,0 +1,43 @@
+# See buildroot/system/device_table.txt for the original
+# See package/makedevs/README for details
+#
+# This device table is used to assign proper ownership and permissions
+# on various files. It doesn't create any device file, as it is used
+# in both static device configurations (where /dev/ is static) and in
+# dynamic configurations (where devtmpfs, mdev or udev are used).
+#
+
+# <name>                                <type> <mode> <uid> <gid> <major> <minor> <start> <inc> <count>
+/dev                                    d      0755   0     0     -       -       -       -     -
+/etc                                    d      0755   0     0     -       -       -       -     -
+/root                                   d      0700   0     0     -       -       -       -     -
+/tmp                                    d      1777   0     0     -       -       -       -     -
+/data                                   d      0755   0     0     -       -       -       -     -
+
+# <name>                                <type> <mode> <uid> <gid> <major> <minor> <start> <inc> <count>
+/etc/shadow                             f      0600   0     0     -       -       -       -     -
+/etc/passwd                             f      0644   0     0     -       -       -       -     -
+/etc/group                              f      0644   0     0     -       -       -       -     -
+/etc/fstab                              f      0644   0     0     -       -       -       -     -
+/etc/resolv.conf                        f      0644   0     0     -       -       -       -     -
+
+# <name>                                <type> <mode> <uid> <gid> <major> <minor> <start> <inc> <count>
+/etc/default                            d      0755   0     0     -       -       -       -     -
+/etc/modules-load.d                     d      0755   0     0     -       -       -       -     -
+/etc/systemd                            d      0755   0     0     -       -       -       -     -
+/etc/systemd/system                     d      0755   0     0     -       -       -       -     -
+/etc/systemd/network                    d      0755   0     0     -       -       -       -     -
+/usr/local/bin                          d      0755   0     0     -       -       -       -     -
+
+# <name>                                <type> <mode> <uid> <gid> <major> <minor> <start> <inc> <count>
+/etc/default/zram-swap                  f      0644   0     0     -       -       -       -     -
+
+# Scripts
+# <name>                                <type> <mode> <uid> <gid> <major> <minor> <start> <inc> <count>
+/usr/local/bin/usb-gadget.sh            f      0755   0     0     -       -       -       -     -
+/usr/local/bin/wifi-setup.sh            f      0755   0     0     -       -       -       -     -
+/usr/local/bin/provision-wifi.sh        f      0755   0     0     -       -       -       -     -
+/usr/local/bin/provision-ssh.sh         f      0755   0     0     -       -       -       -     -
+/usr/local/bin/fake-hwclock.sh          f      0755   0     0     -       -       -       -     -
+/usr/local/bin/zram-swap.sh             f      0755   0     0     -       -       -       -     -
+/usr/local/bin/expand-data.sh           f      0755   0     0     -       -       -       -     -

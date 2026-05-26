@@ -1,0 +1,9 @@
+config BR2_PACKAGE_OFFLINELAB_ZRAM
+	bool "offlinelab-zram"
+	default y
+	depends on BR2_INIT_SYSTEMD
+	select BR2_PACKAGE_UTIL_LINUX
+	select BR2_PACKAGE_UTIL_LINUX_ZRAMCTL
+	help
+	  zram swap for low-memory operation.
+	  Configures compressed RAM-based swap on boot.

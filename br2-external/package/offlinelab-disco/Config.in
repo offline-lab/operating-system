@@ -1,0 +1,36 @@
+config BR2_PACKAGE_OFFLINELAB_DISCO
+	bool "offlinelab-disco"
+	depends on BR2_INIT_SYSTEMD
+	depends on BR2_PACKAGE_SYSTEMD_NETWORKD
+	help
+	  Service discovery, NSS name resolution, and time
+	  synchronization daemon for offline/airgapped networks.
+
+	  Builds disco-daemon, disco CLI, and libnss_disco.so.2
+	  from source (requires Go toolchain for cross-compilation).
+
+	  https://github.com/offline-lab/disco
+
+if BR2_PACKAGE_OFFLINELAB_DISCO
+
+config BR2_PACKAGE_OFFLINELAB_DISCO_VERSION
+	string "disco version (git tag or branch)"
+	default "main"
+	help
+	  Git ref to build. Use a tag (e.g. "v0.3.0") for
+	  reproducible builds, or "main" for latest.
+
+config BR2_PACKAGE_OFFLINELAB_DISCO_DNS
+	bool "Enable built-in DNS server"
+	default n
+	help
+	  Serve .disco domain on port 53 for legacy clients.
+
+config BR2_PACKAGE_OFFLINELAB_DISCO_GPS
+	bool "Enable GPS time broadcaster"
+	default n
+	help
+	  Include disco-gps-broadcaster for GPS-based time sync.
+	  Requires a GPS receiver on /dev/ttyACM0.
+
+endif

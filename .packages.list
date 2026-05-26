@@ -1,0 +1,61 @@
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#                                                                              #
+#      SPDX-License-Identifier: GPL-2.0-only                                   #
+#                                                                              #
+################################################################################
+
+bc
+bison
+build-essential
+bzip2
+ca-certificates
+ccache
+cmake
+coreutils
+cpio
+curl
+device-tree-compiler
+dosfstools
+e2fsprogs
+fakeroot
+fdisk
+file
+flex
+g++
+gawk
+gcc
+git
+grep
+gzip
+jq
+kmod
+less
+libncurses-dev
+libssl-dev
+make
+moreutils
+ncdu
+parted
+pigz
+pkg-config
+procps
+rsync
+squashfs-tools
+sudo
+u-boot-tools
+unzip
+util-linux
+vim
+wget
+wpasupplicant
+xz-utils
+zip
+zstd

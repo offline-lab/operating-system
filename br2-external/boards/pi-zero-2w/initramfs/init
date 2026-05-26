@@ -1,0 +1,51 @@
+#!/bin/sh
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs devtmpfs /dev
+
+echo "offlinelab: initramfs starting"
+
+# Set up mdev as hotplug handler and scan for existing devices
+echo /bin/mdev > /proc/sys/kernel/hotplug
+mdev -s
+
+# Wait for MMC device to appear (mdev handles node creation)
+i=0
+while [ ! -b /dev/mmcblk0p2 ] && [ "$i" -lt 50 ]; do
+    i=$((i + 1))
+    sleep 0.1
+done
+
+if [ ! -b /dev/mmcblk0p2 ]; then
+    echo "offlinelab: FATAL - /dev/mmcblk0p2 not found"
+    echo "offlinelab: available block devices:"
+    cat /proc/partitions
+    exec sh
+fi
+
+# Mount rootfs-a (partition 2) read-only
+mount -t ext4 -o ro,noatime /dev/mmcblk0p2 /mnt
+
+# Mount data partition (partition 4) read-write
+mount -t ext4 -o rw,noatime /dev/mmcblk0p4 /data
+
+# Ensure overlay directories exist
+mkdir -p /data/overlay/upper /data/overlay/work
+
+# Mount overlayfs
+mount -t overlay overlay \
+    -o lowerdir=/mnt,upperdir=/data/overlay/upper,workdir=/data/overlay/work \
+    /newroot
+
+# Make data accessible in new root
+mkdir -p /newroot/data
+mount --bind /data /newroot/data
+
+# Move virtual filesystems into new root
+mkdir -p /newroot/proc /newroot/sys /newroot/dev
+mount --move /proc /newroot/proc
+mount --move /sys /newroot/sys
+mount --move /dev /newroot/dev
+
+echo "offlinelab: switching to rootfs"
+exec switch_root /newroot /sbin/init
