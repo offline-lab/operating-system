@@ -3,7 +3,7 @@ set -e -u -o pipefail
 
 KEY_DIR="/data/config/ssh/dropbear"
 AUTH_KEYS="/data/home/app/.ssh/authorized_keys"
-BOOT_AUTH_KEYS="/boot/firmware/authorized_keys"
+BOOT_AUTH_KEYS="/boot/firmware/config/authorized_keys"
 
 mkdir -p "${KEY_DIR}"
 

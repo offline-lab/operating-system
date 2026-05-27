@@ -29,6 +29,7 @@ define OFFLINELAB_WIFI_INSTALL_TARGET_CMDS
 		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/wifi-setup.service
 
 	if [ "$(BR2_PACKAGE_OFFLINELAB_WIFI_WPA_CREATE)" = y ]; then \
+		mkdir -p $(BINARIES_DIR)/config; \
 		if [ -n "$(call qstrip,$(BR2_PACKAGE_OFFLINELAB_WIFI_WPA_SSID))" ] && \
 		   [ -n "$(call qstrip,$(BR2_PACKAGE_OFFLINELAB_WIFI_WPA_PASSWORD))" ]; then \
 			{ \
@@ -38,7 +39,7 @@ define OFFLINELAB_WIFI_INSTALL_TARGET_CMDS
 				wpa_passphrase \
 					"$(call qstrip,$(BR2_PACKAGE_OFFLINELAB_WIFI_WPA_SSID))" \
 					"$(call qstrip,$(BR2_PACKAGE_OFFLINELAB_WIFI_WPA_PASSWORD))"; \
-			} > "$(BINARIES_DIR)/wpa_supplicant.conf"; \
+			} > "$(BINARIES_DIR)/config/wpa_supplicant.conf"; \
 		fi \
 	fi
 endef

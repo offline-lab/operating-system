@@ -66,7 +66,7 @@ function gen_config() {
     done
 
     for extra in wpa_supplicant.conf authorized_keys; do
-        [[ -f "${BINARIES_DIR}/${extra}" ]] && files+=("${extra}")
+        [[ -f "${BINARIES_DIR}/config/${extra}" ]] && files+=("config/${extra}")
     done
 
     local boot_files="$(printf '\\t\\t\\t"%s",\\n' "${files[@]}")"

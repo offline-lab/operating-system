@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e -u -o pipefail
 
-BOOT_CONFIG="/boot/firmware/wpa_supplicant.conf"
+BOOT_CONFIG="/boot/firmware/config/wpa_supplicant.conf"
 DATA_CONFIG="/data/config/wifi/wpa_supplicant.conf"
 
 mkdir -p /data/config/wifi

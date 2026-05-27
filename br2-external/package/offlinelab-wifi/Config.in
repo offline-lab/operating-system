@@ -8,7 +8,7 @@ config BR2_PACKAGE_OFFLINELAB_WIFI
 	select BR2_PACKAGE_UTIL_LINUX_RFKILL
 	help
 	  WiFi support with wpa_supplicant.
-	  Config provisioned from /boot/firmware/wpa_supplicant.conf
+	  Config provisioned from /boot/firmware/config/wpa_supplicant.conf
 	  to /data/config/wifi/ on first boot.
 
 config BR2_PACKAGE_OFFLINELAB_WIFI_WPA_CREATE

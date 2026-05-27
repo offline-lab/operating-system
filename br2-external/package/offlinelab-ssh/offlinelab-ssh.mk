@@ -23,8 +23,9 @@ define OFFLINELAB_SSH_INSTALL_TARGET_CMDS
 		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/dropbear.service
 
 	if [ "$(BR2_PACKAGE_OFFLINELAB_SSH_CREATE_AUTHORIZED_KEYS)" = y ]; then \
+		mkdir -p $(BINARIES_DIR)/config; \
 		echo "$(call qstrip,$(BR2_PACKAGE_OFFLINELAB_SSH_CREATE_AUTHORIZED_KEYS_CONTENT))" \
-			> $(BINARIES_DIR)/authorized_keys; \
+			> $(BINARIES_DIR)/config/authorized_keys; \
 	fi
 endef
 
