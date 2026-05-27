@@ -229,6 +229,16 @@ if [[ -n "${SDCARD}" ]] && command -v losetup &>/dev/null; then
                 assert_contains "${BOOT_MNT}/cmdline.txt" "ttyS0" "cmdline.txt uses ttyS0 console"
             fi
 
+            # boot.scr A/B logic (mkimage header + script text)
+            if [[ -f "${BOOT_MNT}/boot.scr" ]]; then
+                assert_contains "${BOOT_MNT}/boot.scr" "BOOT_ORDER" "boot.scr has BOOT_ORDER logic"
+                assert_contains "${BOOT_MNT}/boot.scr" "BOOT_A_LEFT" "boot.scr has slot A counter"
+                assert_contains "${BOOT_MNT}/boot.scr" "BOOT_B_LEFT" "boot.scr has slot B counter"
+                assert_contains "${BOOT_MNT}/boot.scr" "rauc.slot=A" "boot.scr sets rauc.slot=A"
+                assert_contains "${BOOT_MNT}/boot.scr" "rauc.slot=B" "boot.scr sets rauc.slot=B"
+                assert_contains "${BOOT_MNT}/boot.scr" "storebootstate" "boot.scr saves state before boot"
+            fi
+
             sudo umount "${BOOT_MNT}" 2>/dev/null || true
         else
             skip "Could not mount boot partition"
