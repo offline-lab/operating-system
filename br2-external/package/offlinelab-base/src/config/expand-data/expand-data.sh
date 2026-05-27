@@ -11,8 +11,8 @@ if [[ ! -b "${PART}" ]]; then
 fi
 
 # Ensure data directories exist (idempotent, runs every boot)
+# Overlay dirs are on the dedicated overlay partition (p3), not here
 mkdir -p /data/home/app/.ssh
-mkdir -p /data/overlay/upper /data/overlay/work
 mkdir -p /data/portable /data/config
 
 if [[ ! -f /data/home/app/.bashrc ]]; then

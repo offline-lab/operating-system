@@ -3,9 +3,9 @@ device_tree=bcm2710-rpi-zero-2-w.dtb
 start_file=start.elf
 fixup_file=fixup.dat
 
-# Direct kernel boot (no U-Boot)
-kernel=Image
-initramfs initramfs.cpio.gz followkernel
+# U-Boot as second-stage bootloader
+kernel=u-boot.bin
+disable_splash=1
 
 # Media: keep audio, BT, GPU for portable service use cases
 dtparam=audio=on

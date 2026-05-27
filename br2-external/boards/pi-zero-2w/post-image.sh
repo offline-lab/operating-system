@@ -5,6 +5,7 @@ set -e -o pipefail
 
 export BUILD_DIR="${BUILD_DIR:-}"
 export TARGET_DIR="${TARGET_DIR:-}"
+export HOST_DIR="${HOST_DIR:-}"
 export BINARIES_DIR="${BINARIES_DIR:-}"
 export BR2_EXTERNAL_OFFLINELAB_PATH="${BR2_EXTERNAL_OFFLINELAB_PATH:-}"
 export BOARD_DIR="$(dirname "${0}")"
@@ -14,7 +15,7 @@ function build_initramfs() {
     local tmpdir="$(mktemp -d)"
     trap 'rm -rf "${tmpdir}"' RETURN
 
-    mkdir -p "${tmpdir}"/{bin,sbin,etc,proc,sys,dev,mnt,newroot,data,tmp}
+    mkdir -p "${tmpdir}"/{bin,sbin,etc,proc,sys,dev,mnt,newroot,data,tmp,overlay}
 
     cp "${TARGET_DIR}/bin/busybox" "${tmpdir}/bin/busybox"
     chmod 755 "${tmpdir}/bin/busybox"
@@ -30,10 +31,24 @@ function build_initramfs() {
         > "${BINARIES_DIR}/initramfs.cpio.gz")
 }
 
+function build_boot_scr() {
+    "${HOST_DIR}/bin/mkimage" -C none -A arm64 -T script \
+        -d "${BOARD_DIR}/uboot/boot.cmd" "${BINARIES_DIR}/boot.scr"
+}
+
+function build_kernel_squashfs() {
+    local tmpdir="$(mktemp -d)"
+    cp "${BINARIES_DIR}/Image" "${tmpdir}/Image"
+    "${HOST_DIR}/bin/mksquashfs" "${tmpdir}" "${BINARIES_DIR}/kernel-a.img" \
+        -noappend -comp lzo -b 131072 -quiet
+    rm -rf "${tmpdir}"
+}
+
 function gen_config() {
     local output="${1}"
     local -a files=(
-        Image
+        u-boot.bin
+        boot.scr
         initramfs.cpio.gz
         rpi-firmware/bootcode.bin
         rpi-firmware/cmdline.txt
@@ -58,9 +73,12 @@ function gen_config() {
     sed "s|#BOOT_FILES#|${boot_files}|" "${BOARD_DIR}/genimage.cfg.in" > "${output}"
 }
 
-function create_rootfs_b() {
-    truncate -s 512M "${BINARIES_DIR}/rootfs-b.ext4"
-    mkfs.ext4 -F -L "rootfs-b" "${BINARIES_DIR}/rootfs-b.ext4"
+function create_overlay() {
+    local tmpdir="$(mktemp -d)"
+    mkdir -p "${tmpdir}/a/upper" "${tmpdir}/a/work"
+    mkdir -p "${tmpdir}/b/upper" "${tmpdir}/b/work"
+    mkfs.ext4 -F -d "${tmpdir}" -L "overlay" "${BINARIES_DIR}/overlay.ext4" 96M
+    rm -rf "${tmpdir}"
 }
 
 function create_data() {
@@ -68,7 +86,6 @@ function create_data() {
     trap 'rm -rf "${tmpdir}"' RETURN
 
     mkdir -p "${tmpdir}/home/app/.ssh"
-    mkdir -p "${tmpdir}/overlay/upper" "${tmpdir}/overlay/work"
     mkdir -p "${tmpdir}/portable" "${tmpdir}/config"
 
     chown -R 1000:1000 "${tmpdir}/home/app"
@@ -95,7 +112,9 @@ function assemble() {
 }
 
 build_initramfs && sync
-create_rootfs_b && sync
+build_boot_scr && sync
+build_kernel_squashfs && sync
+create_overlay && sync
 create_data && sync
 assemble && sync
 exit $?

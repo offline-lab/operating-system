@@ -1,5 +1,5 @@
 image bootfs.vfat {
-    size = 128M
+    size = 32M
     vfat {
         label = "bootfs"
         files = {
@@ -10,31 +10,52 @@ image bootfs.vfat {
 
 image sdcard.img {
     hdimage {
-        fill = "true"
+        partition-table-type = "mbr"
+        align = 1M
+        extended-partition = 2
     }
 
     partition boot {
         partition-type = 0xC
-        bootable = "true"
+        bootable = "yes"
         image = "bootfs.vfat"
-        offset = 4M
+    }
+
+    partition kernel-a {
+        partition-type = 0x83
+        size = 24M
+        image = "kernel-a.img"
     }
 
     partition rootfs-a {
         partition-type = 0x83
         image = "rootfs.ext4"
-        offset = 132M
+    }
+
+    partition kernel-b {
+        partition-type = 0x83
+        size = 24M
     }
 
     partition rootfs-b {
         partition-type = 0x83
-        image = "rootfs-b.ext4"
-        offset = 644M
+        size = 512M
+    }
+
+    partition bootstate {
+        partition-type = 0x83
+        size = 8M
+    }
+
+    partition overlay {
+        partition-type = 0x83
+        image = "overlay.ext4"
+        forced-primary = "yes"
     }
 
     partition data {
         partition-type = 0x83
         image = "data.ext4"
-        offset = 1156M
+        forced-primary = "yes"
     }
 }

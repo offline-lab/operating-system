@@ -86,6 +86,9 @@ SDCARD="${ARTIFACTS}/sdcard.img"
 ROOTFS="${ARTIFACTS}/rootfs.ext4"
 INITRAMFS="${ARTIFACTS}/initramfs.cpio.gz"
 KERNEL="${ARTIFACTS}/Image"
+KERNEL_SQFS="${ARTIFACTS}/kernel-a.img"
+UBOOT="${ARTIFACTS}/u-boot.bin"
+BOOTSCR="${ARTIFACTS}/boot.scr"
 
 CLEANUP=()
 function cleanup() {
@@ -108,6 +111,9 @@ section "Artifact files"
 assert_file "${ROOTFS}" "rootfs.ext4 exists"
 assert_file "${INITRAMFS}" "initramfs.cpio.gz exists"
 assert_file "${KERNEL}" "Kernel Image exists"
+assert_file "${KERNEL_SQFS}" "kernel-a.img squashfs exists"
+assert_file "${UBOOT}" "u-boot.bin exists"
+assert_file "${BOOTSCR}" "boot.scr exists"
 
 if [[ -f "${SDCARD}" ]]; then
     pass "sdcard.img exists"
@@ -131,28 +137,30 @@ section "SD card partition layout"
 if [[ -n "${SDCARD}" ]] && command -v fdisk &>/dev/null; then
     FDISK_OUT="$(fdisk -l "${SDCARD}" 2>/dev/null || true)"
 
+    # MBR with extended partition: p1=boot p2=extended p3=overlay p4=data
+    # Logical: p5=kernel-a p6=rootfs-a p7=kernel-b p8=rootfs-b p9=bootstate
     part_count="$(echo "${FDISK_OUT}" | grep -c "^${SDCARD}" || true)"
-    if [[ "${part_count}" -eq 4 ]]; then
-        pass "4 partitions found"
+    if [[ "${part_count}" -ge 9 ]]; then
+        pass "${part_count} partitions found (MBR extended layout)"
     else
-        fail "Expected 4 partitions, found ${part_count}"
+        fail "Expected >=9 partitions (MBR extended), found ${part_count}"
     fi
 
-    if echo "${FDISK_OUT}" | grep -q "${SDCARD}1.*FAT"; then
+    if echo "${FDISK_OUT}" | grep -q "${SDCARD}1.*FAT\|${SDCARD}1.*W95 FAT32\|${SDCARD}1.*0c"; then
         pass "Partition 1 is FAT (boot)"
-    elif echo "${FDISK_OUT}" | grep -q "${SDCARD}1.*W95 FAT32"; then
-        pass "Partition 1 is W95 FAT32 (boot)"
-    elif echo "${FDISK_OUT}" | grep -q "${SDCARD}1.*0c"; then
-        pass "Partition 1 type 0xC (FAT32 LBA)"
     else
         fail "Partition 1 not FAT type"
     fi
 
-    for p in 2 3 4; do
-        if echo "${FDISK_OUT}" | grep -q "${SDCARD}${p}.*Linux"; then
+    if echo "${FDISK_OUT}" | grep -q "${SDCARD}2.*Extended\|${SDCARD}2.*W95 Ext\|${SDCARD}2.*05\|${SDCARD}2.*0f"; then
+        pass "Partition 2 is Extended container"
+    else
+        fail "Partition 2 not Extended type"
+    fi
+
+    for p in 3 4 5 6 7 8 9; do
+        if echo "${FDISK_OUT}" | grep -q "${SDCARD}${p}.*Linux\|${SDCARD}${p}.*83"; then
             pass "Partition ${p} is Linux"
-        elif echo "${FDISK_OUT}" | grep -q "${SDCARD}${p}.*83"; then
-            pass "Partition ${p} type 0x83 (Linux)"
         else
             fail "Partition ${p} not Linux type"
         fi
@@ -180,7 +188,8 @@ if [[ -n "${SDCARD}" ]] && command -v losetup &>/dev/null; then
         CLEANUP+=("${BOOT_MNT}")
 
         if sudo mount -o ro "${LOOP_DEV}p1" "${BOOT_MNT}" 2>/dev/null; then
-            assert_file "${BOOT_MNT}/Image" "Kernel Image on boot partition"
+            assert_file "${BOOT_MNT}/u-boot.bin" "u-boot.bin on boot partition"
+            assert_file "${BOOT_MNT}/boot.scr" "boot.scr on boot partition"
             assert_file "${BOOT_MNT}/initramfs.cpio.gz" "initramfs.cpio.gz on boot partition"
             assert_file "${BOOT_MNT}/config.txt" "config.txt on boot partition"
             assert_file "${BOOT_MNT}/cmdline.txt" "cmdline.txt on boot partition"
@@ -211,7 +220,7 @@ if [[ -n "${SDCARD}" ]] && command -v losetup &>/dev/null; then
             fi
 
             if [[ -f "${BOOT_MNT}/config.txt" ]]; then
-                assert_contains "${BOOT_MNT}/config.txt" "initramfs" "config.txt has initramfs directive"
+                assert_contains "${BOOT_MNT}/config.txt" "kernel=u-boot.bin" "config.txt loads u-boot.bin"
                 assert_contains "${BOOT_MNT}/config.txt" "arm_64bit=1" "config.txt sets arm_64bit=1"
                 assert_contains "${BOOT_MNT}/config.txt" "dwc2" "config.txt has dwc2 overlay"
             fi
@@ -258,13 +267,16 @@ if [[ -f "${INITRAMFS}" ]]; then
             fi
         done
 
-        for dir in proc sys dev mnt newroot data; do
+        for dir in proc sys dev mnt newroot data overlay; do
             assert_dir "${INITRAMFS_DIR}/${dir}" "initramfs has /${dir}"
         done
 
         if [[ -f "${INITRAMFS_DIR}/init" ]]; then
             assert_contains "${INITRAMFS_DIR}/init" "overlay" "init mounts overlayfs"
-            assert_contains "${INITRAMFS_DIR}/init" "mmcblk0p2" "init mounts rootfs-a (p2)"
+            assert_contains "${INITRAMFS_DIR}/init" "rauc.slot" "init parses rauc.slot from cmdline"
+            assert_contains "${INITRAMFS_DIR}/init" "mmcblk0p6" "init mounts rootfs-a (p6)"
+            assert_contains "${INITRAMFS_DIR}/init" "mmcblk0p8" "init mounts rootfs-b (p8)"
+            assert_contains "${INITRAMFS_DIR}/init" "mmcblk0p3" "init mounts overlay partition (p3)"
             assert_contains "${INITRAMFS_DIR}/init" "mmcblk0p4" "init mounts data partition (p4)"
             assert_contains "${INITRAMFS_DIR}/init" "switch_root" "init calls switch_root"
         fi
