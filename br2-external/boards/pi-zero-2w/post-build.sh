@@ -25,3 +25,9 @@ ln -sf ../run "${TARGET_DIR}/var/run"
 
 mkdir -p "${TARGET_DIR}/data"
 mkdir -p "${TARGET_DIR}/boot/firmware"
+
+if [[ -f "${TARGET_DIR}/usr/lib/libnss_disco.so.2" ]]; then
+    if [[ -f "${TARGET_DIR}/etc/nsswitch.conf" ]]; then
+        sed -i 's/^hosts:.*/hosts: files disco dns/' "${TARGET_DIR}/etc/nsswitch.conf"
+    fi
+fi

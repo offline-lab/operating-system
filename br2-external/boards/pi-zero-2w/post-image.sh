@@ -65,9 +65,9 @@ function gen_config() {
         files+=("${file}")
     done
 
-    for extra in wpa_supplicant.conf authorized_keys; do
-        [[ -f "${BINARIES_DIR}/config/${extra}" ]] && files+=("config/${extra}")
-    done
+    if [[ -d "${BINARIES_DIR}/config" ]] && [[ -n "$(ls -A "${BINARIES_DIR}/config" 2>/dev/null)" ]]; then
+        files+=("config")
+    fi
 
     local boot_files="$(printf '\\t\\t\\t"%s",\\n' "${files[@]}")"
     sed "s|#BOOT_FILES#|${boot_files}|" "${BOARD_DIR}/genimage.cfg.in" > "${output}"
@@ -95,6 +95,44 @@ function create_data() {
     mkfs.ext4 -F -d "${tmpdir}" -L "data" "${BINARIES_DIR}/data.ext4" 64M
 }
 
+function build_rauc_bundle() {
+    local rauc_dir="${BR2_EXTERNAL_OFFLINELAB_PATH}/../.rauc"
+    local bundle="${BINARIES_DIR}/offlinelab-update.raucb"
+    local tmpdir="$(mktemp -d)"
+    trap 'rm -rf "${tmpdir}"' RETURN
+
+    if [ ! -f "${rauc_dir}/signing.key" ]; then
+        echo "WARNING: RAUC signing key not found at ${rauc_dir}/signing.key — skipping bundle"
+        return 0
+    fi
+
+    cp "${BINARIES_DIR}/kernel-a.img" "${tmpdir}/kernel.img"
+    cp "${BINARIES_DIR}/rootfs.ext4" "${tmpdir}/rootfs.img"
+
+    cat > "${tmpdir}/manifest.raucm" <<EOF
+[update]
+compatible=offlinelab-pi-zero-2w
+version=$(date +%Y%m%d)
+
+[bundle]
+format=verity
+
+[image.kernel]
+filename=kernel.img
+
+[image.rootfs]
+filename=rootfs.img
+EOF
+
+    "${HOST_DIR}/bin/rauc" bundle \
+        --cert="${rauc_dir}/signing.cert.pem" \
+        --key="${rauc_dir}/signing.key" \
+        "${tmpdir}" \
+        "${bundle}"
+
+    echo "RAUC bundle: ${bundle}"
+}
+
 function assemble() {
     local cfg="${BINARIES_DIR}/genimage.cfg"
     gen_config "${cfg}"
@@ -117,4 +155,5 @@ build_kernel_squashfs && sync
 create_overlay && sync
 create_data && sync
 assemble && sync
+build_rauc_bundle && sync
 exit $?

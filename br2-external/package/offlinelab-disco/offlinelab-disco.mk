@@ -8,20 +8,71 @@
 ################################################################################
 
 OFFLINELAB_DISCO_VERSION = $(call qstrip,$(BR2_PACKAGE_OFFLINELAB_DISCO_VERSION))
-OFFLINELAB_DISCO_SITE = https://github.com/offline-lab/disco.git
-OFFLINELAB_DISCO_SITE_METHOD = git
+OFFLINELAB_DISCO_SITE = $(call github,offline-lab,disco,$(OFFLINELAB_DISCO_VERSION))
+OFFLINELAB_DISCO_LICENSE = MIT
+OFFLINELAB_DISCO_LICENSE_FILES = LICENSE
 
-# TODO: uncomment and implement when disco build is ready
-# OFFLINELAB_DISCO_DEPENDENCIES = host-go systemd
+OFFLINELAB_DISCO_DEPENDENCIES = host-go systemd
+OFFLINELAB_DISCO_SRC_DIR = $(BR2_EXTERNAL_OFFLINELAB_PATH)/package/offlinelab-disco/src
 
-# Placeholder — actual build/install targets will be added when disco
-# source stabilizes. The package skeleton is here so Config.in options
-# and directory structure are ready for integration.
+OFFLINELAB_DISCO_GO_ENV = \
+	PATH="$(HOST_DIR)/bin:$(PATH)" \
+	GOPATH="$(@D)/.gopath" \
+	GOPROXY=https://proxy.golang.org,direct \
+	GOFLAGS=-modcacherw \
+	GOOS=linux \
+	GOARCH=$(if $(BR2_aarch64),arm64,$(if $(BR2_arm),arm,$(GO_GOARCH))) \
+	CGO_ENABLED=0
 
-# define OFFLINELAB_DISCO_BUILD_CMDS
-# endef
+OFFLINELAB_DISCO_LDFLAGS = -s -w \
+	-X main.Version=$(OFFLINELAB_DISCO_VERSION) \
+	-X main.BuildTime=$(shell date -u '+%Y-%m-%d_%H:%M:%S')
 
-# define OFFLINELAB_DISCO_INSTALL_TARGET_CMDS
-# endef
+OFFLINELAB_DISCO_BUILD_TARGETS = disco-daemon disco disco-gps-broadcaster
+
+define OFFLINELAB_DISCO_BUILD_CMDS
+	$(foreach t,$(OFFLINELAB_DISCO_BUILD_TARGETS), \
+		cd $(@D) && $(OFFLINELAB_DISCO_GO_ENV) $(HOST_DIR)/bin/go build \
+			-ldflags="$(OFFLINELAB_DISCO_LDFLAGS)" \
+			-trimpath -buildvcs=false \
+			-o $(@D)/bin/$(t) ./cmd/$(if $(filter disco-daemon,$(t)),daemon,$(if $(filter disco-gps-broadcaster,$(t)),gps-broadcaster,$(t)))/main.go
+	)
+	$(TARGET_CC) $(TARGET_CFLAGS) -fPIC -shared \
+		-o $(@D)/bin/libnss_disco.so.2 \
+		-Wl,-soname,libnss_disco.so.2 \
+		-D_GNU_SOURCE \
+		$(@D)/libnss/nss_disco.c
+endef
+
+define OFFLINELAB_DISCO_INSTALL_TARGET_CMDS
+	$(foreach t,$(OFFLINELAB_DISCO_BUILD_TARGETS), \
+		$(INSTALL) -D -m 0755 $(@D)/bin/$(t) $(TARGET_DIR)/usr/bin/$(t)
+	)
+
+	$(INSTALL) -D -m 0755 $(@D)/bin/libnss_disco.so.2 \
+		$(TARGET_DIR)/usr/lib/libnss_disco.so.2
+
+	mkdir -p $(TARGET_DIR)/etc/systemd/system/multi-user.target.wants
+	mkdir -p $(TARGET_DIR)/data/config/disco
+
+	$(INSTALL) -D -m 0644 $(OFFLINELAB_DISCO_SRC_DIR)/systemd/service/disco-daemon.service \
+		$(TARGET_DIR)/etc/systemd/system/disco-daemon.service
+	ln -sf /etc/systemd/system/disco-daemon.service \
+		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/disco-daemon.service
+
+	$(INSTALL) -D -m 0644 $(OFFLINELAB_DISCO_SRC_DIR)/systemd/service/provision-disco.service \
+		$(TARGET_DIR)/etc/systemd/system/provision-disco.service
+	ln -sf /etc/systemd/system/provision-disco.service \
+		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/provision-disco.service
+
+	$(INSTALL) -D -m 0755 $(OFFLINELAB_DISCO_SRC_DIR)/config/provision-disco.sh \
+		$(TARGET_DIR)/usr/local/bin/provision-disco.sh
+
+	$(INSTALL) -D -m 0644 $(OFFLINELAB_DISCO_SRC_DIR)/config/config.yaml \
+		$(TARGET_DIR)/etc/disco/config.yaml
+
+	$(INSTALL) -D -m 0644 $(OFFLINELAB_DISCO_SRC_DIR)/systemd/service/disco-gps-broadcaster.service \
+		$(TARGET_DIR)/etc/systemd/system/disco-gps-broadcaster.service
+endef
 
 $(eval $(generic-package))

@@ -42,6 +42,11 @@ define OFFLINELAB_BASE_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0755 $(@D)/config/fake-hwclock/fake-hwclock.sh \
 		$(TARGET_DIR)/usr/local/bin/fake-hwclock.sh
 
+	$(INSTALL) -D -m 0644 $(@D)/systemd/service/psplash-quit.service \
+		$(TARGET_DIR)/etc/systemd/system/psplash-quit.service
+	ln -sf /etc/systemd/system/psplash-quit.service \
+		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/psplash-quit.service
+
 	ln -sf /lib/systemd/system/serial-getty@.service \
 		"$(TARGET_DIR)/etc/systemd/system/getty.target.wants/serial-getty@ttyS0.service"
 	ln -sf /lib/systemd/system/getty@.service \

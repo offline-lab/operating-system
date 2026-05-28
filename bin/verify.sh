@@ -542,7 +542,130 @@ else
 fi
 
 ################################################################################
-# 6. Kernel config (if available in build output)
+# 6. RAUC update system
+################################################################################
+
+section "RAUC update system"
+
+if [[ -f "${ROOTFS}" ]] && command -v mount &>/dev/null; then
+    RAUC_MNT="$(mktemp -d)"
+    CLEANUP+=("${RAUC_MNT}")
+
+    if sudo mount -o ro,loop "${ROOTFS}" "${RAUC_MNT}" 2>/dev/null; then
+
+        assert_file "${RAUC_MNT}/etc/rauc/system.conf" "RAUC system.conf installed"
+        assert_file "${RAUC_MNT}/etc/rauc/keyring.pem" "RAUC keyring installed"
+        assert_file "${RAUC_MNT}/etc/fw_env.config" "fw_env.config installed"
+
+        if [[ -f "${RAUC_MNT}/etc/rauc/system.conf" ]]; then
+            assert_contains "${RAUC_MNT}/etc/rauc/system.conf" "bootloader=uboot" \
+                "system.conf uses U-Boot backend"
+            assert_contains "${RAUC_MNT}/etc/rauc/system.conf" "compatible=offlinelab-pi-zero-2w" \
+                "system.conf has correct compatible"
+            assert_contains "${RAUC_MNT}/etc/rauc/system.conf" "mmcblk0p5" \
+                "system.conf has kernel slot A (p5)"
+            assert_contains "${RAUC_MNT}/etc/rauc/system.conf" "mmcblk0p6" \
+                "system.conf has rootfs slot A (p6)"
+            assert_contains "${RAUC_MNT}/etc/rauc/system.conf" "mmcblk0p7" \
+                "system.conf has kernel slot B (p7)"
+            assert_contains "${RAUC_MNT}/etc/rauc/system.conf" "mmcblk0p8" \
+                "system.conf has rootfs slot B (p8)"
+            assert_contains "${RAUC_MNT}/etc/rauc/system.conf" "bootname=A" \
+                "system.conf has bootname=A"
+            assert_contains "${RAUC_MNT}/etc/rauc/system.conf" "bootname=B" \
+                "system.conf has bootname=B"
+        fi
+
+        if [[ -f "${RAUC_MNT}/etc/fw_env.config" ]]; then
+            assert_contains "${RAUC_MNT}/etc/fw_env.config" "mmcblk0p9" \
+                "fw_env.config points at bootstate partition (p9)"
+            assert_contains "${RAUC_MNT}/etc/fw_env.config" "0x4000" \
+                "fw_env.config has correct env size (16KB)"
+        fi
+
+        if [[ -f "${RAUC_MNT}/usr/bin/rauc" ]]; then
+            pass "rauc binary installed"
+        else
+            fail "rauc binary not found"
+        fi
+
+        if [[ -f "${RAUC_MNT}/usr/sbin/fw_printenv" ]]; then
+            pass "fw_printenv installed"
+        else
+            fail "fw_printenv not found"
+        fi
+
+        assert_file "${RAUC_MNT}/etc/systemd/system/rauc-mark-good.service" \
+            "rauc-mark-good.service installed"
+        if [[ -L "${RAUC_MNT}/etc/systemd/system/multi-user.target.wants/rauc-mark-good.service" ]]; then
+            pass "rauc-mark-good.service enabled (wanted by multi-user)"
+        else
+            fail "rauc-mark-good.service not enabled"
+        fi
+
+        sudo umount "${RAUC_MNT}" 2>/dev/null || true
+    else
+        skip "RAUC check (could not mount rootfs)"
+    fi
+else
+    skip "RAUC check (rootfs not found or mount unavailable)"
+fi
+
+# RAUC bundle artifact
+RAUC_BUNDLE="${ARTIFACTS}/offlinelab-update.raucb"
+if [[ -f "${RAUC_BUNDLE}" ]]; then
+    pass "RAUC bundle artifact exists"
+    bundle_size="$(stat -c%s "${RAUC_BUNDLE}" 2>/dev/null || stat -f%z "${RAUC_BUNDLE}" 2>/dev/null || echo 0)"
+    if [[ "${bundle_size}" -gt 1048576 ]]; then
+        pass "RAUC bundle size plausible ($(( bundle_size / 1048576 ))MB)"
+    else
+        fail "RAUC bundle suspiciously small (${bundle_size} bytes)"
+    fi
+else
+    skip "RAUC bundle check (not built — signing key may be missing)"
+fi
+
+################################################################################
+# 7. Disco service discovery
+################################################################################
+
+section "Disco service discovery"
+
+if [[ -f "${ROOTFS}" ]] && command -v mount &>/dev/null; then
+    DISCO_MNT="$(mktemp -d)"
+    CLEANUP+=("${DISCO_MNT}")
+
+    if sudo mount -o ro,loop "${ROOTFS}" "${DISCO_MNT}" 2>/dev/null; then
+        assert_file "${DISCO_MNT}/usr/bin/disco-daemon" "disco-daemon binary"
+        assert_file "${DISCO_MNT}/usr/bin/disco" "disco CLI binary"
+        assert_file "${DISCO_MNT}/usr/lib/libnss_disco.so.2" "libnss_disco.so.2 NSS module"
+        assert_file "${DISCO_MNT}/etc/disco/config.yaml" "default config.yaml"
+        assert_file "${DISCO_MNT}/etc/systemd/system/disco-daemon.service" "disco-daemon.service unit"
+        assert_file "${DISCO_MNT}/etc/systemd/system/provision-disco.service" "provision-disco.service unit"
+        assert_exec "${DISCO_MNT}/usr/local/bin/provision-disco.sh" "provision-disco.sh script"
+        assert_link "${DISCO_MNT}/etc/systemd/system/multi-user.target.wants/disco-daemon.service" "disco-daemon enabled"
+        assert_link "${DISCO_MNT}/etc/systemd/system/multi-user.target.wants/provision-disco.service" "provision-disco enabled"
+
+        assert_contains "${DISCO_MNT}/etc/systemd/system/disco-daemon.service" "CAP_NET_RAW" "disco-daemon: CAP_NET_RAW"
+        assert_contains "${DISCO_MNT}/etc/systemd/system/disco-daemon.service" "CAP_SYS_TIME" "disco-daemon: CAP_SYS_TIME"
+        assert_contains "${DISCO_MNT}/etc/systemd/system/disco-daemon.service" "User=disco" "disco-daemon: runs as disco user"
+
+        assert_file "${DISCO_MNT}/usr/bin/disco-gps-broadcaster" "disco-gps-broadcaster binary"
+        assert_file "${DISCO_MNT}/etc/systemd/system/disco-gps-broadcaster.service" "disco-gps-broadcaster.service unit (not enabled)"
+
+        assert_contains "${DISCO_MNT}/etc/nsswitch.conf" "disco" "nsswitch.conf includes disco"
+        assert_contains "${DISCO_MNT}/etc/passwd" "disco" "disco user in passwd"
+
+        sudo umount "${DISCO_MNT}" 2>/dev/null || true
+    else
+        skip "Disco checks (could not mount rootfs)"
+    fi
+else
+    skip "Disco checks (rootfs not found)"
+fi
+
+################################################################################
+# 8. Kernel config (if available in build output)
 ################################################################################
 
 section "Kernel config"

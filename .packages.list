@@ -38,6 +38,7 @@ gzip
 jq
 kmod
 less
+librsvg2-bin
 libncurses-dev
 libssl-dev
 make

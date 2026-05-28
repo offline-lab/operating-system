@@ -29,6 +29,12 @@ if ! ccache -s &>/dev/null; then
     ccache --max-size=15G
 fi
 
+SPLASH_SVG="${WORK}/br2-external/boards/pi-zero-2w/splash.svg"
+SPLASH_PNG="${WORK}/br2-external/boards/pi-zero-2w/splash.png"
+if [[ -f "${SPLASH_SVG}" ]] && command -v rsvg-convert &>/dev/null; then
+    "${WORK}/bin/gen-splash.sh" "${SPLASH_SVG}" "${SPLASH_PNG}" "$(date +%Y%m%d)"
+fi
+
 make -C "${BUILDROOT}" BR2_EXTERNAL="${WORK}/br2-external" offlinelab_pi_zero_2w_defconfig
 
 if [[ -f "${WORK}/.config" ]]; then

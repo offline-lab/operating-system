@@ -40,7 +40,7 @@ REMOTE_WORK="/home/builder/work"
 REMOTE_BUILDROOT="/home/builder/buildroot"
 REMOTE_ARTIFACTS="/home/builder/artifacts"
 
-SSH_OPTS=(-F /dev/null -i "${SSH_KEY}" -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10 -o BatchMode=yes)
+SSH_OPTS=(-F /dev/null -i "${SSH_KEY}" -o IdentityAgent=none -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10 -o BatchMode=yes)
 REMOTE_HOST=""
 
 ################################################################################
@@ -428,6 +428,12 @@ function cmd_sync() {
 
     if [[ -f "${BASEDIR}/.config" ]]; then
         bb_scp "${BASEDIR}/.config" "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_WORK}/.config"
+    fi
+
+    if [[ -d "${BASEDIR}/.rauc" ]]; then
+        bb_rsync \
+            "${BASEDIR}/.rauc/" \
+            "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_WORK}/.rauc/"
     fi
 
     log "Sync complete"

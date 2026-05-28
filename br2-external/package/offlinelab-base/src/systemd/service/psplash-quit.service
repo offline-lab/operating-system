@@ -1,0 +1,11 @@
+[Unit]
+Description=Quit psplash boot splash
+After=multi-user.target
+ConditionPathExists=/tmp/.psplash
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/psplash-write QUIT
+
+[Install]
+WantedBy=multi-user.target

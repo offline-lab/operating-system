@@ -1,0 +1,34 @@
+################################################################################
+#
+# offlinelab-update
+#
+################################################################################
+
+OFFLINELAB_UPDATE_VERSION = 1.0
+OFFLINELAB_UPDATE_SITE = $(BR2_EXTERNAL_OFFLINELAB_PATH)/package/offlinelab-update/src
+OFFLINELAB_UPDATE_SITE_METHOD = local
+
+OFFLINELAB_UPDATE_DEPENDENCIES = \
+	rauc \
+	uboot-tools
+
+define OFFLINELAB_UPDATE_INSTALL_TARGET_CMDS
+	mkdir -p $(TARGET_DIR)/etc/rauc
+	mkdir -p $(TARGET_DIR)/etc/systemd/system/multi-user.target.wants
+
+	$(INSTALL) -D -m 0644 $(@D)/rauc/system.conf \
+		$(TARGET_DIR)/etc/rauc/system.conf
+
+	$(INSTALL) -D -m 0644 $(BR2_EXTERNAL_OFFLINELAB_PATH)/../.rauc/ca.cert.pem \
+		$(TARGET_DIR)/etc/rauc/keyring.pem
+
+	$(INSTALL) -D -m 0644 $(@D)/rauc/fw_env.config \
+		$(TARGET_DIR)/etc/fw_env.config
+
+	$(INSTALL) -D -m 0644 $(@D)/systemd/service/rauc-mark-good.service \
+		$(TARGET_DIR)/etc/systemd/system/rauc-mark-good.service
+	ln -sf /etc/systemd/system/rauc-mark-good.service \
+		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/rauc-mark-good.service
+endef
+
+$(eval $(generic-package))

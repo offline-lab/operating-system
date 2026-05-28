@@ -5,5 +5,6 @@ menu "Offline Lab board options"
 	source "$BR2_EXTERNAL_OFFLINELAB_PATH/package/offlinelab-wifi/Config.in"
 	source "$BR2_EXTERNAL_OFFLINELAB_PATH/package/offlinelab-ssh/Config.in"
 	source "$BR2_EXTERNAL_OFFLINELAB_PATH/package/offlinelab-zram/Config.in"
+	source "$BR2_EXTERNAL_OFFLINELAB_PATH/package/offlinelab-update/Config.in"
 	source "$BR2_EXTERNAL_OFFLINELAB_PATH/package/offlinelab-disco/Config.in"
 endmenu

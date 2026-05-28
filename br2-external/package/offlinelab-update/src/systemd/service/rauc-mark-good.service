@@ -1,0 +1,11 @@
+[Unit]
+Description=Mark RAUC slot as good
+After=rauc.service multi-user.target
+Requires=rauc.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/rauc status mark-good
+
+[Install]
+WantedBy=multi-user.target

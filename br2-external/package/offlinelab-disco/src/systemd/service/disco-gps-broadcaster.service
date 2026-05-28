@@ -1,0 +1,17 @@
+[Unit]
+Description=Disco GPS time broadcaster
+After=disco-daemon.service
+Wants=disco-daemon.service
+
+[Service]
+Type=simple
+User=disco
+Group=disco
+ExecStart=/usr/bin/disco-gps-broadcaster --device /dev/ttyACM0
+Restart=on-failure
+RestartSec=10
+AmbientCapabilities=CAP_NET_RAW CAP_NET_BIND_SERVICE
+SupplementaryGroups=dialout
+
+[Install]
+WantedBy=multi-user.target
