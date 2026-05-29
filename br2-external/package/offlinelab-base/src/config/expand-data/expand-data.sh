@@ -1,4 +1,16 @@
 #!/usr/bin/env bash
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#      SPDX-License-Identifier: AGPL-3.0-only                                  #
+################################################################################
+
 set -e -u -o pipefail
 
 DISK="/dev/mmcblk0"
@@ -13,7 +25,7 @@ fi
 # Ensure data directories exist (idempotent, runs every boot)
 # Overlay dirs are on the dedicated overlay partition (p3), not here
 mkdir -p /data/home/app/.ssh
-mkdir -p /data/portable /data/config
+mkdir -p /data/apps /data/extensions /data/confexts /data/config
 
 if [[ ! -f /data/home/app/.bashrc ]]; then
     printf '[ -f /etc/bash.bashrc ] && . /etc/bash.bashrc\n' > /data/home/app/.bashrc

@@ -1,4 +1,16 @@
 #!/usr/bin/env bash
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#      SPDX-License-Identifier: AGPL-3.0-only                                  #
+################################################################################
+
 # vi: ft=bash
 # shellcheck shell=bash
 #
@@ -694,8 +706,104 @@ if [[ -n "${KCONFIG}" ]]; then
     assert_contains "${KCONFIG}" "CONFIG_MMC_BCM2835=y\|CONFIG_MMC_SDHCI_IPROC=y" "Kernel: MMC driver built-in"
     assert_contains "${KCONFIG}" "CONFIG_ZRAM=m\|CONFIG_ZRAM=y" "Kernel: zram support"
     assert_contains "${KCONFIG}" "CONFIG_USB_HID=y\|CONFIG_USB_HID=m" "Kernel: USB HID (keyboard) support"
+
+    # Power-saving
+    assert_contains "${KCONFIG}" "CONFIG_CPU_FREQ_DEFAULT_GOV_SCHEDUTIL=y" "Kernel: schedutil governor (power-saving)"
+    assert_contains "${KCONFIG}" "CONFIG_ARM_PSCI_CPUIDLE=y" "Kernel: PSCI cpuidle (C-states)"
+    assert_contains "${KCONFIG}" "CONFIG_SUSPEND=y" "Kernel: suspend-to-RAM support"
+    assert_contains "${KCONFIG}" "CONFIG_NO_HZ_FULL=y" "Kernel: full tickless idle"
+    assert_contains "${KCONFIG}" "CONFIG_HZ=100" "Kernel: HZ=100 (low timer rate)"
+
+    # Security
+    assert_contains "${KCONFIG}" "CONFIG_DM_VERITY=y" "Kernel: dm-verity built-in"
+    assert_contains "${KCONFIG}" "CONFIG_DM_VERITY_VERIFY_ROOTHASH_SIG=y" "Kernel: dm-verity root hash signature verification"
+    assert_contains "${KCONFIG}" "CONFIG_SECURITY_APPARMOR=y" "Kernel: AppArmor LSM"
+    assert_contains "${KCONFIG}" 'CONFIG_LSM="apparmor"' "Kernel: AppArmor in LSM list"
 else
     skip "Kernel config (not found — only available inside build container)"
+fi
+
+################################################################################
+# 9. Portable services & extensions
+################################################################################
+
+section "Portable services & extensions"
+
+if [[ -f "${ROOTFS}" ]] && command -v mount &>/dev/null; then
+    PORT_MNT="$(mktemp -d)"
+    CLEANUP+=("${PORT_MNT}")
+
+    if sudo mount -o ro,loop "${ROOTFS}" "${PORT_MNT}" 2>/dev/null; then
+
+        # Binaries
+        assert_file "${PORT_MNT}/usr/bin/portablectl" "portablectl binary"
+        assert_file "${PORT_MNT}/usr/bin/systemd-sysext" "systemd-sysext binary"
+        assert_file "${PORT_MNT}/usr/bin/systemd-confext" "systemd-confext binary"
+
+        # Symlinks to /data
+        if [[ -L "${PORT_MNT}/var/lib/portables" ]]; then
+            target="$(readlink "${PORT_MNT}/var/lib/portables")"
+            if [[ "${target}" == "/data/apps" ]]; then
+                pass "/var/lib/portables → /data/apps"
+            else
+                fail "/var/lib/portables points to ${target}, expected /data/apps"
+            fi
+        else
+            fail "/var/lib/portables is not a symlink"
+        fi
+
+        if [[ -L "${PORT_MNT}/var/lib/extensions" ]]; then
+            target="$(readlink "${PORT_MNT}/var/lib/extensions")"
+            if [[ "${target}" == "/data/extensions" ]]; then
+                pass "/var/lib/extensions → /data/extensions"
+            else
+                fail "/var/lib/extensions points to ${target}, expected /data/extensions"
+            fi
+        else
+            fail "/var/lib/extensions is not a symlink"
+        fi
+
+        if [[ -L "${PORT_MNT}/var/lib/confexts" ]]; then
+            target="$(readlink "${PORT_MNT}/var/lib/confexts")"
+            if [[ "${target}" == "/data/confexts" ]]; then
+                pass "/var/lib/confexts → /data/confexts"
+            else
+                fail "/var/lib/confexts points to ${target}, expected /data/confexts"
+            fi
+        else
+            fail "/var/lib/confexts is not a symlink"
+        fi
+
+        # modules-load.d
+        if [[ -f "${PORT_MNT}/etc/modules-load.d/99-offlinelab-portable.conf" ]]; then
+            pass "modules-load.d/99-offlinelab-portable.conf installed"
+            assert_contains "${PORT_MNT}/etc/modules-load.d/99-offlinelab-portable.conf" "squashfs" \
+                "portable modules-load has squashfs"
+            assert_contains "${PORT_MNT}/etc/modules-load.d/99-offlinelab-portable.conf" "loop" \
+                "portable modules-load has loop"
+        else
+            fail "modules-load.d/99-offlinelab-portable.conf missing"
+        fi
+
+        # portabled service unit
+        if [[ -f "${PORT_MNT}/usr/lib/systemd/system/systemd-portabled.service" ]] ||
+            [[ -f "${PORT_MNT}/lib/systemd/system/systemd-portabled.service" ]]; then
+            pass "systemd-portabled.service unit exists"
+        else
+            fail "systemd-portabled.service unit missing"
+        fi
+
+        # AppArmor userspace
+        assert_file "${PORT_MNT}/usr/sbin/apparmor_parser" "apparmor_parser binary"
+        assert_file "${PORT_MNT}/usr/bin/aa-enabled" "aa-enabled binary"
+        assert_file "${PORT_MNT}/usr/bin/aa-exec" "aa-exec binary"
+
+        sudo umount "${PORT_MNT}" 2>/dev/null || true
+    else
+        skip "Portable services check (could not mount rootfs)"
+    fi
+else
+    skip "Portable services check (rootfs not found)"
 fi
 
 ################################################################################

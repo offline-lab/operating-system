@@ -10,4 +10,15 @@
 #      SPDX-License-Identifier: AGPL-3.0-only                                  #
 ################################################################################
 
-zram
+config BR2_PACKAGE_OFFLINELAB_PORTABLE
+	bool "offlinelab-portable"
+	default y
+	depends on BR2_INIT_SYSTEMD
+	select BR2_PACKAGE_SYSTEMD_PORTABLED
+	select BR2_PACKAGE_SYSTEMD_SYSEXT
+	help
+	  Portable services, system extensions, and config extensions
+	  infrastructure for Offline Lab OS.
+
+	  Enables systemd-portabled, systemd-sysext, and
+	  systemd-confext with image stores on /data.

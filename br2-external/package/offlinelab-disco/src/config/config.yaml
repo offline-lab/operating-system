@@ -1,5 +1,5 @@
 daemon:
-  socket_path: "/run/disco.sock"
+  socket_path: "/run/disco/disco.sock"
   broadcast_interval: 30s
   record_ttl: 3600s
 
