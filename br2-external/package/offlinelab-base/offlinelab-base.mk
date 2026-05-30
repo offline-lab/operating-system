@@ -27,6 +27,23 @@ OFFLINELAB_BASE_DEPENDENCIES = \
 	parted \
 	systemd
 
+define OFFLINELAB_SPLASH_GENERATE
+	@BOARD_DIR="$(BR2_EXTERNAL_OFFLINELAB_PATH)/boards/pi-zero-2w"; \
+	SVG="$${BOARD_DIR}/splash.svg"; \
+	PNG="$${BOARD_DIR}/splash.png"; \
+	if [ -f "$${SVG}" ] && command -v rsvg-convert >/dev/null 2>&1; then \
+		VERSION=$$(date +%Y%m%d); \
+		TMP=$$(mktemp); \
+		sed "s/@@VERSION@@/$${VERSION}/g" "$${SVG}" > "$${TMP}"; \
+		rsvg-convert -w 1920 -h 1080 "$${TMP}" -o "$${PNG}"; \
+		rm -f "$${TMP}"; \
+		echo "splash: generated $${PNG} (version $${VERSION})"; \
+	elif [ -f "$${SVG}" ]; then \
+		echo "splash: WARNING: rsvg-convert not found, using existing PNG" >&2; \
+	fi
+endef
+PSPLASH_PRE_BUILD_HOOKS += OFFLINELAB_SPLASH_GENERATE
+
 define OFFLINELAB_BASE_INSTALL_TARGET_CMDS
 	mkdir -p $(TARGET_DIR)/etc/systemd/system/local-fs.target.wants
 	mkdir -p $(TARGET_DIR)/etc/systemd/system/multi-user.target.wants

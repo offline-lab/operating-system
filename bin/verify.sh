@@ -438,18 +438,18 @@ if [[ -f "${ROOTFS}" ]] && command -v mount &>/dev/null; then
         assert_file "${ROOTFS_MNT}/etc/hosts" "/etc/hosts present"
         assert_file "${ROOTFS_MNT}/etc/modprobe.d/02w-wifi-fix.conf" "WiFi modprobe fix present"
         assert_file "${ROOTFS_MNT}/etc/sysctl.d/99-offlinelab.conf" "sysctl config present"
-        assert_file "${ROOTFS_MNT}/etc/sudoers.d/app" "sudoers.d/app present"
+        assert_file "${ROOTFS_MNT}/etc/sudoers.d/admin" "sudoers.d/admin present"
 
         # User check
-        if grep -q "^app:" "${ROOTFS_MNT}/etc/passwd" 2>/dev/null; then
-            pass "app user exists in /etc/passwd"
-            if grep "^app:" "${ROOTFS_MNT}/etc/passwd" | grep -q "1000"; then
-                pass "app user has uid 1000"
+        if grep -q "^admin:" "${ROOTFS_MNT}/etc/passwd" 2>/dev/null; then
+            pass "admin user exists in /etc/passwd"
+            if grep "^admin:" "${ROOTFS_MNT}/etc/passwd" | grep -q "1000"; then
+                pass "admin user has uid 1000"
             else
-                fail "app user does not have uid 1000"
+                fail "admin user does not have uid 1000"
             fi
         else
-            fail "app user missing from /etc/passwd"
+            fail "admin user missing from /etc/passwd"
         fi
 
         # Group check
@@ -715,7 +715,7 @@ if [[ -n "${KCONFIG}" ]]; then
     assert_contains "${KCONFIG}" "CONFIG_HZ=100" "Kernel: HZ=100 (low timer rate)"
 
     # Security
-    assert_contains "${KCONFIG}" "CONFIG_DM_VERITY=y" "Kernel: dm-verity built-in"
+    assert_contains "${KCONFIG}" "CONFIG_DM_VERITY=y\|CONFIG_DM_VERITY=m" "Kernel: dm-verity support"
     assert_contains "${KCONFIG}" "CONFIG_DM_VERITY_VERIFY_ROOTHASH_SIG=y" "Kernel: dm-verity root hash signature verification"
     assert_contains "${KCONFIG}" "CONFIG_SECURITY_APPARMOR=y" "Kernel: AppArmor LSM"
     assert_contains "${KCONFIG}" 'CONFIG_LSM="apparmor"' "Kernel: AppArmor in LSM list"
@@ -728,6 +728,8 @@ fi
 ################################################################################
 
 section "Portable services & extensions"
+
+assert_file "${ARTIFACTS}/portable/hello-portable.raw" "hello-portable.raw built"
 
 if [[ -f "${ROOTFS}" ]] && command -v mount &>/dev/null; then
     PORT_MNT="$(mktemp -d)"
@@ -797,6 +799,17 @@ if [[ -f "${ROOTFS}" ]] && command -v mount &>/dev/null; then
         assert_file "${PORT_MNT}/usr/sbin/apparmor_parser" "apparmor_parser binary"
         assert_file "${PORT_MNT}/usr/bin/aa-enabled" "aa-enabled binary"
         assert_file "${PORT_MNT}/usr/bin/aa-exec" "aa-exec binary"
+
+        # Default portable profile
+        assert_file "${PORT_MNT}/etc/portables/default.conf" "default portable profile"
+        if [[ -f "${PORT_MNT}/etc/portables/default.conf" ]]; then
+            assert_contains "${PORT_MNT}/etc/portables/default.conf" "ProtectSystem=strict" \
+                "default profile: ProtectSystem=strict"
+            assert_contains "${PORT_MNT}/etc/portables/default.conf" "NoNewPrivileges=yes" \
+                "default profile: NoNewPrivileges=yes"
+            assert_contains "${PORT_MNT}/etc/portables/default.conf" "MemoryMax=" \
+                "default profile: MemoryMax limit"
+        fi
 
         sudo umount "${PORT_MNT}" 2>/dev/null || true
     else

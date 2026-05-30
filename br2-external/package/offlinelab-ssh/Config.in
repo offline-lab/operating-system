@@ -19,7 +19,7 @@ config BR2_PACKAGE_OFFLINELAB_SSH
 	  SSH server using dropbear with key-only authentication.
 	  Host keys stored persistently on /data/config/ssh/dropbear/.
 	  Authorized keys provisioned from /boot/firmware/config/authorized_keys
-	  to /data/home/app/.ssh/ on first boot.
+	  to /data/home/admin/.ssh/ on first boot.
 
 config BR2_PACKAGE_OFFLINELAB_SSH_CREATE_AUTHORIZED_KEYS
 	bool "Set authorized_keys at build time"
@@ -33,4 +33,4 @@ config BR2_PACKAGE_OFFLINELAB_SSH_CREATE_AUTHORIZED_KEYS_CONTENT
 	default "# Add your public keys for ssh access"
 	depends on BR2_PACKAGE_OFFLINELAB_SSH_CREATE_AUTHORIZED_KEYS
 	help
-	  Content for the app user authorized_keys file.
+	  Content for the admin user authorized_keys file.
