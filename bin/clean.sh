@@ -13,6 +13,17 @@
 
 # vi: ft=bash
 # shellcheck shell=bash
-set -e -u -o pipefail
+set -euo pipefail
 
+# shellcheck source=lib/common.sh
+source "$(dirname "${0}")/lib/common.sh"
+
+require_tools make
+
+if [[ ! -d /buildroot ]]; then
+    log_err "/buildroot not found — run inside the builder container"
+    exit 1
+fi
+
+log "Running buildroot distclean"
 make -C /buildroot distclean

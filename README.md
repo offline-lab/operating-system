@@ -59,7 +59,6 @@ br2-builder/
 │   └── skeleton/                 # custom rootfs skeleton
 ├── docs/                         # project documentation
 │   ├── PHASES.md                 # development roadmap
-│   ├── TASKS.md                  # task tracking
 │   └── KERNEL.md                 # kernel strategy
 ├── Dockerfile                    # Docker build environment
 ├── config.example                # build-time config template
@@ -220,7 +219,6 @@ rootfs (systemd units, scripts, users), and kernel config.
 ## Documentation
 
 - [docs/PHASES.md](docs/PHASES.md) — development roadmap
-- [docs/TASKS.md](docs/TASKS.md) — current task status
 - [docs/KERNEL.md](docs/KERNEL.md) — kernel strategy and trimming plan
 
 ## License

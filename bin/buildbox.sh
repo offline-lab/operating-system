@@ -49,31 +49,32 @@ VM_DISK="60G"
 
 REMOTE_USER="builder"
 REMOTE_WORK="/home/builder/work"
-REMOTE_BUILDROOT="/home/builder/buildroot"
 REMOTE_ARTIFACTS="/home/builder/artifacts"
 
 SSH_OPTS=(-F /dev/null -i "${SSH_KEY}" -o IdentityAgent=none -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10 -o BatchMode=yes)
 REMOTE_HOST=""
 
 ################################################################################
-# Logging
+# Shared library
 ################################################################################
 
-function log()     { printf '\e[1;32m>>>\e[0m %s\n' "${*}"; }
-function log_err() { printf '\e[1;31m!!!\e[0m %s\n' "${*}" >&2; }
-function log_dim() { printf '\e[0;90m    %s\e[0m\n' "${*}"; }
+# shellcheck source=lib/common.sh
+source "$(dirname "${0}")/lib/common.sh"
 
 ################################################################################
 # SSH helpers
 ################################################################################
 
+# shellcheck disable=SC2029
 function bb_ssh() {
     SSH_AUTH_SOCK=/dev/null ssh "${SSH_OPTS[@]}" "${REMOTE_USER}@${REMOTE_HOST}" "${@}"
 }
 
 function bb_rsync() {
+    local ssh_cmd
+    ssh_cmd="ssh $(printf '%q ' "${SSH_OPTS[@]}")"
     SSH_AUTH_SOCK=/dev/null rsync -a --delete \
-        -e "ssh ${SSH_OPTS[*]}" \
+        -e "${ssh_cmd}" \
         "${@}"
 }
 
@@ -132,7 +133,7 @@ function wait_for_ssh() {
             log "SSH available"
             return 0
         fi
-        ((attempt++))
+        attempt=$((attempt + 1))
         sleep 5
     done
 
@@ -154,7 +155,7 @@ function wait_for_cloudinit() {
             log "Cloud-init finished"
             return 0
         fi
-        ((attempt++))
+        attempt=$((attempt + 1))
         sleep 10
     done
 
@@ -233,7 +234,7 @@ function cmd_create() {
     qemu-img resize "${vm_dir}/Data/${disk_uuid}.qcow2" "${VM_DISK}"
     cp "${iso}" "${vm_dir}/Data/${cidata_uuid}.iso"
 
-    cat > "${vm_dir}/config.plist" <<PLIST
+    cat >"${vm_dir}/config.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -393,7 +394,7 @@ PLIST
     local attempts=0
     while [[ -z "${ip}" ]] && [[ ${attempts} -lt 30 ]]; do
         ip="$(utmctl ip-address "${VM_NAME}" 2>/dev/null | head -1 || true)"
-        ((attempts++))
+        attempts=$((attempts + 1))
         sleep 5
     done
 
@@ -468,15 +469,14 @@ function cmd_build() {
             log_dim "${line}"
         fi
     done; then
-        local rc=${PIPESTATUS[0]}
-        log_err "Build failed (exit code ${rc})"
+        log_err "Build failed"
         log_err "Full log: ssh builder@${REMOTE_HOST} cat /home/builder/build.log"
         return 1
     fi
 
     local end_time elapsed
     end_time="$(date +%s)"
-    elapsed="$(( end_time - start_time ))"
+    elapsed="$((end_time - start_time))"
     log "Build completed in $((elapsed / 60))m $((elapsed % 60))s"
 }
 
@@ -574,7 +574,7 @@ function cmd_pipeline() {
 
     local end_time elapsed
     end_time="$(date +%s)"
-    elapsed="$(( end_time - start_time ))"
+    elapsed="$((end_time - start_time))"
 
     log "=== Pipeline complete: $((elapsed / 60))m $((elapsed % 60))s ==="
 }
@@ -621,14 +621,38 @@ if [[ ! -f "${SSH_KEY}" ]]; then
 fi
 
 case "${1:-}" in
-    create)   shift; cmd_create "${@}" ;;
-    sync)     shift; cmd_sync "${@}" ;;
-    build)    shift; cmd_build "${@}" ;;
-    verify)   shift; cmd_verify "${@}" ;;
-    fetch)    shift; cmd_fetch "${@}" ;;
-    ssh)      shift; cmd_ssh "${@}" ;;
-    destroy)  shift; cmd_destroy "${@}" ;;
-    -h|--help|help) cmd_usage ;;
-    "")       cmd_pipeline ;;
-    *)        log_err "Unknown command: ${1}"; cmd_usage ;;
+    create)
+        shift
+        cmd_create "${@}"
+        ;;
+    sync)
+        shift
+        cmd_sync "${@}"
+        ;;
+    build)
+        shift
+        cmd_build "${@}"
+        ;;
+    verify)
+        shift
+        cmd_verify "${@}"
+        ;;
+    fetch)
+        shift
+        cmd_fetch "${@}"
+        ;;
+    ssh)
+        shift
+        cmd_ssh "${@}"
+        ;;
+    destroy)
+        shift
+        cmd_destroy "${@}"
+        ;;
+    -h | --help | help) cmd_usage ;;
+    "") cmd_pipeline ;;
+    *)
+        log_err "Unknown command: ${1}"
+        cmd_usage
+        ;;
 esac

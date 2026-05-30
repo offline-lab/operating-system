@@ -22,6 +22,11 @@
 #
 set -e -u -o pipefail
 
+# shellcheck source=lib/common.sh
+source "$(dirname "${0}")/lib/common.sh"
+
+require_tools cpio find
+
 declare -i PASS=0
 declare -i FAIL=0
 declare -i SKIP=0
@@ -48,6 +53,7 @@ function assert_file() {
     if [[ -f "${1}" ]]; then pass "${2:-${1} exists}"; else fail "${2:-${1} missing}"; fi
 }
 
+# shellcheck disable=SC2329
 function assert_dir() {
     if [[ -d "${1}" ]]; then pass "${2:-${1} exists}"; else fail "${2:-${1} missing}"; fi
 }
@@ -71,10 +77,12 @@ function assert_contains() {
 
 function assert_static() {
     local binary="${1}" desc="${2:-${1} is static}"
-    if file "${binary}" 2>/dev/null | grep -q "statically linked"; then
+    local file_out
+    file_out="$(file "${binary}" 2>/dev/null | cut -d: -f2-)" || true
+    if [[ "${file_out}" == *"statically linked"* ]]; then
         pass "${desc}"
     else
-        fail "${desc} — $(file "${binary}" 2>/dev/null | cut -d: -f2-)"
+        fail "${desc} — ${file_out}"
     fi
 }
 
@@ -103,6 +111,7 @@ UBOOT="${ARTIFACTS}/u-boot.bin"
 BOOTSCR="${ARTIFACTS}/boot.scr"
 
 CLEANUP=()
+# shellcheck disable=SC2329
 function cleanup() {
     for dir in "${CLEANUP[@]}"; do
         sudo umount "${dir}" 2>/dev/null || true
@@ -206,15 +215,15 @@ if [[ -n "${SDCARD}" ]] && command -v losetup &>/dev/null; then
             assert_file "${BOOT_MNT}/config.txt" "config.txt on boot partition"
             assert_file "${BOOT_MNT}/cmdline.txt" "cmdline.txt on boot partition"
 
-            if compgen -G "${BOOT_MNT}/*.dtb" >/dev/null 2>&1 ||
-                compgen -G "${BOOT_MNT}/bcm271*.dtb" >/dev/null 2>&1; then
+            if compgen -G "${BOOT_MNT}/*.dtb" >/dev/null 2>&1 \
+                || compgen -G "${BOOT_MNT}/bcm271*.dtb" >/dev/null 2>&1; then
                 pass "DTB files present"
             else
                 fail "No DTB files on boot partition"
             fi
 
-            if [[ -f "${BOOT_MNT}/bootcode.bin" ]] ||
-                [[ -f "${BOOT_MNT}/rpi-firmware/bootcode.bin" ]]; then
+            if [[ -f "${BOOT_MNT}/bootcode.bin" ]] \
+                || [[ -f "${BOOT_MNT}/rpi-firmware/bootcode.bin" ]]; then
                 pass "bootcode.bin present"
             else
                 # check in root and subdirs
@@ -322,8 +331,8 @@ if [[ -f "${ROOTFS}" ]] && command -v mount &>/dev/null; then
     if sudo mount -o ro,loop "${ROOTFS}" "${ROOTFS_MNT}" 2>/dev/null; then
 
         # Init system
-        if [[ -f "${ROOTFS_MNT}/lib/systemd/systemd" ]] ||
-            [[ -f "${ROOTFS_MNT}/usr/lib/systemd/systemd" ]]; then
+        if [[ -f "${ROOTFS_MNT}/lib/systemd/systemd" ]] \
+            || [[ -f "${ROOTFS_MNT}/usr/lib/systemd/systemd" ]]; then
             pass "systemd installed"
         else
             fail "systemd not found"
@@ -629,7 +638,7 @@ if [[ -f "${RAUC_BUNDLE}" ]]; then
     pass "RAUC bundle artifact exists"
     bundle_size="$(stat -c%s "${RAUC_BUNDLE}" 2>/dev/null || stat -f%z "${RAUC_BUNDLE}" 2>/dev/null || echo 0)"
     if [[ "${bundle_size}" -gt 1048576 ]]; then
-        pass "RAUC bundle size plausible ($(( bundle_size / 1048576 ))MB)"
+        pass "RAUC bundle size plausible ($((bundle_size / 1048576))MB)"
     else
         fail "RAUC bundle suspiciously small (${bundle_size} bytes)"
     fi
@@ -788,8 +797,8 @@ if [[ -f "${ROOTFS}" ]] && command -v mount &>/dev/null; then
         fi
 
         # portabled service unit
-        if [[ -f "${PORT_MNT}/usr/lib/systemd/system/systemd-portabled.service" ]] ||
-            [[ -f "${PORT_MNT}/lib/systemd/system/systemd-portabled.service" ]]; then
+        if [[ -f "${PORT_MNT}/usr/lib/systemd/system/systemd-portabled.service" ]] \
+            || [[ -f "${PORT_MNT}/lib/systemd/system/systemd-portabled.service" ]]; then
             pass "systemd-portabled.service unit exists"
         else
             fail "systemd-portabled.service unit missing"

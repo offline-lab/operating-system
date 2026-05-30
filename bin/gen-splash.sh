@@ -25,5 +25,5 @@ fi
 tmpsvg="$(mktemp)"
 trap 'rm -f "${tmpsvg}"' EXIT
 
-sed "s/@@VERSION@@/${VERSION}/g" "${SVG_IN}" > "${tmpsvg}"
+sed "s/@@VERSION@@/${VERSION}/g" "${SVG_IN}" >"${tmpsvg}"
 rsvg-convert -w 1920 -h 1080 "${tmpsvg}" -o "${PNG_OUT}"

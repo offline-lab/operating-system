@@ -28,29 +28,29 @@ find_target_files() {
     git ls-files --cached --others --exclude-standard | while IFS= read -r f; do
         [[ -f "$f" ]] && [[ ! -L "$f" ]] || continue
         case "$f" in
-            .claude/*|.github/*|.editorconfig)              continue ;;
-            */configs/linux.config)                         continue ;;
-            */.empty|*/splash.svg)                          continue ;;
-            */cloud-init/*)                                 continue ;;
-            */external.desc|*/genimage.cfg.in)              continue ;;
-            */etc/passwd|*/etc/group|*/etc/shadow)          continue ;;
-            */etc/protocols|*/etc/services|*/etc/resolv.conf) continue ;;
-            */etc/hosts|*/etc/hostname|*/etc/os-release)    continue ;;
-            */users.txt|*/devices.txt|*/cmdline.txt)        continue ;;
-            *.md|*.yml|*.yaml|*.svg|*.patch|*.json)         continue ;;
-            */config.txt)                  echo "$f" ;;
-            *.sh|*.mk)                     echo "$f" ;;
-            */Config.in|*/config.yaml)     [[ "$f" == */Config.in ]] && echo "$f" || continue ;;
-            Dockerfile)                    echo "$f" ;;
-            *.service|*.mount|*.network)   echo "$f" ;;
-            *.conf|*.config)               echo "$f" ;;
-            */fstab|*/sudoers.d/*)         echo "$f" ;;
-            */bash.bashrc|*/.bashrc)       echo "$f" ;;
-            */etc/profile)                 echo "$f" ;;
-            */boot.cmd|*/init)             echo "$f" ;;
-            .gitignore|.dockerignore|.packages.list) echo "$f" ;;
-            config.example|env.example)    echo "$f" ;;
-            *_defconfig)                   echo "$f" ;;
+            .claude/* | .github/* | .editorconfig) continue ;;
+            */configs/linux.config) continue ;;
+            */.empty | */splash.svg) continue ;;
+            */cloud-init/*) continue ;;
+            */external.desc | */genimage.cfg.in) continue ;;
+            */etc/passwd | */etc/group | */etc/shadow) continue ;;
+            */etc/protocols | */etc/services | */etc/resolv.conf) continue ;;
+            */etc/hosts | */etc/hostname | */etc/os-release) continue ;;
+            */users.txt | */devices.txt | */cmdline.txt) continue ;;
+            *.md | *.yml | *.yaml | *.svg | *.patch | *.json) continue ;;
+            */config.txt) echo "$f" ;;
+            *.sh | *.mk) echo "$f" ;;
+            */Config.in | */config.yaml) [[ "$f" == */Config.in ]] && echo "$f" || continue ;;
+            Dockerfile) echo "$f" ;;
+            *.service | *.mount | *.network) echo "$f" ;;
+            *.conf | *.config) echo "$f" ;;
+            */fstab | */sudoers.d/*) echo "$f" ;;
+            */bash.bashrc | */.bashrc) echo "$f" ;;
+            */etc/profile) echo "$f" ;;
+            */boot.cmd | */init) echo "$f" ;;
+            .gitignore | .dockerignore | .packages.list) echo "$f" ;;
+            config.example | env.example) echo "$f" ;;
+            *_defconfig) echo "$f" ;;
         esac
     done | sort
 }
@@ -65,9 +65,18 @@ add_banner() {
     if [[ "$first_line" == "#!"* ]]; then
         local rest
         rest=$(tail -n +2 "$file" | sed '/./,$!d')
-        { echo "$first_line"; echo "$banner"; echo ""; echo "$rest"; } > "$file.tmp"
+        {
+            echo "$first_line"
+            echo "$banner"
+            echo ""
+            echo "$rest"
+        } >"$file.tmp"
     else
-        { echo "$banner"; echo ""; cat "$file"; } > "$file.tmp"
+        {
+            echo "$banner"
+            echo ""
+            cat "$file"
+        } >"$file.tmp"
     fi
     chmod --reference="$file" "$file.tmp" 2>/dev/null || chmod "$(stat -f '%Lp' "$file")" "$file.tmp"
     mv "$file.tmp" "$file"
@@ -75,7 +84,7 @@ add_banner() {
 
 update_year() {
     local file="$1"
-    sed "s/Copyright (C) ${START_YEAR}-[0-9]\{4\} Offline Lab/Copyright (C) ${START_YEAR}-${YEAR} Offline Lab/" "$file" > "$file.tmp"
+    sed "s/Copyright (C) ${START_YEAR}-[0-9]\{4\} Offline Lab/Copyright (C) ${START_YEAR}-${YEAR} Offline Lab/" "$file" >"$file.tmp"
     chmod --reference="$file" "$file.tmp" 2>/dev/null || chmod "$(stat -f '%Lp' "$file")" "$file.tmp"
     mv "$file.tmp" "$file"
 }

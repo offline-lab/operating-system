@@ -19,6 +19,11 @@
 #
 set -e -u -o pipefail
 
+# shellcheck source=lib/common.sh
+source "$(dirname "${0}")/lib/common.sh"
+
+require_tools nproc ccache make pigz date cp
+
 NPROC="$(nproc)"
 export MAKEFLAGS="-j${NPROC}"
 
@@ -31,7 +36,7 @@ CCACHE_DIR="${HOME}/.ccache"
 export BR2_DL_DIR="${DL_DIR}"
 
 if [[ ! -d "${BUILDROOT}" ]]; then
-    echo "ERROR: buildroot not found at ${BUILDROOT}"
+    log_err "buildroot not found at ${BUILDROOT}"
     exit 1
 fi
 
@@ -44,7 +49,8 @@ fi
 SPLASH_SVG="${WORK}/br2-external/boards/pi-zero-2w/splash.svg"
 SPLASH_PNG="${WORK}/br2-external/boards/pi-zero-2w/splash.png"
 if [[ -f "${SPLASH_SVG}" ]] && command -v rsvg-convert &>/dev/null; then
-    "${WORK}/bin/gen-splash.sh" "${SPLASH_SVG}" "${SPLASH_PNG}" "$(date +%Y%m%d)"
+    splash_date="$(date +%Y%m%d)"
+    "${WORK}/bin/gen-splash.sh" "${SPLASH_SVG}" "${SPLASH_PNG}" "${splash_date}"
 fi
 
 make -C "${BUILDROOT}" BR2_EXTERNAL="${WORK}/br2-external" offlinelab_pi_zero_2w_defconfig
@@ -65,7 +71,7 @@ timestamp="$(date +%Y-%m-%d-%H%M%S)"
 
 if [[ -e "${BUILDROOT}/output/images/sdcard.img" ]]; then
     pigz --force -9 "${BUILDROOT}/output/images/sdcard.img" --stdout \
-        > "${ARTIFACTS}/offlinelab-sdcard-${timestamp}.img.gz"
+        >"${ARTIFACTS}/offlinelab-sdcard-${timestamp}.img.gz"
 fi
 
 cp -rv "${BUILDROOT}/output/images/"* "${ARTIFACTS}/"
