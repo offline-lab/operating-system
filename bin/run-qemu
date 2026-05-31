@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#      SPDX-License-Identifier: AGPL-3.0-only                                  #
+################################################################################
+
+# vi: ft=bash
+# shellcheck shell=bash
+set -eu -o pipefail
+
+# Usage: bin/run-qemu [images-dir]
+#   images-dir defaults to output/images relative to this script's repo root.
+#
+# Prerequisites (macOS):
+#   brew install qemu
+#
+# SSH access once booted:
+#   ssh admin@localhost -p 2222
+#
+# Expected service failures (no hardware):
+#   usb-gadget.service  — no UDC on virt machine
+#   wifi-setup.service  — no wlan0 interface
+#   psplash.service     — no framebuffer in -nographic mode
+#
+# 9P host-directory sharing (optional):
+#   Add -virtfs local,path=/host/path,mount_tag=host0,security_model=mapped-xattr
+#   Then inside the VM: mount -t 9p host0 /mnt -o trans=virtio
+
+REPO_ROOT="$(cd "$(dirname "${0}")/.." && pwd)"
+IMAGES_DIR="${1:-${REPO_ROOT}/output/images}"
+
+if [[ ! -f "${IMAGES_DIR}/u-boot.bin" ]]; then
+    printf 'ERROR: u-boot.bin not found in %s\n' "${IMAGES_DIR}" >&2
+    printf 'Build the image first: bin/buildbox.sh make offlinelab_qemu_arm64_defconfig && bin/buildbox.sh make\n' >&2
+    exit 1
+fi
+
+if [[ ! -f "${IMAGES_DIR}/qemu.img" ]]; then
+    printf 'ERROR: qemu.img not found in %s\n' "${IMAGES_DIR}" >&2
+    exit 1
+fi
+
+printf 'Starting Offline Lab OS (QEMU arm64)...\n'
+printf 'SSH: ssh admin@localhost -p 2222\n'
+printf 'Exit: Ctrl-A X\n\n'
+
+exec qemu-system-aarch64 \
+    -machine virt \
+    -cpu cortex-a53 \
+    -m 512M \
+    -smp 4 \
+    -bios "${IMAGES_DIR}/u-boot.bin" \
+    -drive "file=${IMAGES_DIR}/qemu.img,format=raw,if=virtio,id=hd0" \
+    -netdev "user,id=net0,hostfwd=tcp::2222-:22" \
+    -device "virtio-net-pci,netdev=net0" \
+    -serial mon:stdio \
+    -display none \
+    -nographic

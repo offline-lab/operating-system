@@ -1,4 +1,16 @@
 #!/usr/bin/env bash
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#      SPDX-License-Identifier: AGPL-3.0-only                                  #
+################################################################################
+
 # vi: ft=bash
 # shellcheck shell=bash
 set -e -u -o pipefail
@@ -25,3 +37,9 @@ ln -sf ../run "${TARGET_DIR}/var/run"
 
 mkdir -p "${TARGET_DIR}/data"
 mkdir -p "${TARGET_DIR}/boot/firmware"
+
+if [[ -f "${TARGET_DIR}/usr/lib/libnss_disco.so.2" ]]; then
+    if [[ -f "${TARGET_DIR}/etc/nsswitch.conf" ]]; then
+        sed -i 's/^hosts:.*/hosts: files disco dns/' "${TARGET_DIR}/etc/nsswitch.conf"
+    fi
+fi

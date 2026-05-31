@@ -1,4 +1,16 @@
 ################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#      SPDX-License-Identifier: AGPL-3.0-only                                  #
+################################################################################
+
+################################################################################
 #
 # offlinelab-wifi
 #
@@ -16,10 +28,10 @@ define OFFLINELAB_WIFI_INSTALL_TARGET_CMDS
 		$(TARGET_DIR)/etc/systemd/system/wifi-setup.service
 	$(INSTALL) -D -m 0644 $(@D)/systemd/network/wlan0.network \
 		$(TARGET_DIR)/etc/systemd/network/wlan0.network
-	$(INSTALL) -D -m 0755 $(@D)/config/provision-wifi.sh \
-		$(TARGET_DIR)/usr/local/bin/provision-wifi.sh
-	$(INSTALL) -D -m 0755 $(@D)/config/wifi-setup.sh \
-		$(TARGET_DIR)/usr/local/bin/wifi-setup.sh
+	$(INSTALL) -D -m 0755 $(@D)/init-provision-wifi \
+		$(TARGET_DIR)/usr/local/bin/init-provision-wifi
+	$(INSTALL) -D -m 0755 $(@D)/init-wifi-setup \
+		$(TARGET_DIR)/usr/local/bin/init-wifi-setup
 	$(INSTALL) -D -m 0644 $(@D)/config/02w-wifi-fix.conf \
 		$(TARGET_DIR)/etc/modprobe.d/02w-wifi-fix.conf
 	mkdir -p $(TARGET_DIR)/etc/systemd/system/multi-user.target.wants
@@ -29,6 +41,7 @@ define OFFLINELAB_WIFI_INSTALL_TARGET_CMDS
 		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/wifi-setup.service
 
 	if [ "$(BR2_PACKAGE_OFFLINELAB_WIFI_WPA_CREATE)" = y ]; then \
+		mkdir -p $(BINARIES_DIR)/config; \
 		if [ -n "$(call qstrip,$(BR2_PACKAGE_OFFLINELAB_WIFI_WPA_SSID))" ] && \
 		   [ -n "$(call qstrip,$(BR2_PACKAGE_OFFLINELAB_WIFI_WPA_PASSWORD))" ]; then \
 			{ \
@@ -38,7 +51,7 @@ define OFFLINELAB_WIFI_INSTALL_TARGET_CMDS
 				wpa_passphrase \
 					"$(call qstrip,$(BR2_PACKAGE_OFFLINELAB_WIFI_WPA_SSID))" \
 					"$(call qstrip,$(BR2_PACKAGE_OFFLINELAB_WIFI_WPA_PASSWORD))"; \
-			} > "$(BINARIES_DIR)/wpa_supplicant.conf"; \
+			} > "$(BINARIES_DIR)/config/wpa_supplicant.conf"; \
 		fi \
 	fi
 endef

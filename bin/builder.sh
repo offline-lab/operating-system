@@ -1,7 +1,22 @@
 #!/usr/bin/env bash
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#      SPDX-License-Identifier: AGPL-3.0-only                                  #
+################################################################################
+
 # vi: ft=bash
 # shellcheck shell=bash
 set -e -u -o pipefail
+
+# shellcheck source=lib/common.sh
+source "$(dirname "${0}")/lib/common.sh"
 
 export builder_name="${builder_name:-offlinelab-builder}"
 export builder_base_image="${builder_base_image:-debian}"
@@ -34,12 +49,12 @@ function log::formatter() {
     shift
 
     case "${level}" in
-    ERROR) color="\e[1;91m" ;;
-    INFO) color="\e[1;32m" ;;
-    WARNING) color="\e[1;33m" ;;
-    TRACE) color="\e[1;90m" ;;
-    DEBUG) color="\e[1;94m" ;;
-    *) color="\e[1;90m" ;;
+        ERROR) color="\e[1;91m" ;;
+        INFO) color="\e[1;32m" ;;
+        WARNING) color="\e[1;33m" ;;
+        TRACE) color="\e[1;90m" ;;
+        DEBUG) color="\e[1;94m" ;;
+        *) color="\e[1;90m" ;;
     esac
 
     timestamp="$(date +"[%T]")"
@@ -128,6 +143,11 @@ function build::build_container() {
 ################################################################################
 
 function build::run() {
+    local mem_bytes
+    mem_bytes="$(sysctl -n hw.memsize 2>/dev/null || echo 8589934592)"
+    local mem_gb
+    mem_gb="$(awk -v m="${mem_bytes}" 'BEGIN { printf "%.0fg", m / 1073741824 * 0.9 }')"
+
     local -a run_arguments=(
         --tty
         --interactive
@@ -136,7 +156,7 @@ function build::run() {
         --platform linux/arm64
         --hostname builder.offline-lab.com
         --cpus "$(sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 4)"
-        --memory "$(awk 'BEGIN{printf "%.0fg", '$(sysctl -n hw.memsize 2>/dev/null || echo 8589934592)'/1073741824 * 0.9}')"
+        --memory "${mem_gb}"
 
         --env builder_name="${builder_name}"
         --env builder_basedir="${builder_basedir}"
@@ -256,43 +276,43 @@ function build::main() {
 
     while [[ "${1:-}" != "" ]]; do
         case "${1}" in
-        -d | --debug)
-            set -x
-            shift
-            ;;
-        -h | --help)
-            shift
-            build::usage
-            ;;
-        --build)
-            shift
-            action_build=1
-            ;;
-        --shell)
-            shift
-            action_shell=1
-            ;;
-        --exec)
-            shift
-            action_exec=1
-            ;;
-        --build-docker)
-            shift
-            action_build_docker=1
-            ;;
-        --cleanup)
-            shift
-            action_cleanup=1
-            ;;
-        -a | --all)
-            action_build=1
-            action_build_docker=1
-            shift
-            ;;
-        *)
-            arguments+=("${1:-}")
-            shift
-            ;;
+            -d | --debug)
+                set -x
+                shift
+                ;;
+            -h | --help)
+                shift
+                build::usage
+                ;;
+            --build)
+                shift
+                action_build=1
+                ;;
+            --shell)
+                shift
+                action_shell=1
+                ;;
+            --exec)
+                shift
+                action_exec=1
+                ;;
+            --build-docker)
+                shift
+                action_build_docker=1
+                ;;
+            --cleanup)
+                shift
+                action_cleanup=1
+                ;;
+            -a | --all)
+                action_build=1
+                action_build_docker=1
+                shift
+                ;;
+            *)
+                arguments+=("${1:-}")
+                shift
+                ;;
         esac
     done
 
@@ -314,6 +334,7 @@ function build::main() {
         fi
         :
     else
+        require_tools docker git awk truncate
         if [[ "$((action_shell + action_build))" -gt 0 ]]; then
             [[ -d "${builder_basedir}/artifacts" ]] || mkdir -p "${builder_basedir}/artifacts"
             [[ -d "${HOME}/.cache/buildroot" ]] || mkdir -p "${HOME}/.cache/buildroot/dl" "${HOME}/.cache/buildroot/ccache"

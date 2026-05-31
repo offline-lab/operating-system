@@ -1,3 +1,15 @@
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#      SPDX-License-Identifier: AGPL-3.0-only                                  #
+################################################################################
+
 # Architecture
 BR2_aarch64=y
 BR2_cortex_a53=y
@@ -6,6 +18,9 @@ BR2_ARM_FPU_VFPV4=y
 # Ccache
 BR2_CCACHE=y
 BR2_CCACHE_DIR="/buildroot/.ccache"
+
+# Patches
+BR2_GLOBAL_PATCH_DIR="$(BR2_EXTERNAL_OFFLINELAB_PATH)/patches"
 
 # Toolchain
 BR2_USE_WCHAR=y
@@ -16,15 +31,20 @@ BR2_KERNEL_HEADERS_6_12=y
 BR2_LINUX_KERNEL=y
 BR2_LINUX_KERNEL_CUSTOM_TARBALL=y
 BR2_LINUX_KERNEL_CUSTOM_TARBALL_LOCATION="https://github.com/raspberrypi/linux/archive/rpi-6.12.y.tar.gz"
-BR2_LINUX_KERNEL_CONFIG_FRAGMENT_FILES="$(BR2_EXTERNAL_OFFLINELAB_PATH)/boards/pi-zero-2w/fragments/kernel-fragment.config"
-BR2_LINUX_KERNEL_DEFCONFIG="bcm2711"
+BR2_LINUX_KERNEL_USE_CUSTOM_CONFIG=y
+BR2_LINUX_KERNEL_CUSTOM_CONFIG_FILE="$(BR2_EXTERNAL_OFFLINELAB_PATH)/boards/pi-zero-2w/configs/linux.config"
 BR2_LINUX_KERNEL_DTS_SUPPORT=y
 BR2_LINUX_KERNEL_INTREE_DTS_NAME="broadcom/bcm2710-rpi-zero-2-w"
 BR2_LINUX_KERNEL_NEEDS_HOST_OPENSSL=y
 BR2_LINUX_KERNEL_INSTALL_TARGET=y
 
-# No U-Boot
-# BR2_TARGET_UBOOT is not set
+# U-Boot (rpi_arm64 = aarch64 for BCM2710/Pi Zero 2W)
+BR2_TARGET_UBOOT=y
+BR2_TARGET_UBOOT_BUILD_SYSTEM_KCONFIG=y
+BR2_TARGET_UBOOT_BOARD_DEFCONFIG="rpi_arm64"
+BR2_TARGET_UBOOT_CONFIG_FRAGMENT_FILES="$(BR2_EXTERNAL_OFFLINELAB_PATH)/boards/pi-zero-2w/fragments/uboot-fragment.config"
+BR2_TARGET_UBOOT_FORMAT_BIN=y
+BR2_TARGET_UBOOT_NEEDS_DTC=y
 
 # RPi firmware
 BR2_PACKAGE_RPI_FIRMWARE=y
@@ -70,6 +90,8 @@ BR2_PACKAGE_SYSTEMD=y
 BR2_PACKAGE_SYSTEMD_NETWORKD=y
 # BR2_PACKAGE_SYSTEMD_RESOLVED is not set
 # BR2_PACKAGE_SYSTEMD_TIMESYNCD is not set
+BR2_PACKAGE_SYSTEMD_PORTABLED=y
+BR2_PACKAGE_SYSTEMD_SYSEXT=y
 BR2_PACKAGE_DBUS=y
 
 # Busybox (static for initramfs)
@@ -104,10 +126,34 @@ BR2_PACKAGE_HOST_MTOOLS=y
 BR2_PACKAGE_HOST_GENIMAGE=y
 BR2_PACKAGE_HOST_DTC=y
 BR2_PACKAGE_HOST_KMOD_XZ=y
+BR2_PACKAGE_HOST_UBOOT_TOOLS=y
+BR2_PACKAGE_HOST_SQUASHFS=y
 
 # Board packages
 BR2_PACKAGE_OFFLINELAB_BASE=y
+BR2_PACKAGE_OFFLINELAB_FRAMEWORK=y
 BR2_PACKAGE_OFFLINELAB_USB_GADGET=y
 BR2_PACKAGE_OFFLINELAB_WIFI=y
 BR2_PACKAGE_OFFLINELAB_SSH=y
 BR2_PACKAGE_OFFLINELAB_ZRAM=y
+BR2_PACKAGE_OFFLINELAB_UPDATE=y
+BR2_PACKAGE_OFFLINELAB_DISCO=y
+BR2_PACKAGE_OFFLINELAB_PORTABLE=y
+
+# Splash screen
+BR2_PACKAGE_PSPLASH=y
+BR2_PACKAGE_PSPLASH_IMAGE="$(BR2_EXTERNAL_OFFLINELAB_PATH)/boards/pi-zero-2w/splash.png"
+BR2_PACKAGE_PSPLASH_FULL_SCREEN=y
+# BR2_PACKAGE_PSPLASH_PROGRESS_BAR is not set
+# BR2_PACKAGE_PSPLASH_STARTUP_MSG is not set
+
+# RAUC A/B updates
+BR2_PACKAGE_RAUC=y
+BR2_PACKAGE_RAUC_DBUS=y
+BR2_PACKAGE_HOST_RAUC=y
+BR2_PACKAGE_UBOOT_TOOLS=y
+BR2_PACKAGE_UBOOT_TOOLS_FWPRINTENV=y
+
+# AppArmor userspace (kernel LSM already built-in)
+BR2_PACKAGE_APPARMOR=y
+BR2_PACKAGE_APPARMOR_BINUTILS=y

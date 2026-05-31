@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#      SPDX-License-Identifier: AGPL-3.0-only                                  #
+################################################################################
+# vi: ft=bash
+# shellcheck shell=bash disable=SC1091,SC2312
+set -euo pipefail
+
+source framework || exit 1
+
+readonly CLOCK_FILE="/data/config/fake-hwclock.data"
+
+function fake_hwclock::main() {
+    log::trace "${FUNCNAME[0]}: managing fake hardware clock"
+
+    case "${1:-}" in
+        load)
+            fs::is_file "${CLOCK_FILE}" || return 0
+            local saved_time
+            saved_time="$(cat "${CLOCK_FILE}")"
+            date -u -s "${saved_time}" >/dev/null 2>&1 || true
+            log::info "${FUNCNAME[0]}: restored to ${saved_time}"
+            ;;
+        save)
+            fs::ensure_dir "${CLOCK_FILE}"
+            date -u '+%Y-%m-%d %H:%M:%S' > "${CLOCK_FILE}"
+            ;;
+        *)
+            exit::error "${FUNCNAME[0]}: Usage: ${0} (load|save)"
+            ;;
+    esac
+}
+
+fake_hwclock::main "${@}"

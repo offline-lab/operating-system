@@ -1,3 +1,15 @@
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#      SPDX-License-Identifier: AGPL-3.0-only                                  #
+################################################################################
+
 [Unit]
 Description=WiFi setup via wpa_supplicant
 After=provision-wifi.service
@@ -7,8 +19,11 @@ Before=network.target
 ConditionPathExists=/data/config/wifi/wpa_supplicant.conf
 
 [Service]
-Type=simple
-ExecStart=/usr/local/bin/wifi-setup.sh
+Type=notify
+NotifyAccess=main
+WatchdogSec=30
+Environment=PATH=/usr/lib/framework/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/usr/local/bin/init-wifi-setup
 Restart=on-failure
 RestartSec=10
 

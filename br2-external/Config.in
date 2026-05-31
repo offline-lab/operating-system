@@ -1,3 +1,15 @@
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#      SPDX-License-Identifier: AGPL-3.0-only                                  #
+################################################################################
+
 menu "Offline Lab board options"
 	source "$BR2_EXTERNAL_OFFLINELAB_PATH/boards/pi-zero-2w/Config.in"
 	source "$BR2_EXTERNAL_OFFLINELAB_PATH/package/offlinelab-base/Config.in"
@@ -5,5 +17,9 @@ menu "Offline Lab board options"
 	source "$BR2_EXTERNAL_OFFLINELAB_PATH/package/offlinelab-wifi/Config.in"
 	source "$BR2_EXTERNAL_OFFLINELAB_PATH/package/offlinelab-ssh/Config.in"
 	source "$BR2_EXTERNAL_OFFLINELAB_PATH/package/offlinelab-zram/Config.in"
+	source "$BR2_EXTERNAL_OFFLINELAB_PATH/package/offlinelab-update/Config.in"
 	source "$BR2_EXTERNAL_OFFLINELAB_PATH/package/offlinelab-disco/Config.in"
+	source "$BR2_EXTERNAL_OFFLINELAB_PATH/package/offlinelab-portable/Config.in"
+	source "$BR2_EXTERNAL_OFFLINELAB_PATH/package/offlinelab-framework/Config.in"
+	source "$BR2_EXTERNAL_OFFLINELAB_PATH/package/fzf/Config.in"
 endmenu

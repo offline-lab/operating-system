@@ -2,4 +2,5 @@
 # |username |uid |group |gid |password |home |shell |groups |comment
 # |=================================================================
 
-app 1000 app 1000 =offlinelab /data/home/app /bin/bash wheel,dialout,sudo,audio,video,bluetooth,netdev,systemd-journal App User
+admin 1000 admin 1000 =offlinelab /data/home/admin /bin/bash wheel,dialout,sudo,audio,video,bluetooth,netdev,systemd-journal Admin User
+disco 800 disco 800 !* /nonexistent /bin/false - Disco daemon

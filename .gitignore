@@ -1,3 +1,15 @@
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#      SPDX-License-Identifier: AGPL-3.0-only                                  #
+################################################################################
+
 # Build configuration (user-specific credentials)
 .config
 .config.*
@@ -19,7 +31,18 @@ tmp/
 
 # OS
 .DS_Store
+*.pyc
 *.swp
 *.swo
 *~
 .rauc
+.cache/
+
+docs/public/docs/
+docs/public/images/
+docs/site/
+
+__pycache__/
+.venv/
+.env
+.envrc

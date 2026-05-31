@@ -1,3 +1,15 @@
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#      SPDX-License-Identifier: AGPL-3.0-only                                  #
+################################################################################
+
 config BR2_PACKAGE_OFFLINELAB_SSH
 	bool "offlinelab-ssh"
 	default y
@@ -6,8 +18,8 @@ config BR2_PACKAGE_OFFLINELAB_SSH
 	help
 	  SSH server using dropbear with key-only authentication.
 	  Host keys stored persistently on /data/config/ssh/dropbear/.
-	  Authorized keys provisioned from /boot/firmware/authorized_keys
-	  to /data/home/app/.ssh/ on first boot.
+	  Authorized keys provisioned from /boot/firmware/config/authorized_keys
+	  to /data/home/admin/.ssh/ on first boot.
 
 config BR2_PACKAGE_OFFLINELAB_SSH_CREATE_AUTHORIZED_KEYS
 	bool "Set authorized_keys at build time"
@@ -21,4 +33,4 @@ config BR2_PACKAGE_OFFLINELAB_SSH_CREATE_AUTHORIZED_KEYS_CONTENT
 	default "# Add your public keys for ssh access"
 	depends on BR2_PACKAGE_OFFLINELAB_SSH_CREATE_AUTHORIZED_KEYS
 	help
-	  Content for the app user authorized_keys file.
+	  Content for the admin user authorized_keys file.

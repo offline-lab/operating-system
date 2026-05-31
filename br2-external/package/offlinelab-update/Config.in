@@ -1,0 +1,24 @@
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#      SPDX-License-Identifier: AGPL-3.0-only                                  #
+################################################################################
+
+config BR2_PACKAGE_OFFLINELAB_UPDATE
+	bool "offlinelab-update"
+	default y
+	depends on BR2_INIT_SYSTEMD
+	select BR2_PACKAGE_RAUC
+	select BR2_PACKAGE_RAUC_DBUS
+	select BR2_PACKAGE_UBOOT_TOOLS
+	select BR2_PACKAGE_UBOOT_TOOLS_FWPRINTENV
+	help
+	  RAUC A/B update integration for Offline Lab OS.
+	  Installs system.conf, keyring, fw_env.config,
+	  and mark-good service.

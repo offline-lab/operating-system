@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4a7cf7"/>
+      <stop offset="50%" style="stop-color:#9b59b6"/>
+      <stop offset="100%" style="stop-color:#e74c5e"/>
+    </linearGradient>
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#6a9cfc"/>
+      <stop offset="100%" style="stop-color:#e74c5e"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1920" height="1080" fill="#12121f"/>
+
+  <g transform="translate(960, 430)">
+    <rect x="-135" y="-150" width="270" height="270" rx="27" ry="27"
+          fill="none" stroke="url(#logoGrad)" stroke-width="6"/>
+
+    <g fill="none" stroke="url(#logoGrad)" stroke-width="7.5" stroke-linecap="round">
+      <path d="M-54,-63 A90,90 0 0,1 54,-63"/>
+      <path d="M-36,-42 A60,60 0 0,1 36,-42"/>
+      <path d="M-18,-24 A33,33 0 0,1 18,-24"/>
+    </g>
+
+    <circle cx="0" cy="-9" r="6.75" fill="url(#logoGrad)"/>
+
+    <line x1="-69" y1="-78" x2="69" y2="6" stroke="url(#logoGrad)" stroke-width="7.5" stroke-linecap="round"/>
+
+    <g transform="translate(0, 48)">
+      <rect x="-33" y="-33" width="66" height="66" rx="7.5" ry="7.5"
+            fill="none" stroke="url(#logoGrad)" stroke-width="5.25"/>
+      <g stroke="url(#logoGrad)" stroke-width="3.75" stroke-linecap="round">
+        <line x1="-15" y1="-33" x2="-15" y2="-45"/>
+        <line x1="0" y1="-33" x2="0" y2="-45"/>
+        <line x1="15" y1="-33" x2="15" y2="-45"/>
+        <line x1="-15" y1="33" x2="-15" y2="45"/>
+        <line x1="0" y1="33" x2="0" y2="45"/>
+        <line x1="15" y1="33" x2="15" y2="45"/>
+        <line x1="-33" y1="-15" x2="-45" y2="-15"/>
+        <line x1="-33" y1="0" x2="-45" y2="0"/>
+        <line x1="-33" y1="15" x2="-45" y2="15"/>
+        <line x1="33" y1="-15" x2="45" y2="-15"/>
+        <line x1="33" y1="0" x2="45" y2="0"/>
+        <line x1="33" y1="15" x2="45" y2="15"/>
+      </g>
+      <rect x="-13.5" y="-13.5" width="27" height="27" rx="3" ry="3"
+            fill="none" stroke="url(#logoGrad)" stroke-width="3"/>
+    </g>
+  </g>
+
+  <text x="960" y="630" text-anchor="middle"
+        font-family="sans-serif" font-weight="700" font-size="48"
+        letter-spacing="9" fill="url(#textGrad)">OFFLINE LAB</text>
+
+  <text x="960" y="672" text-anchor="middle"
+        font-family="sans-serif" font-weight="300" font-size="18"
+        letter-spacing="3" fill="#444460">@@VERSION@@</text>
+</svg>

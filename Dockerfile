@@ -7,9 +7,7 @@
 #                                                                              #
 #      Copyright (C) 2025-2026 Offline Lab                                     #
 #      Contact: info@offline-lab.com                                           #
-#                                                                              #
-#      SPDX-License-Identifier: GPL-2.0-only                                   #
-#                                                                              #
+#      SPDX-License-Identifier: AGPL-3.0-only                                  #
 ################################################################################
 
 ARG BASE_IMAGE=debian

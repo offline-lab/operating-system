@@ -1,0 +1,26 @@
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#      SPDX-License-Identifier: AGPL-3.0-only                                  #
+################################################################################
+
+[Unit]
+Description=Apply runtime power profile
+DefaultDependencies=no
+After=local-fs.target data.mount
+Requires=data.mount
+
+[Service]
+Type=oneshot
+Environment=PATH=/usr/lib/framework/bin:/usr/sbin:/usr/bin:/sbin:/bin
+RemainAfterExit=yes
+ExecStart=/usr/lib/framework/bin/labctl power apply
+
+[Install]
+WantedBy=multi-user.target

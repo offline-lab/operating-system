@@ -1,3 +1,15 @@
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#      SPDX-License-Identifier: AGPL-3.0-only                                  #
+################################################################################
+
 config BR2_PACKAGE_OFFLINELAB_DISCO
 	bool "offlinelab-disco"
 	depends on BR2_INIT_SYSTEMD
@@ -14,23 +26,13 @@ config BR2_PACKAGE_OFFLINELAB_DISCO
 if BR2_PACKAGE_OFFLINELAB_DISCO
 
 config BR2_PACKAGE_OFFLINELAB_DISCO_VERSION
-	string "disco version (git tag or branch)"
-	default "main"
+	string "disco version (git tag or commit)"
+	default "v0.20260528.1"
 	help
-	  Git ref to build. Use a tag (e.g. "v0.3.0") for
-	  reproducible builds, or "main" for latest.
+	  Git ref to build. Use a tag (e.g. "v0.20260528.1") for
+	  reproducible builds.
 
-config BR2_PACKAGE_OFFLINELAB_DISCO_DNS
-	bool "Enable built-in DNS server"
-	default n
-	help
-	  Serve .disco domain on port 53 for legacy clients.
-
-config BR2_PACKAGE_OFFLINELAB_DISCO_GPS
-	bool "Enable GPS time broadcaster"
-	default n
-	help
-	  Include disco-gps-broadcaster for GPS-based time sync.
-	  Requires a GPS receiver on /dev/ttyACM0.
+	  To update: change version, run offlinelab-disco-dirclean,
+	  then rebuild.
 
 endif

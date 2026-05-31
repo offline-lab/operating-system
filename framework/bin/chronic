@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# chronic — run a command silently; show output only on failure.
+#
+# Ported from moreutils chronic(1) by Joey Hess <joey@kitenet.net>
+# Original: https://joeyh.name/code/moreutils/
+# License: GNU GPL v2
+#
+# This implementation is a pure-bash drop-in replacement that avoids the
+# perl/moreutils package dependency on buildroot targets.
+
+set -uo pipefail
+
+if [[ "${#}" -eq 0 ]]; then
+    printf "Usage: chronic <command> [args...]\n" >&2
+    exit 1
+fi
+
+tmpfile="$(mktemp)" || exit 1
+
+rc=0
+"${@}" >"${tmpfile}" 2>&1 || rc="${?}"
+
+if [[ "${rc}" -ne 0 ]]; then
+    cat "${tmpfile}" >&2
+fi
+
+rm -f "${tmpfile}"
+exit "${rc}"

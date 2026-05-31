@@ -1,0 +1,35 @@
+daemon:
+  socket_path: "/run/disco/disco.sock"
+  broadcast_interval: 30s
+  record_ttl: 3600s
+
+network:
+  interfaces: ["wlan0", "usb0"]
+  broadcast_addr: "255.255.255.255:5354"
+
+discovery:
+  enabled: true
+  detect_services: true
+  service_port_mapping:
+    ssh: [22]
+  scan_interval: 60s
+
+security:
+  enabled: false
+
+logging:
+  level: "info"
+  format: "text"
+
+time_sync:
+  enabled: false
+
+health:
+  grace_period: 60s
+  expire_after: 3600s
+  cleanup_interval: 30s
+
+dns:
+  enabled: false
+
+static_hosts: {}

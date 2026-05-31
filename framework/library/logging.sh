@@ -1,0 +1,260 @@
+#!/usr/bin/env bash
+# vi: ft=bash
+# shellcheck shell=bash disable=SC2312
+
+################################################################################
+# Color utils                                                                  #
+################################################################################
+
+declare \
+    bold \
+    black \
+    red \
+    green \
+    yellow \
+    blue \
+    magenta \
+    cyan \
+    white \
+    orange \
+    purple \
+    violet \
+    reset
+
+if [[ -t 1 ]] && tput setaf 1 &>/dev/null; then
+    tput sgr0 # reset colors
+
+    bold="$(tput bold)"
+    black="$(tput setaf 0)"
+    red="$(tput setaf 1)"
+    green="$(tput setaf 2)"
+    yellow="$(tput setaf 3)"
+    blue="$(tput setaf 4)"
+    magenta="$(tput setaf 5)"
+    cyan="$(tput setaf 6)"
+    white="$(tput setaf 007)"
+    orange="$(tput setaf 166)"
+    purple="$(tput setaf 125)"
+    violet="$(tput setaf 61)"
+    reset="$(tput sgr0)"
+else
+    bold=$'\e[1m'
+    black=$'\e[0m'
+    red=$'\033[0;31m'
+    green=$'\e[0;32m'
+    yellow=$'\e[1;33m'
+    blue=$'\e[0;34m'
+    magenta=$'\e[1;35m'
+    cyan=$'\e[0;36m'
+    white=$'\e[1;37m'
+    orange=$'\e[0;33m'
+    purple=$'\e[0;35m'
+    violet=$'\e[1;35m'
+    reset=$'\e[0m'
+fi
+
+export \
+    bold \
+    black \
+    red \
+    green \
+    yellow \
+    blue \
+    magenta \
+    cyan \
+    white \
+    orange \
+    purple \
+    violet \
+    reset
+
+################################################################################
+# Logger util                                                                  #
+################################################################################
+
+function log::logger() {
+    local message level cr timestamp color linefeed
+
+    message="${1}"
+    level="${2:-INFO}"
+    cr="${3:-1}"
+
+    # Skip logs with trace level if trace flag is not set
+    if [[ "${level}" == TRACE ]] && [[ "${TRACE:-}" != 1 ]]; then
+        return 0
+    fi
+
+    # Skip logging if silent flag is set
+    if [[ -n "${SILENT}" ]] && [[ "${SILENT}" == 1 ]]; then
+        return 0
+    fi
+
+    # Check if cr is 1
+    if [[ "${cr}" == 1 ]]; then
+        linefeed='\n'
+    else
+        linefeed=''
+    fi
+
+    timestamp="$(date '+%Y-%m-%d %H:%M:%S')"
+
+    case "${level}" in
+        ERROR)
+            color=${bold}${red}
+            ;;
+        INFO)
+            color=${bold}${green}
+            ;;
+        WARNING)
+            color=${bold}${yellow}
+            ;;
+        TRACE)
+            color=${bold}${purple}
+            ;;
+        DEBUG)
+            color=${bold}${blue}
+            ;;
+        *)
+            color=${bold}${white}
+            ;;
+    esac
+
+    local -a logline=(
+        "${color}[+]${reset}"
+        "${bold}${white}%s${reset}"
+        -
+        "${color}%-5s${reset}"
+        -
+        "${bold}${white}%s${reset}${linefeed}"
+    )
+
+    # shellcheck disable=SC2059
+    printf \
+        "${logline[*]}" \
+        "${timestamp}" \
+        "${level}" \
+        "${message}" \
+        &>/dev/stderr
+}
+
+################################################################################
+# Log functions                                                                #
+################################################################################
+
+#
+# NOK
+#
+
+function log::error() {
+    local message cr
+
+    message="${1}"
+    cr="${2:-1}"
+
+    log::logger "${message}" ERROR "${cr}"
+}
+
+function log::err() {
+    log::error "${@}"
+}
+
+function log::critical() {
+    log::error "${@}"
+}
+
+#
+# OK
+#
+
+function log::info() {
+    local message cr
+
+    message="${1}"
+    cr="${2:-1}"
+
+    log::logger "${message}" INFO "${cr}"
+}
+
+function log::ok() {
+    log::info "${@}"
+}
+
+function log::log() {
+    log::info "${@}"
+}
+
+#
+# TRACE
+#
+
+function log::trace() {
+    local message="${1}"
+    local cr="${2:-1}"
+
+    log::logger "${message}" TRACE "${cr}"
+}
+
+#
+# DEBUG
+#
+
+function log::debug() {
+    local message cr
+
+    message="${1}"
+    cr="${2:-1}"
+
+    log::logger "${message}" DEBUG "${cr}"
+}
+
+#
+# WARNING
+#
+
+function log::warning() {
+    local message cr
+
+    message="${1}"
+    cr="${2:-1}"
+
+    log::logger "${message}" WARNING "${cr}"
+}
+
+function log::warn() {
+    log::warning "${@}"
+}
+
+################################################################################
+# Generic log functions                                                        #
+################################################################################
+
+function log::input() {
+    local message cr
+
+    message="${1}"
+    cr="${2:-1}"
+
+    log::logger "${message}" INPUT "${cr}"
+}
+
+function log::output() {
+    local message cr
+
+    message="${1}"
+    cr="${2:-1}"
+
+    log::logger "${message}" OUTPUT "${cr}"
+}
+
+################################################################################
+# Stdout to logger                                                             #
+################################################################################
+
+function log::stdin() {
+    local level="${1:-INPUT}"
+    local cr="${2:-1}"
+
+    while read -r line; do
+        log::logger "${line}" "${level}" "${cr}"
+    done </dev/stdin
+}

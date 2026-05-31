@@ -1,11 +1,23 @@
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#      SPDX-License-Identifier: AGPL-3.0-only                                  #
+################################################################################
+
 arm_64bit=1
 device_tree=bcm2710-rpi-zero-2-w.dtb
 start_file=start.elf
 fixup_file=fixup.dat
 
-# Direct kernel boot (no U-Boot)
-kernel=Image
-initramfs initramfs.cpio.gz followkernel
+# U-Boot as second-stage bootloader
+kernel=u-boot.bin
+disable_splash=1
 
 # Media: keep audio, BT, GPU for portable service use cases
 dtparam=audio=on

@@ -1,0 +1,37 @@
+name: Task
+description: A unit of work tracked on the kanban board
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Title format:** `[Phase/Area]: Brief imperative verb phrase`
+        Example: `Phase 1: Add psplash boot splash`
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What needs to be done and why? State the goal, not the implementation.
+      placeholder: "Add a boot splash screen so the device shows visual feedback during the ~8s boot sequence..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: dod
+    attributes:
+      label: Definition of Done
+      description: Specific, verifiable criteria. Each item must be independently checkable.
+      value: |
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Related issues, constraints, external links — leave blank if none.
+    validations:
+      required: false
