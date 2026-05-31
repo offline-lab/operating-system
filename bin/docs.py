@@ -1,4 +1,7 @@
-#!/usr/bin/env -S uv run --with zensical python
+#!/usr/bin/env -S uv run python
+# /// script
+# dependencies = ["zensical"]
+# ///
 """Build the Offline Lab documentation site using Zensical."""
 
 import http.server
