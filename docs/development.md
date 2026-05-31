@@ -1,6 +1,12 @@
-# Development
+# Development guide
 
-A guide for contributors working on the OS image and br2-external packages.
+A guide for contributors working on the OS image, framework, and packages.
+
+## Quick start
+
+For build environment setup (Docker or Buildbox), see [Build the OS image](build-image.md).
+
+This page covers the development workflow after your build environment is working: making changes, coding conventions, and common pitfalls.
 
 ## Repository structure
 
@@ -37,7 +43,8 @@ builder/
 │   ├── external.mk
 │   ├── users.txt           # user accounts
 │   └── devices.txt         # device nodes
-├── docs/                   # internal documentation
+├── framework/              # first-party Bash utility library and labctl CLI
+├── docs/                   # documentation site (Zensical)
 ├── Dockerfile
 ├── config.example          # build-time config template
 └── env.example             # environment template
@@ -45,31 +52,48 @@ builder/
 
 No binaries, pre-built images, or third-party source code is stored in git. Build artifacts go to `artifacts/` (gitignored). External dependencies are fetched at build time.
 
-## Build workflow
+## Making changes
 
-1. Edit source files in `br2-external/`.
-2. Run `make offlinelab-<package>-dirclean` if you edited any package source files (see gotcha below).
-3. Build: `bin/builder.sh --build` or `bin/buildbox.sh`.
-4. Verify: `bin/verify.sh artifacts/`.
-5. Flash and test on hardware.
+### Rebuilding after edits
 
-## Critical gotchas
-
-### pkg-dirclean after editing package source files
-
-Buildroot tracks build state per-package. If you edit files under `br2-external/package/offlinelab-*/src/`, Buildroot may not detect the change and will skip the install step, leaving the old files in the image.
-
-**Always run this after editing package source files:**
+Buildroot caches package output. After editing files under `br2-external/`, force a clean rebuild:
 
 ```bash
-# From inside the build environment
 make offlinelab-<package>-dirclean
-
-# Then rebuild
-bin/build.sh  # or bin/build-native.sh on buildbox
 ```
 
-This is the most common source of "my change isn't in the image" confusion.
+Then rebuild. Without this, your changes won't appear in the image. This is the most common source of "my change isn't in the image" confusion.
+
+### Framework development
+
+The framework (`framework/`) is first-party source — edit it directly in this repo, then rebuild:
+
+```bash
+make offlinelab-framework-dirclean && make offlinelab-framework
+```
+
+For framework development without full OS rebuilds, use the framework's dev setup:
+
+```bash
+source framework/bin/dev-setup
+bin/test-framework --lint
+```
+
+See `framework/.claude/CLAUDE.md` for the full framework development guide including function conventions, variable namespace, and module structure.
+
+## Coding conventions
+
+- **Shell scripts:** POSIX sh where possible, bash only when needed. No unofficial bash-isms.
+- **Systemd units:** explicit `After=`, `Requires=`, `WantedBy=`. Don't rely on implicit ordering.
+- **Config files:** match the style of the file you're editing.
+- **No binaries in git.** Everything fetched at build time.
+- **Framework scripts** must follow the conventions in `framework/.claude/CLAUDE.md`: `namespace::function_name` naming, `log::trace` as first line, return codes 0/1/2.
+- **Use the framework library** for common operations (logging, config reads, network checks, privilege escalation) rather than reimplementing them in package scripts.
+- **Busybox compatibility:** `grep -E` not `grep -P`, `date -u` not `date --universal`, `mktemp -t prefix-XXXX` not `mktemp --suffix`. No gawk-specific features.
+- Run `bin/test-framework --lint` before submitting changes to framework code.
+- Read the `.claude/` and `AGENTS.md` files — they contain project-specific rules that apply to all contributions.
+
+## Critical gotchas
 
 ### Config provisioning is first-boot-only
 
@@ -104,6 +128,7 @@ bin/verify.sh artifacts/
 ```
 
 Checks include:
+
 - Partition layout and types
 - Boot partition contents (U-Boot, boot.scr, kernel sqfs, initramfs)
 - Initramfs structure (static busybox, init script, overlayfs logic)
@@ -134,11 +159,3 @@ Add new checks to `bin/verify.sh` when adding new packages or changing the image
 4. Add verification checks to `bin/verify.sh`.
 
 Follow the pattern of an existing package. Keep each package focused on one concern. Use the provisioning pattern for any config that users might need to change (boot partition → `/data`).
-
-## Coding conventions
-
-- Shell scripts: POSIX sh where possible, bash only when needed. No unofficial bash-isms.
-- Systemd units: explicit `After=`, `Requires=`, `WantedBy=`. Don't rely on implicit ordering.
-- Config files: match the style of the file you're editing.
-- No binaries in git. Everything fetched at build time.
-- No update scripts in this repo — the USB update workflow is a separate project.

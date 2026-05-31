@@ -181,6 +181,8 @@ Check if var is a flotation
 
 Check if all are truthy
 
+**Arguments:** at least 1 argument(s)
+
 ---
 
 ### `var::any`
@@ -189,6 +191,8 @@ Check if all are truthy
 
 Check if one of the two is set
 
+**Arguments:** at least 1 argument(s)
+
 ---
 
 ### `var::none`
@@ -196,6 +200,8 @@ Check if one of the two is set
 > Check if all of the variables are none
 
 Check if none are set
+
+**Arguments:** at least 1 argument(s)
 
 ---
 

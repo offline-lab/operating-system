@@ -21,6 +21,8 @@ The card is partitioned as follows:
 
 The `/data` partition is last on the card and expands to fill the remaining space on first boot.
 
+See [Boot](boot.md) for the full partition layout and boot chain.
+
 ## Power
 
 There are no specific watt-hour targets. The principle is to minimize consumption at every level:

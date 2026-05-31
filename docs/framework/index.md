@@ -2,7 +2,7 @@
 
 The offline-lab-framework is a bash utility library installed at `/usr/lib/framework/` on the Offline Lab OS. Scripts load it with `source framework || exit 1`.
 
-See [Framework Integration](../framework-integration/) for buildroot packaging details.
+See [Building the OS](../builder/) for buildroot packaging details.
 
 ## CLI
 
@@ -23,9 +23,10 @@ See [Framework Integration](../framework-integration/) for buildroot packaging d
 | [`fs`](fs.md) | path and file checks | 16 |
 | [`interact`](interact.md) | prompts and user input | 5 |
 | [`net`](net.md) | IP, FQDN, email validation | 6 |
+| [`power`](power.md) | power | 8 |
 | [`prettytable`](prettytable.md) | Unicode terminal table output | 4 |
 | [`proc`](proc.md) | command execution and output handling | 10 |
-| [`ssh`](ssh.md) | key generation and agent management | 10 |
+| [`ssh`](ssh.md) | key generation and agent management | 6 |
 | [`ssl`](ssl.md) | certificate and key validation | 23 |
 | [`string`](string.md) | manipulation and comparison | 17 |
 | [`system`](system.md) | privilege escalation and sudo keepalive | 2 |

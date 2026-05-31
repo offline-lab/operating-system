@@ -2,39 +2,35 @@
 
 Development is organised in phases. Each builds on the previous one.
 
+| Phase | Status | Summary |
+|---|---|---|
+| 0 — Base OS | Complete | Minimal read-only OS for Pi Zero 2W |
+| 1 — A/B updates | In progress | Atomic updates via U-Boot and RAUC |
+| 2 — Discovery | Complete | Service discovery and name resolution |
+| 3 — Portable services | Complete | systemd portable services and security hardening |
+| 4 — App packaging | Planned | .olab format, pkgctl, appctl, build pipeline |
+| 5 — Package repository | Planned | Index, distribution, publishing |
+| 6 — Packages | Planned | First real portable service packages |
+| 7 — Disco enhancements | Planned | Service aliases, announce hooks |
+
 ## Phase 0: Base OS
 
 **Status: Complete**
 
-Minimal read-only OS that boots on Pi Zero 2W, connects to WiFi, provides SSH and USB console access.
-
-- Buildroot image for Raspberry Pi Zero 2W (arm64)
-- Raspberry Pi foundation kernel (rpi-6.12.y), custom-trimmed defconfig
-- Systemd init with systemd-networkd
-- 4-primary-partition layout with overlayfs (lower=rootfs-a, upper on overlay partition)
-- WiFi with credentials provisioned from boot partition
-- SSH via dropbear, key-only auth, keys provisioned from boot partition
-- USB composite gadget (serial ttyGS0 + ethernet usb0)
-- GPIO UART console (ttyS0, 115200 baud)
-- Data partition auto-expanded on first boot
-- zram compressed swap
-- Fake hardware clock for valid TLS before NTP
+A minimal read-only Linux image for the Raspberry Pi Zero 2W. The OS boots from SD card with a Buildroot-built arm64 kernel, connects to WiFi using credentials provisioned from the boot partition, and provides SSH and USB console access. An overlayfs layer keeps the rootfs immutable while allowing runtime state, and a dedicated data partition is auto-expanded on first boot.
 
 ## Phase 1: A/B updates
 
 **Status: In progress**
 
-Reliable A/B rootfs switching via U-Boot and RAUC.
+Reliable A/B rootfs switching via U-Boot and RAUC, enabling atomic updates with automatic fallback on failure.
 
 ### Completed
-- Custom kernel defconfig replacing the fragment-based approach
-- U-Boot integration (single-slot, then full A/B bootchooser)
-- New partition layout: boot + extended (kernel-a, rootfs-a, kernel-b, rootfs-b, bootstate) + overlay + data
-- Per-slot overlay directories (`/overlay/a/`, `/overlay/b/`)
-- U-Boot A/B bootchooser: BOOT_ORDER, per-slot counters, automatic fallback
-- RAUC PKI (CA + signing keypair)
+
+Custom kernel defconfig, full U-Boot A/B bootchooser with per-slot counters and automatic fallback, new partition layout (boot + kernel/rootfs A + kernel/rootfs B + bootstate + overlay + data), per-slot overlay directories, and RAUC PKI with CA and signing keypair.
 
 ### Remaining
+
 - `offlinelab-update` package: RAUC config, keyring, `rauc-mark-good.service`
 - RAUC bundle generation in post-image.sh
 - psplash boot splash
@@ -44,35 +40,19 @@ Reliable A/B rootfs switching via U-Boot and RAUC.
 
 **Status: Complete**
 
-Service discovery and name resolution for offline networks via [disco](disco.md).
-
-- `disco-daemon`: UDP broadcast discovery (port 5354)
-- `libnss_disco.so.2`: glibc NSS module for native hostname resolution
-- `disco` CLI: host listing, lookup, service status
-- Time synchronisation from GPS sources
-- Optional DNS server for `.disco` domain
-- `offlinelab-disco` Buildroot package
+Service discovery and name resolution for offline networks, implemented in [disco](disco.md). Devices find each other via UDP broadcast, hostnames resolve natively through a glibc NSS module, and an optional DNS server handles `.disco` domain queries. Includes time synchronisation from GPS sources.
 
 ## Phase 3: Portable services
 
 **Status: Complete**
 
-Systemd portable service infrastructure and security hardening.
-
-- `portabled` + `systemd-sysext` + `systemd-confext` enabled
-- `offlinelab-portable` package: `/data/apps/`, `/data/extensions/`, `/data/confexts/` provisioned on first boot
-- `dm-verity` with signed root hash verification
-- AppArmor enabled (`LSM=apparmor`, `security=apparmor`)
-- Default portable profile: `ProtectSystem=strict`, `NoNewPrivileges=yes`, `MemoryMax=128M`, `CPUQuota=50%`
-- `admin` user with full sudo (portablectl, sysext, confext)
-- Hello-world test service validated
+systemd portable service infrastructure with security hardening. Apps run as isolated portable services backed by `dm-verity` for image integrity and AppArmor for mandatory access control. The default portable profile enforces strict filesystem protection, memory limits (128 MB), and CPU quotas. An `admin` user has controlled sudo access for service management.
 
 ## Phase 4: App packaging foundation
 
 **Status: Planned**
 
-Defines the `.olab` package format, the tooling to build and run apps, and the
-app configuration model. This phase unblocks parallel work on services and tooling.
+Defines the `.olab` package format, the tooling to build and run apps, and the app configuration model. This phase unblocks parallel work on services and tooling.
 
 ### Goals
 - **`.olab` format spec** — single-file archive: squashfs + `metadata.json` + dm-verity
@@ -89,7 +69,7 @@ app configuration model. This phase unblocks parallel work on services and tooli
   ship their own. Profile docs published on website with source links.
 - **CLI split** — three distinct binaries, clearly documented:
   - `labctl` — OS management (status, update, reboot, net, logs, diagnose)
-  - `pkgctl` — package index management (list, search, info, publish) — rename from `olpfctl`
+  - `pkgctl` — package index management (list, search, info, publish)
   - `appctl` — app lifecycle (install, start, stop, restart, enable, disable, remove, list)
 - **Build pipeline** — Docker (`FROM scratch` final stage) → `mksquashfs` → dm-verity
   seal → sign → produce `.olab`. `mkosi` also supported as build tool.
@@ -98,7 +78,6 @@ app configuration model. This phase unblocks parallel work on services and tooli
 
 ### Open questions to resolve during phase
 - Finalise the YAML DSL for `appctl` multi-app definitions (compose-like)
-- Decide `pkgctl` rename (see [#TBD](https://github.com/offline-lab/builder/issues))
 
 ## Phase 5: Package repository
 

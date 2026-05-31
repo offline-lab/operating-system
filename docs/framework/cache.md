@@ -23,7 +23,7 @@ Check of cache is initialized
 
 ### `cache::warning`
 
-> Checking if cache key is initialized
+> Checking if cache is initialized
 
 Print a warning if cache is not initialized
 

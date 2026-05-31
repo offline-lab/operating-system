@@ -58,7 +58,6 @@ br2-builder/
 │   ├── rootfs_overlay/           # static overlay files
 │   └── skeleton/                 # custom rootfs skeleton
 ├── docs/                         # project documentation
-│   ├── PHASES.md                 # development roadmap
 │   └── KERNEL.md                 # kernel strategy
 ├── Dockerfile                    # Docker build environment
 ├── config.example                # build-time config template
@@ -242,7 +241,6 @@ uv run bin/docs.py serve    # serve locally on :8000
 bin/generate-framework-docs # regenerate framework API reference (docs/framework/)
 ```
 
-- [docs/PHASES.md](docs/PHASES.md) — development roadmap
 - [docs/KERNEL.md](docs/KERNEL.md) — kernel strategy and trimming plan
 
 ## License

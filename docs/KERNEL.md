@@ -161,4 +161,4 @@ freed up for portable services.
 - **Fragment-first over immediate custom defconfig**: need a working boot before trimming
 - **Keep modules over built-in for WiFi/BT/audio/GPU**: allows unloading when unused,
   smaller kernel image for faster boot, runtime PM can suspend module hardware
-- **Squashfs as module**: only loaded when portable services are attached (Phase 3)
+- **Squashfs as module**: only loaded when portable services are attached

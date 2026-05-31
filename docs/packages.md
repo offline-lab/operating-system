@@ -11,7 +11,7 @@ The OS is organised as a Buildroot external tree (`br2-external`). Functionality
 | `offlinelab-wifi` | WiFi via wpa_supplicant, credential provisioning from boot partition |
 | `offlinelab-ssh` | Dropbear SSH, key-only auth, host key generation and key provisioning from boot partition |
 | `offlinelab-zram` | Compressed RAM swap for low-memory operation |
-| `offlinelab-disco` | Service discovery, NSS name resolution, time sync — Phase 2 |
+| `offlinelab-disco` | Service discovery, NSS name resolution, time sync |
 
 ## Package structure
 
@@ -101,7 +101,7 @@ Configures a zram block device as compressed swap:
 
 ## offlinelab-disco
 
-Phase 2 — not yet active. Will provide:
+Provides:
 - `disco-daemon` — UDP broadcast discovery and hostname resolution
 - `libnss_disco.so.2` — glibc NSS module for native hostname resolution
 - `disco` CLI

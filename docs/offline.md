@@ -10,7 +10,7 @@ Time synchronization will use alternatives in a later phase: Meshtastic, manual 
 
 ## The cutoff model
 
-The platform works around the concept of a "cutoff": a point after which internet is no longer available. Before cutoff, data is synced: package mirrors, content databases, maps, media. After cutoff, the system runs on what it has.
+The platform works around the concept of a "cutoff": a point after which internet is no longer available. Before cutoff, data is synced: package mirrors, content databases, maps, media. After cutoff, the system runs on what it has. See [Packages](packages.md) for the provisioning model.
 
 This is not sudden. Users prepare by running sync tools while internet is available, building up the content and images they need.
 
@@ -34,7 +34,7 @@ Each device runs its services independently. No distributed databases, no replic
 
 The platform targets small communities, roughly 20 to 30 concurrent users per node. This is not a data center. Everything for a service runs on a single node.
 
-All state for a service lives on the local `/data` partition. SQLite is the only database engine. Services are tuned for low concurrency, not throughput. Multiple services can run on the same device.
+All state for a service lives on the local `/data` partition. SQLite is the only database engine. Services are tuned for low concurrency, not throughput. Multiple services can run on the same device. See the [service model](components.md) for how services are packaged and managed.
 
 ## Bootstrap
 

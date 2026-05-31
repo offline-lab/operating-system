@@ -2,59 +2,45 @@
 
 A battery-powered platform for life without internet.
 
-## What is Offline Lab?
+## Start here
 
-Offline Lab is an open-source platform for running apps on low-power devices without internet. We are the opposite of a data center: just enough compute to serve a family or a small community.
+**New to the project?** Read [About](about.md) to understand what we're building and why.
 
-The platform has two parts: a minimal read-only operating system (working name: **MinOS**) and a set of services packaged as portable images. Everything runs on battery power, stores data on SD cards, and works without any network connection.
+## Where to go next
 
-## Use cases
+### Learn
 
-Offline Lab is for people who need computing tools but don't have reliable internet. Travelers on cruises or long trips. Communities in remote or off-grid locations. Small groups that want to share services over a local network.
+Start here if you want to understand the platform:
 
-## How it works
+- [Getting Started](getting-started.md) — set up your first device
+- [Hardware](hardware.md) — supported devices, storage, power, networking
+- [Operating System](operating-system.md) — MoreOS design principles
+- [Offline design](offline.md) — design decisions for offline-first computing
 
-A Raspberry Pi Zero 2W boots a read-only OS from an SD card. Services run as systemd portable services from squashfs images. User data lives on a separate writable partition. Updates use A/B root partitions: write the new image to the inactive slot and reboot.
+### Build
 
-Nodes connect over a travel router or WiFi mesh. Each node also works standalone, powered by a USB powerbank.
+Step-by-step guides for working with the platform:
 
-## Project ecosystem
+- [Install MoreOS](burn-image.md) — write a pre-built image
+- [Build the OS image](build-image.md) — build MoreOS from source
 
-| Repository | Description |
-|---|---|
-| [website](https://github.com/offline-lab/website) | Documentation and project site |
-| [builder](https://github.com/offline-lab/builder) | Buildroot-based OS image builder |
-| [disco](https://github.com/offline-lab/disco) | Service discovery and name resolution for offline networks |
-| services | Portable systemd service images (Phase 3, planned) |
-| sync | Data synchronization tools (planned) |
+### Look things up
 
-## Documentation
+Reference material for the platform and framework:
 
-**Platform**
-- [About](about.md) - purpose and philosophy
-- [Hardware](hardware.md) - devices, storage, power, networking
-- [Offline](offline.md) - offline design decisions
-- [Roadmap](roadmap.md) - development phases
+- [Configuration](configuration.md) — WiFi, SSH, and runtime config
+- [Boot](boot.md) — boot chain, partition layout, A/B mechanics
+- [Packages](packages.md) — OS packages and the provisioning pattern
+- [Service model](components.md) — portable service model
+- [App format](app-format.md) — .olab package format spec
+- [Disco](discovery/) — service discovery and name resolution
+- [Framework](framework/index.md) — bash library and labctl CLI reference
 
-**Operating system**
-- [Operating System](operating-system.md) - MinOS design principles
-- [Boot](boot.md) - boot chain, partition layout, A/B mechanics
-- [Packages](packages.md) - OS packages and the provisioning pattern
-- [Configuration](configuration.md) - WiFi, SSH, and runtime config reference
-- [Components](components.md) - portable service model and planned services
+### Contribute
 
-**Infrastructure**
-- [Disco](disco.md) - service discovery and name resolution
+- [How to contribute](contributing.md) — issues, PRs, code of conduct
+- [Development guide](development.md) — repo structure, gotchas, adding packages
 
-**Framework**
-- [Framework](framework/index.md) - bash library and labctl CLI reference
-- [Commands](framework/commands.md) - labctl command reference
+### Plan ahead
 
-**Contributing**
-- [Building](builder.md) - how to build the OS image
-- [Development](development.md) - repo structure, gotchas, adding packages
-- [Contributing](contributing.md) - how to get involved
-
-## License
-
-Offline Lab is licensed under [AGPL v3](https://www.gnu.org/licenses/agpl-3.0.en.html). You can use, modify, and distribute the software, but modifications, including running it as a service, must be released under the same license.
+- [Roadmap](roadmap.md) — development phases and future work

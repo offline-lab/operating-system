@@ -50,7 +50,7 @@ If both slots are exhausted (counters at zero), U-Boot resets both counters and 
 
 ## Boot success signaling
 
-The initramfs passes `rauc.slot=A|B` through to userspace via the kernel command line. After reaching multi-user.target, a systemd service (`rauc-mark-good.service`) reads this value and marks the active slot as good by resetting its boot counter to the configured maximum. This service is part of Phase 1 and is not yet in the image.
+The initramfs passes `rauc.slot=A|B` through to userspace via the kernel command line. After reaching multi-user.target, a systemd service (`rauc-mark-good.service`) reads this value and marks the active slot as good by resetting its boot counter to the configured maximum.
 
 If the system crashes or panics before reaching multi-user.target, the counter stays decremented. After enough failures, U-Boot switches to the other slot.
 

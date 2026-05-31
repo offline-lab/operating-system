@@ -16,14 +16,15 @@ site_dir = "docs/public/docs"
 
 nav = [
   { "Home" = "index.md" },
+  { "About" = "about.md" },
 
   { "Tutorials" = [
     { "Getting Started" = "getting-started.md" },
   ]},
 
   { "How-to Guides" = [
-    { "Burn image to SD card" = "burn-image.md" },
-    { "Build the image" = "build-image.md" },
+    { "Install MoreOS" = "burn-image.md" },
+    { "Build the OS image" = "build-image.md" },
   ]},
 
   { "Reference" = [
@@ -33,56 +34,63 @@ nav = [
     { "Configuration" = "configuration.md" },
     { "Boot partition config" = "bootfs-config.md" },
     { "Packages" = "packages.md" },
-    { "Components" = "components.md" },
-    { "Disco" = "disco.md" },
+    { "Service model" = "components.md" },
+    { "Discovery" = [
+      { "Overview" = "discovery/index.md" },
+      { "Protocol" = "discovery/protocol.md" },
+      { "CLI" = "discovery/cli.md" },
+    ]},
     { "App format" = "app-format.md" },
+    { "Terminology" = "terminology.md" },
+    { "labctl" = "labctl.md" },
   ]},
 
-  { "Explanation" = [
-    { "About" = "about.md" },
+  { "Design & Roadmap" = [
     { "Offline design" = "offline.md" },
     { "Roadmap" = "roadmap.md" },
+  ]},
+
+  { "Framework" = [
+    { "Overview" = "framework/index.md" },
+    { "Commands" = "framework/commands.md" },
+    { "Reference" = [
+      { "Variables" = "framework/var.md" },
+      { "Strings" = "framework/string.md" },
+      { "Arrays" = "framework/array.md" },
+      { "Arguments" = "framework/arguments.md" },
+      { "Filesystem" = "framework/fs.md" },
+      { "Files" = "framework/files.md" },
+      { "Network" = "framework/net.md" },
+      { "WiFi" = "framework/wifi.md" },
+      { "SSH" = "framework/ssh.md" },
+      { "SSL" = "framework/ssl.md" },
+      { "Process" = "framework/proc.md" },
+      { "Dependencies" = "framework/depends.md" },
+      { "Cache" = "framework/cache.md" },
+      { "Time" = "framework/time.md" },
+      { "Credentials" = "framework/credentials.md" },
+      { "Interaction" = "framework/interact.md" },
+      { "Prettytable" = "framework/prettytable.md" },
+      { "System" = "framework/system.md" },
+      { "Config" = "framework/config.md" },
+      { "Health" = "framework/health.md" },
+      { "Power" = "framework/power.md" },
+      { "RAUC" = "framework/rauc.md" },
+      { "Core" = "framework/core.md" },
+      { "Import" = "framework/import.md" },
+      { "Logging" = "framework/logging.md" },
+      { "Exit" = "framework/exit.md" },
+      { "Debug" = "framework/debug.md" },
+      { "Sanity" = "framework/sanity.md" },
+    ]},
   ]},
 
   { "Contributing" = [
     { "How to contribute" = "contributing.md" },
     { "Development guide" = "development.md" },
-    { "Builder reference" = "builder.md" },
+    { "Build the OS image" = "build-image.md" },
   ]},
 
-  { "Framework" = [
-    { "Overview" = "framework/index.md" },
-    { "Integration" = "framework-integration.md" },
-    { "Commands" = "framework/commands.md" },
-    { "Variables" = "framework/var.md" },
-    { "Strings" = "framework/string.md" },
-    { "Arrays" = "framework/array.md" },
-    { "Arguments" = "framework/arguments.md" },
-    { "Filesystem" = "framework/fs.md" },
-    { "Files" = "framework/files.md" },
-    { "Network" = "framework/net.md" },
-    { "WiFi" = "framework/wifi.md" },
-    { "SSH" = "framework/ssh.md" },
-    { "SSL" = "framework/ssl.md" },
-    { "Process" = "framework/proc.md" },
-    { "Dependencies" = "framework/depends.md" },
-    { "Cache" = "framework/cache.md" },
-    { "Time" = "framework/time.md" },
-    { "Credentials" = "framework/credentials.md" },
-    { "Interaction" = "framework/interact.md" },
-    { "Prettytable" = "framework/prettytable.md" },
-    { "System" = "framework/system.md" },
-    { "Config" = "framework/config.md" },
-    { "Health" = "framework/health.md" },
-    { "Power" = "framework/power.md" },
-    { "RAUC" = "framework/rauc.md" },
-    { "Core" = "framework/core.md" },
-    { "Import" = "framework/import.md" },
-    { "Logging" = "framework/logging.md" },
-    { "Exit" = "framework/exit.md" },
-    { "Debug" = "framework/debug.md" },
-    { "Sanity" = "framework/sanity.md" },
-  ]},
 ]
 
 [project.theme]

@@ -51,36 +51,7 @@ On first boot, provisioning services copy these files to `/data`:
 
 Provisioning is **idempotent**: if the destination already exists, the service exits without overwriting it. To re-provision, delete the file from `/data` and reboot.
 
-### WiFi credentials format
-
-```
-ctrl_interface=DIR=/run/wpa_supplicant GROUP=netdev
-update_config=1
-country=NL
-
-network={
-    ssid="your-network"
-    psk="your-password"
-}
-```
-
-Use `wpa_passphrase <ssid> <password>` to generate a hashed PSK instead of storing the password in plain text. Set the file permission to `600`.
-
-### Manual SD card method
-
-After flashing, mount the boot partition on your computer and create the `config/` directory:
-
-```bash
-mount /dev/sdX1 /mnt
-mkdir -p /mnt/config
-
-cp wpa_supplicant.conf /mnt/config/
-chmod 600 /mnt/config/wpa_supplicant.conf
-
-cp ~/.ssh/id_ed25519.pub /mnt/config/authorized_keys
-
-umount /mnt
-```
+See [Boot partition configuration](bootfs-config.md) for the full reference: boot partition layout, config file formats, provisioning details, and the manual SD card method.
 
 ## Runtime configuration
 
@@ -120,7 +91,7 @@ Changes take effect immediately — dropbear re-reads the file on each connectio
 │       ├── .bashrc
 │       └── .ssh/
 │           └── authorized_keys     # live SSH public keys
-└── portable/                       # systemd portable service images (Phase 3)
+└── portable/                       # systemd portable service images
 ```
 
 The overlay partition (separate from `/data`) holds the overlayfs upper/work directories and is managed automatically. User data should not be placed there.

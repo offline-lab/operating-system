@@ -1,8 +1,24 @@
 # Build the image
 
-The OS image is built with Buildroot. There are two build paths: Docker and Buildbox. Both produce the same output — a compressed SD card image in `artifacts/`.
+The OS image is built with Buildroot. There are two build paths:
 
-## Before you start
+- **Docker** — runs an arm64 build container on macOS (via QEMU emulation, slower)
+- **Buildbox** — a native arm64 Debian VM for fast builds on Apple Silicon
+
+Both produce the same output: a compressed SD card image in `artifacts/`.
+
+## Prerequisites
+
+**Docker path:**
+- Docker Desktop with `linux/arm64` platform support enabled
+- ~15 GB free disk for the build cache
+
+**Buildbox path:**
+- UTM (macOS virtualisation) or any arm64 Debian host
+- SSH access to the VM (`buildbox` in `/etc/hosts` or `BUILDBOX_HOST` env var)
+- ~15 GB free disk on the VM
+
+## Setup
 
 Clone the repository and copy the example config files:
 
@@ -14,9 +30,10 @@ cp env.example .env
 cp config.example .config
 ```
 
-Open `.config` and set at minimum your WiFi credentials and SSH authorized key:
+Open `.config` and set at minimum your WiFi credentials and SSH authorized key. These are baked into the image at build time:
 
 ```ini
+BR2_PACKAGE_OFFLINELAB_WIFI_WPA_CREATE=y
 BR2_PACKAGE_OFFLINELAB_WIFI_WPA_SSID="your-network"
 BR2_PACKAGE_OFFLINELAB_WIFI_WPA_PASSWORD="your-password"
 BR2_PACKAGE_OFFLINELAB_WIFI_WPA_COUNTRY="NL"
@@ -25,16 +42,14 @@ BR2_PACKAGE_OFFLINELAB_SSH_CREATE_AUTHORIZED_KEYS=y
 BR2_PACKAGE_OFFLINELAB_SSH_CREATE_AUTHORIZED_KEYS_CONTENT="ssh-ed25519 AAAA... you@host"
 ```
 
-These are baked into the image. The `.config` file is gitignored — treat it as sensitive. See [Configuration](configuration.md) for all available options.
+The `.config` file is gitignored — treat it as sensitive. See [Configuration](configuration.md) for all available options and the boot-partition alternative.
 
-## Docker
+## Docker build
 
 Docker is the easiest path if you're on macOS and just want to try a build. It runs arm64 in emulation via QEMU, which works correctly but is slow — expect a first build to take 45–90 minutes.
 
-**Prerequisites:** Docker Desktop with `linux/arm64` platform support, ~15 GB free disk.
-
 ```bash
-# Build the Docker image (first time only)
+# Build the Docker image (first time only, or after Dockerfile changes)
 bin/builder.sh --build-docker
 
 # Run a full build
@@ -51,11 +66,9 @@ bin/builder.sh --shell
 bin/build.sh
 ```
 
-## Buildbox
+## Buildbox build
 
 Buildbox is a native arm64 Debian VM. Because there's no emulation overhead, it's significantly faster than Docker on Apple Silicon — typically 3–5× faster.
-
-**Prerequisites:** UTM (macOS) or any arm64 Debian host with SSH access. ~15 GB free disk on the VM.
 
 ### First-time setup
 
@@ -65,7 +78,7 @@ Create the VM using the bundled cloud-init config:
 bin/buildbox.sh create
 ```
 
-This provisions the VM with the right dependencies via cloud-init. Set the VM's IP in `.env` or add `buildbox` to `/etc/hosts`:
+This provisions the VM with the right dependencies via cloud-init. Set the VM's IP in `.env` as `BUILDBOX_HOST=<ip>` or add `buildbox` to `/etc/hosts`:
 
 ```bash
 echo "192.168.64.X  buildbox" | sudo tee -a /etc/hosts
@@ -87,7 +100,19 @@ bin/buildbox.sh ssh       # open an interactive shell
 
 The image lands in `artifacts/` on your local machine after `fetch`.
 
-## Verifying a build
+## Writing to SD card
+
+```bash
+# Decompress the image (keeps the .gz)
+gunzip -k artifacts/offlinelab-sdcard-*.img.gz
+
+# Write to SD card (replace diskN with your device)
+sudo dd if=artifacts/offlinelab-sdcard-*.img of=/dev/diskN bs=4M status=progress
+```
+
+On macOS, use `diskutil list` to identify the SD card device. Unmount it first with `diskutil unmountDisk /dev/diskN`.
+
+## Verification
 
 `bin/verify.sh` checks the artifacts without needing hardware:
 
@@ -105,8 +130,10 @@ It inspects partition layout, boot contents, initramfs structure, rootfs, system
 make offlinelab-<package>-dirclean
 ```
 
-Then run the build again.
+Then run the build again. Without this, your changes won't appear in the image.
 
-**First build takes very long** — expected. The first run compiles the full toolchain, kernel, and all packages from source. This takes 30–90 minutes depending on your machine. Subsequent builds only rebuild what changed.
+**First build takes very long** — expected. The first run downloads and compiles the full toolchain, kernel, and all packages from source. This takes 30–90 minutes depending on your machine and uses ~15 GB. Subsequent builds only rebuild what changed.
 
-**Docker build fails with `exec format error`** — Docker Desktop doesn't have the arm64 emulation layer enabled. Go to Docker Desktop → Settings → Features in development → Enable Rosetta for x86/amd64 emulation, or enable QEMU under experimental features.
+**Docker build fails with `exec format error`** — Docker Desktop doesn't have the arm64 emulation layer enabled. Go to Docker Desktop → Settings → Features in development → enable Rosetta for x86/amd64 emulation, or enable QEMU under experimental features.
+
+**Credentials in `.config` vs boot partition** — Build-time credentials (`.config` options) are baked into the image and present on every SD card flashed from that image. Boot-partition provisioning is per-card. Use build-time options for development; use boot-partition files for deployment. See [Configuration](configuration.md).

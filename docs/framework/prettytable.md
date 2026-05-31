@@ -19,4 +19,6 @@
 
 ### `prettytable::table`
 
+**Arguments:** exactly 1 argument(s)
+
 ---

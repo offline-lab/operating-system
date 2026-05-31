@@ -120,7 +120,7 @@
     <div class="section-inner">
       <div class="section-label">the platform</div>
       <h2 class="section-heading">What we're building</h2>
-      <p class="section-sub">Five components that together form a complete stack — from the OS running on the device to the tools you use to build and publish services.</p>
+      <p class="section-sub">Six components that together form a complete stack — from the OS running on the device to the tools you use to build and publish services.</p>
 
       <div class="components-grid">
 
@@ -151,9 +151,9 @@
           <span class="card-link">learn more →</span>
         </a>
 
-        <a class="component-card" href="/olpfctl/">
+        <a class="component-card" href="/pkgctl/">
           <div class="card-header">
-            <span class="card-name">olpfctl</span>
+            <span class="card-name">pkgctl</span>
             <span class="card-status status-planned">planned</span>
           </div>
           <p class="card-desc">The toolchain for building, signing, and publishing packages. Runs on Mac or Linux. Build a service, sign it, and push it to a repository or copy the artifact straight to local storage.</p>
@@ -165,7 +165,16 @@
             <span class="card-name">labctl</span>
             <span class="card-status status-planned">planned</span>
           </div>
-          <p class="card-desc">The on-device CLI for installing, running, and managing services. Handles service lifecycle, updates, and eventually orchestration across multiple nodes on the local network.</p>
+          <p class="card-desc">The on-device CLI for managing MoreOS. Handles system status, updates, reboots, network configuration, logs, and diagnostics.</p>
+          <span class="card-link">learn more →</span>
+        </a>
+
+        <a class="component-card" href="/appctl/">
+          <div class="card-header">
+            <span class="card-name">appctl</span>
+            <span class="card-status status-planned">planned</span>
+          </div>
+          <p class="card-desc">The on-device CLI for managing apps on MoreOS. Handles app lifecycle — install, start, stop, enable, disable, and remove portable services.</p>
           <span class="card-link">learn more →</span>
         </a>
 
@@ -194,21 +203,21 @@
         <div class="phase">
           <div class="phase-dot"></div>
           <div class="phase-content">
-            <div class="phase-title">Phase 2 — OLPF + olpfctl</div>
+            <div class="phase-title">Phase 2 — OLPF + pkgctl</div>
             <p class="phase-desc">The packaging spec and build toolchain. Define what a service looks like, how it's built, signed, and distributed — with or without internet access.</p>
             <div class="phase-links">
               <a class="phase-link" href="/olpf/">OLPF →</a>
-              <a class="phase-link" href="/olpfctl/">olpfctl →</a>
+              <a class="phase-link" href="/pkgctl/">pkgctl →</a>
             </div>
           </div>
         </div>
         <div class="phase">
           <div class="phase-dot"></div>
           <div class="phase-content">
-            <div class="phase-title">Phase 3 — labctl + repository</div>
-            <p class="phase-desc">On-device service management, the central package repository, and the foundations of multi-service orchestration across devices on the local network.</p>
+            <div class="phase-title">Phase 3 — appctl + repository</div>
+            <p class="phase-desc">On-device app management, the central package repository, and the foundations of multi-service orchestration across devices on the local network.</p>
             <div class="phase-links">
-              <a class="phase-link" href="/labctl/">labctl →</a>
+              <a class="phase-link" href="/appctl/">appctl →</a>
               <a class="phase-link" href="/repository/">repository →</a>
             </div>
           </div>

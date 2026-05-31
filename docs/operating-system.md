@@ -1,6 +1,6 @@
 # Operating System
 
-The base OS (working name: **MinOS**) is a minimal read-only Linux image built with Buildroot. Its job is to boot the hardware, provide connectivity, and host portable services.
+The base OS (**MoreOS**) is a minimal read-only Linux image built with Buildroot. Its job is to boot the hardware, provide connectivity, and host portable services.
 
 ## Design principles
 
@@ -14,7 +14,7 @@ The base OS (working name: **MinOS**) is a minimal read-only Linux image built w
 
 ## Build system
 
-MinOS is built with [Buildroot](https://buildroot.org/) using the Raspberry Pi foundation kernel and firmware. Builds run in Docker on macOS or on a native arm64 Debian VM (the "buildbox").
+MoreOS is built with [Buildroot](https://buildroot.org/) using the Raspberry Pi foundation kernel and firmware. Builds run in Docker on macOS or on a native arm64 Debian VM (the "buildbox").
 
 The [builder repository](https://github.com/offline-lab/builder) contains the Buildroot configuration, external tree, and tooling for producing SD card images.
 
@@ -87,4 +87,4 @@ The OS uses systemd for:
 - Mount management (overlayfs, data partition, boot partition)
 - Timer-based tasks (fake-hwclock save)
 - Boot success signaling for A/B updates
-- Portable service hosting (phase 3)
+- Portable service hosting

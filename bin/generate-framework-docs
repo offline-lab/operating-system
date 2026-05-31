@@ -455,7 +455,7 @@ def render_index(modules: list[Module], has_commands: bool) -> str:
         'on the Offline Lab OS. Scripts load it with `source framework || exit 1`.'
     )
     lines.append('')
-    lines.append('See [Framework Integration](../framework-integration/) for buildroot packaging details.')
+    lines.append('See [Building the OS](../builder/) for buildroot packaging details.')
     lines.append('')
 
     if has_commands:
@@ -501,44 +501,24 @@ def render_index(modules: list[Module], has_commands: bool) -> str:
 
 # ─── Nav patch ────────────────────────────────────────────────────────────────
 
-# Ordered module list for nav (most useful first)
 _NAV_ORDER = [
     'var', 'string', 'array', 'fs', 'net', 'depends', 'proc',
     'interact', 'cache', 'time', 'credentials', 'files', 'arguments',
     'prettytable', 'system', 'config', 'health', 'rauc', 'wifi',
     'ssh', 'ssl',
-    # internals last
     'core', 'import', 'logging', 'exit', 'debug', 'sanity',
 ]
 
-_MODULE_NAV_LABELS = {
-    'var':         'Framework: Variables',
-    'string':      'Framework: Strings',
-    'array':       'Framework: Arrays',
-    'fs':          'Framework: Filesystem',
-    'files':       'Framework: Files',
-    'arguments':   'Framework: Arguments',
-    'depends':     'Framework: Dependencies',
-    'interact':    'Framework: Interaction',
-    'proc':        'Framework: Process',
-    'time':        'Framework: Time',
-    'cache':       'Framework: Cache',
-    'net':         'Framework: Network',
-    'credentials': 'Framework: Credentials',
-    'ssh':         'Framework: SSH',
-    'ssl':         'Framework: SSL',
-    'system':      'Framework: System',
-    'config':      'Framework: Config',
-    'health':      'Framework: Health',
-    'rauc':        'Framework: RAUC',
-    'wifi':        'Framework: WiFi',
-    'prettytable': 'Framework: Prettytable',
-    'core':        'Framework: Core',
-    'import':      'Framework: Import',
-    'logging':     'Framework: Logging',
-    'exit':        'Framework: Exit',
-    'debug':       'Framework: Debug',
-    'sanity':      'Framework: Sanity',
+_NAV_LABELS = {
+    'var': 'Variables', 'string': 'Strings', 'array': 'Arrays',
+    'arguments': 'Arguments', 'fs': 'Filesystem', 'files': 'Files',
+    'net': 'Network', 'wifi': 'WiFi', 'ssh': 'SSH', 'ssl': 'SSL',
+    'proc': 'Process', 'depends': 'Dependencies', 'cache': 'Cache',
+    'time': 'Time', 'credentials': 'Credentials', 'interact': 'Interaction',
+    'prettytable': 'Prettytable', 'system': 'System', 'config': 'Config',
+    'health': 'Health', 'power': 'Power', 'rauc': 'RAUC',
+    'core': 'Core', 'import': 'Import', 'logging': 'Logging',
+    'exit': 'Exit', 'debug': 'Debug', 'sanity': 'Sanity',
 }
 
 
@@ -546,34 +526,33 @@ def patch_nav(toml_path: Path, module_names: list[str], has_commands: bool) -> N
     """Add framework nav entries to zensical.toml if not already present."""
     content = toml_path.read_text()
 
-    nav_entries: list[str] = []
-    nav_entries.append('  { "Framework" = "framework/index.md" },')
-
-    if has_commands:
-        nav_entries.append('  { "Framework: Commands" = "framework/commands.md" },')
-        nav_entries.append('  { "Framework: Integration" = "framework-integration.md" },')
-
-    ordered = [n for n in _NAV_ORDER if n in module_names]
-    ordered += [n for n in module_names if n not in ordered]
-
-    for name in ordered:
-        label = _MODULE_NAV_LABELS.get(name, f'Framework: {name.title()}')
-        nav_entries.append(f'  {{ "{label}" = "framework/{name}.md" }},')
-
-    new_entries = '\n'.join(nav_entries)
-
-    # Check if already patched
     if 'framework/index.md' in content:
         print('zensical.toml: framework nav entries already present — skipping patch')
         return
 
-    # Insert before the closing ] of nav
+    lines: list[str] = []
+    lines.append('  { "Framework" = [')
+    lines.append('    { "Overview" = "framework/index.md" },')
+    if has_commands:
+        lines.append('    { "Commands" = "framework/commands.md" },')
+    lines.append('    { "Reference" = [')
+
+    ordered = [n for n in _NAV_ORDER if n in module_names]
+    ordered += [n for n in module_names if n not in ordered]
+    for name in ordered:
+        label = _NAV_LABELS.get(name, name.title())
+        lines.append(f'      {{ "{label}" = "framework/{name}.md" }},')
+
+    lines.append('    ]},')
+    lines.append('  ]},')
+
+    nav_block = '\n'.join(lines)
     content = content.replace(
         ']\n\n[project.theme]',
-        f'{new_entries}\n]\n\n[project.theme]'
+        f'{nav_block}\n]\n\n[project.theme]'
     )
     toml_path.write_text(content)
-    print(f'zensical.toml: added {len(nav_entries)} framework nav entries')
+    print(f'zensical.toml: added framework nav entries ({len(ordered)} reference modules)')
 
 
 # ─── Main ─────────────────────────────────────────────────────────────────────

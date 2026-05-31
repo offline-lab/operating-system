@@ -1,19 +1,10 @@
-# Components
+# Service model
 
 ## OS packages
 
 The base OS is built from a set of focused Buildroot packages. Each is self-contained with its own scripts and systemd units.
 
-| Package | Purpose |
-|---|---|
-| `offlinelab-base` | Data partition setup, fake-hwclock, serial console, boot partition mount |
-| `offlinelab-usb-gadget` | USB composite gadget: ACM serial (ttyGS0) + ECM ethernet (usb0) |
-| `offlinelab-wifi` | WiFi via wpa_supplicant, credential provisioning |
-| `offlinelab-ssh` | Dropbear SSH, key-only auth, host key generation |
-| `offlinelab-zram` | Compressed RAM swap |
-| `offlinelab-disco` | Service discovery and name resolution (Phase 2) |
-
-See [Packages](packages.md) for details on each package and the provisioning pattern.
+OS-level packages are documented in [Packages](packages.md).
 
 ## Service model
 
@@ -23,7 +14,7 @@ Each service image contains everything it needs. Images are placed on `/data/por
 
 User data stays on `/data`, separate from the service image. Updating a service means replacing its image without losing data.
 
-## Planned services
+## Planned packages
 
 ### Knowledge
 
@@ -43,7 +34,7 @@ Video and music collections with HTTP and Bluetooth playback, photo gallery.
 
 ### Gaming
 
-Retro gaming service optimised for offline usage.
+Retro gaming package optimised for offline usage.
 
 ### Infrastructure
 
@@ -51,6 +42,6 @@ DNS for the local domain, DHCP (via travel router or on-device), Debian package 
 
 ## Offline concessions
 
-Services are designed around a "cutoff" moment, after which no new data can be fetched.
+Packages are designed around a "cutoff" moment, after which no new data can be fetched.
 
 Content databases like Wikipedia and maps are frozen at the last sync. Security updates stop arriving. The network compensates with strict firewall rules and known-client policies. Services must work indefinitely without upstream connectivity.

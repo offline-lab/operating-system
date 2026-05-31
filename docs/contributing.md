@@ -8,19 +8,26 @@ Offline Lab is an open-source community project under AGPL v3. Contributions are
 2. Read the repository README for build instructions.
 3. Check the issue tracker for open issues, or create one to discuss your idea before starting.
 
+For build setup and coding conventions, see the [Development guide](development.md).
+
 ## Repositories
 
 | Repository | Description |
 |---|---|
-| [website](https://github.com/offline-lab/website) | Documentation and project site |
-| [builder](https://github.com/offline-lab/builder) | Buildroot config and image build tooling |
-| [disco](https://github.com/offline-lab/disco) | Service discovery and name resolution |
-| services | Portable systemd service images (Phase 3, planned) |
+| [builder](https://github.com/offline-lab/builder) | MoreOS image builder (Buildroot), framework, labctl, and on-device tooling |
+| [disco](https://github.com/offline-lab/disco) | Service discovery and name resolution for offline networks |
+| services | Portable systemd service images (planned) |
 | sync | Data synchronization tools (planned) |
+
+## Framework
+
+The [Framework](framework/index.md) is the most actively developed part of the codebase. It's a Bash utility library installed on every MoreOS device. See the [framework contributor guide](https://github.com/offline-lab/builder/blob/main/framework/.claude/CLAUDE.md) for coding conventions, and run `bin/test-framework --lint` before submitting changes.
 
 ## Submitting a pull request
 
 ### 1. Fork and branch
+
+Use `feature/<short-description>` for new features, `fix/<short-description>` for bug fixes.
 
 ```bash
 git clone git@github.com:<your-username>/<repo>.git

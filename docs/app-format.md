@@ -1,7 +1,7 @@
 # App format spec
 
 !!! note "Work in progress"
-    This spec is being defined during Phase 4. The fields and structure described here are subject to change.
+    This spec is a work in progress. The fields and structure described here are subject to change.
 
 ## Overview
 
@@ -39,4 +39,4 @@ A `.olab` package is a single-file archive containing everything needed to insta
 - Portable service profile selection (`webservice`, `audio`, `network`)
 - `mkosi` support alongside Docker builds
 
-See [Phase 4 in the roadmap](roadmap.md#phase-4-app-packaging-foundation) for the full goals.
+See the [roadmap](roadmap.md) for the full goals.

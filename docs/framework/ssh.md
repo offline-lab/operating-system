@@ -2,7 +2,7 @@
 
 **Source:** `framework/library/ssh.sh`
 
-Generate a private key for SSH to instance
+Generate a private key using dropbearkey. Passphrase-protected keys are not supported by dropbear key generation. Writes <keyfile>.pub alongside the private key.
 
 !!! note "Return codes"
     All functions return `0` on success, `1` on failure, `2` on wrong argument count.
@@ -17,49 +17,11 @@ Generate a private key for SSH to instance
 
 ---
 
-### `ssh::start_agent`
-
-> Starting ssh-agent
-
-Start ssh agent
-
----
-
-### `ssh::stop_agent`
-
-> Killing ssh-agent
-
-Stop ssh agent
-
-**Arguments:** exactly 1 argument(s)
-
----
-
-### `ssh::add_key`
-
-> Adding key to ssh-agent
-
-Add key to ssh agent
-
-**Arguments:** at least 2 argument(s)
-
----
-
-### `ssh::rm_key`
-
-> Removing ssh key from ssh agent
-
-Remove key from ssh agent
-
-**Arguments:** exactly 2 argument(s)
-
----
-
 ### `ssh::connect`
 
 > Connecting over ssh to server
 
-Setup an SSH connection to the server
+Open an interactive SSH session
 
 **Arguments:** exactly 3 argument(s)
 
@@ -69,7 +31,7 @@ Setup an SSH connection to the server
 
 > Running command over ssh
 
-Run an SSH command
+Run a command over SSH
 
 **Arguments:** at least 4 argument(s)
 
@@ -99,7 +61,7 @@ Create SSH tunnel
 
 > Checking if port is available
 
-Check if the tunnel can be created
+Check if a port is available for a tunnel
 
 **Arguments:** exactly 1 argument(s)
 
