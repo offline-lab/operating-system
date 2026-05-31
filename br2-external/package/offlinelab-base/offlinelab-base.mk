@@ -66,10 +66,15 @@ define OFFLINELAB_BASE_INSTALL_TARGET_CMDS
 	ln -sf /etc/systemd/system/fake-hwclock.service \
 		$(TARGET_DIR)/etc/systemd/system/sysinit.target.wants/fake-hwclock.service
 
-	$(INSTALL) -D -m 0755 $(@D)/config/expand-data/expand-data.sh \
-		$(TARGET_DIR)/usr/local/bin/expand-data.sh
-	$(INSTALL) -D -m 0755 $(@D)/config/fake-hwclock/fake-hwclock.sh \
-		$(TARGET_DIR)/usr/local/bin/fake-hwclock.sh
+	$(INSTALL) -D -m 0755 $(@D)/init-expand-data \
+		$(TARGET_DIR)/usr/local/bin/init-expand-data
+	$(INSTALL) -D -m 0755 $(@D)/init-fake-hwclock \
+		$(TARGET_DIR)/usr/local/bin/init-fake-hwclock
+
+	$(INSTALL) -D -m 0644 $(@D)/systemd/service/power-profile.service \
+		$(TARGET_DIR)/etc/systemd/system/power-profile.service
+	ln -sf /etc/systemd/system/power-profile.service \
+		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/power-profile.service
 
 	$(INSTALL) -D -m 0644 $(@D)/systemd/service/psplash-quit.service \
 		$(TARGET_DIR)/etc/systemd/system/psplash-quit.service
@@ -91,6 +96,19 @@ define OFFLINELAB_BASE_INSTALL_TARGET_CMDS
 	echo ""                                          >> $(@D)/issue
 	$(INSTALL) -D -m 644 $(@D)/issue $(TARGET_DIR)/etc/issue
 	$(INSTALL) -D -m 644 $(@D)/issue $(TARGET_DIR)/etc/issue.net
+
+	$(INSTALL) -D -m 0440 $(@D)/sudoers/admin \
+		$(TARGET_DIR)/etc/sudoers.d/admin
+
+	# Admin home directory structure under /data (created at runtime by tmpfiles)
+	$(INSTALL) -d $(TARGET_DIR)/etc/tmpfiles.d
+	$(INSTALL) -m 0644 $(@D)/systemd/tmpfiles.d/offlinelab-admin.conf \
+		$(TARGET_DIR)/etc/tmpfiles.d/offlinelab-admin.conf
+
+	# Add /data/home/admin/bin to PATH for the admin user
+	$(INSTALL) -d $(TARGET_DIR)/etc/profile.d
+	printf 'export PATH="/data/home/admin/bin:$${PATH}"\n' \
+		> $(TARGET_DIR)/etc/profile.d/admin-bin.sh
 endef
 
 $(eval $(generic-package))

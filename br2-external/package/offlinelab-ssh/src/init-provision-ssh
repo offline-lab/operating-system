@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#      SPDX-License-Identifier: AGPL-3.0-only                                  #
+################################################################################
+# vi: ft=bash
+# shellcheck shell=bash disable=SC1091,SC2312
+set -euo pipefail
+
+source framework || exit 1
+
+readonly KEY_DIR="/data/config/ssh/dropbear"
+readonly HOST_KEY="${KEY_DIR}/dropbear_ed25519_host_key"
+readonly AUTH_KEYS="/data/home/admin/.ssh/authorized_keys"
+readonly BOOT_AUTH_KEYS="/boot/firmware/config/authorized_keys"
+
+function provision_ssh::main() {
+    log::trace "${FUNCNAME[0]}: provisioning SSH keys"
+
+    depends::check dropbearkey
+
+    mkdir -p "${KEY_DIR}"
+
+    if ! fs::is_file "${HOST_KEY}"; then
+        dropbearkey -t ed25519 -f "${HOST_KEY}"
+        log::info "${FUNCNAME[0]}: generated ed25519 host key"
+    fi
+
+    if ! fs::is_file "${AUTH_KEYS}" && fs::is_file "${BOOT_AUTH_KEYS}"; then
+        fs::ensure_dir "${AUTH_KEYS}"
+        cp "${BOOT_AUTH_KEYS}" "${AUTH_KEYS}"
+        chown 1000:1000 "${AUTH_KEYS}"
+        chmod 600 "${AUTH_KEYS}"
+        log::info "${FUNCNAME[0]}: provisioned authorized_keys from ${BOOT_AUTH_KEYS}"
+    fi
+}
+
+provision_ssh::main "${@}"

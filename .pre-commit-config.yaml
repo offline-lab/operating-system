@@ -1,0 +1,36 @@
+---
+# See https://pre-commit.com for more information
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-yaml
+        exclude: ^br2-external/
+      - id: check-json
+      - id: check-symlinks
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-executables-have-shebangs
+        exclude: ^br2-external/
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: end-of-file-fixer
+        exclude: ^br2-external/
+      - id: trailing-whitespace
+        exclude: ^br2-external/
+
+  # shellcheck — mandatory for framework/, never remove
+  - repo: https://github.com/shellcheck-py/shellcheck-pre-commit
+    rev: v0.10.0.1
+    hooks:
+      - id: shellcheck
+        args: [-s, bash, -x]
+        files: ^framework/.*\.(sh|bash)$|^framework/bin/
+
+  # shfmt — mandatory for framework/, never remove
+  - repo: https://github.com/scop/pre-commit-shfmt
+    rev: v3.10.0-1
+    hooks:
+      - id: shfmt
+        args: [-d, -i, 4, -ci]
+        files: ^framework/.*\.(sh|bash)$|^framework/bin/

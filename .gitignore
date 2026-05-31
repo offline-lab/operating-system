@@ -31,7 +31,18 @@ tmp/
 
 # OS
 .DS_Store
+*.pyc
 *.swp
 *.swo
 *~
 .rauc
+.cache/
+
+docs/public/docs/
+docs/public/images/
+docs/site/
+
+__pycache__/
+.venv/
+.env
+.envrc

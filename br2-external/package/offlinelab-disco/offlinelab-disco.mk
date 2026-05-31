@@ -77,14 +77,17 @@ define OFFLINELAB_DISCO_INSTALL_TARGET_CMDS
 	ln -sf /etc/systemd/system/provision-disco.service \
 		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/provision-disco.service
 
-	$(INSTALL) -D -m 0755 $(OFFLINELAB_DISCO_SRC_DIR)/config/provision-disco.sh \
-		$(TARGET_DIR)/usr/local/bin/provision-disco.sh
+	$(INSTALL) -D -m 0755 $(OFFLINELAB_DISCO_SRC_DIR)/init-provision-disco \
+		$(TARGET_DIR)/usr/local/bin/init-provision-disco
 
 	$(INSTALL) -D -m 0644 $(OFFLINELAB_DISCO_SRC_DIR)/config/config.yaml \
 		$(TARGET_DIR)/etc/disco/config.yaml
 
 	$(INSTALL) -D -m 0644 $(OFFLINELAB_DISCO_SRC_DIR)/systemd/service/disco-gps-broadcaster.service \
 		$(TARGET_DIR)/etc/systemd/system/disco-gps-broadcaster.service
+
+	$(INSTALL) -D -m 0644 $(OFFLINELAB_DISCO_SRC_DIR)/systemd/preset/80-offlinelab-disco.preset \
+		$(TARGET_DIR)/usr/lib/systemd/system-preset/80-offlinelab-disco.preset
 endef
 
 $(eval $(generic-package))

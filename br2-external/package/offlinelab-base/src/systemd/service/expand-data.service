@@ -17,7 +17,8 @@ ConditionPathExists=/data
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/bin/expand-data.sh
+Environment=PATH=/usr/lib/framework/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/usr/local/bin/init-expand-data
 RemainAfterExit=yes
 
 [Install]

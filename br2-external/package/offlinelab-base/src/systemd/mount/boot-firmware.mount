@@ -13,10 +13,9 @@
 [Unit]
 Description=Mount boot firmware partition
 DefaultDependencies=no
-After=dev-mmcblk0p1.device
 
 [Mount]
-What=/dev/mmcblk0p1
+What=LABEL=bootfs
 Where=/boot/firmware
 Type=vfat
 Options=ro,noatime

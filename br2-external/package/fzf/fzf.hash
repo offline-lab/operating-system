@@ -1,0 +1,3 @@
+# Hashes for fzf 0.61.1 prebuilt binaries.
+# Source: https://github.com/junegunn/fzf/releases/tag/v0.61.1
+sha256  25f6295f718b572ac2ff7de1ffa9e39e619f4f9587386d85bf5b647f0b98fd6b  fzf-0.61.1-linux_arm64.tar.gz

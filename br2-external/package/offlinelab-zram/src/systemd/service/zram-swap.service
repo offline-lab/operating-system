@@ -19,8 +19,9 @@ Before=shutdown.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/bin/zram-swap.sh start
-ExecStop=/usr/local/bin/zram-swap.sh stop
+Environment=PATH=/usr/lib/framework/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/usr/local/bin/init-zram-swap start
+ExecStop=/usr/local/bin/init-zram-swap stop
 RemainAfterExit=true
 
 [Install]

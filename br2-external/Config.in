@@ -20,4 +20,6 @@ menu "Offline Lab board options"
 	source "$BR2_EXTERNAL_OFFLINELAB_PATH/package/offlinelab-update/Config.in"
 	source "$BR2_EXTERNAL_OFFLINELAB_PATH/package/offlinelab-disco/Config.in"
 	source "$BR2_EXTERNAL_OFFLINELAB_PATH/package/offlinelab-portable/Config.in"
+	source "$BR2_EXTERNAL_OFFLINELAB_PATH/package/offlinelab-framework/Config.in"
+	source "$BR2_EXTERNAL_OFFLINELAB_PATH/package/fzf/Config.in"
 endmenu

@@ -1,6 +1,6 @@
 # Offline Lab OS — br2-builder
 
-Buildroot-based minimal OS for Raspberry Pi Zero 2W. A read-only "microvisor" designed to
+Buildroot-based minimal OS for Raspberry Pi Zero 2W. A read-only mini os designed to
 run systemd portable services from squashfs images. Built for offline, battery-powered use.
 
 Part of the [offline-lab.com](https://offline-lab.com) project.

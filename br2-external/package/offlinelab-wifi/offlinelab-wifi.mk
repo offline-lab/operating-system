@@ -28,10 +28,10 @@ define OFFLINELAB_WIFI_INSTALL_TARGET_CMDS
 		$(TARGET_DIR)/etc/systemd/system/wifi-setup.service
 	$(INSTALL) -D -m 0644 $(@D)/systemd/network/wlan0.network \
 		$(TARGET_DIR)/etc/systemd/network/wlan0.network
-	$(INSTALL) -D -m 0755 $(@D)/config/provision-wifi.sh \
-		$(TARGET_DIR)/usr/local/bin/provision-wifi.sh
-	$(INSTALL) -D -m 0755 $(@D)/config/wifi-setup.sh \
-		$(TARGET_DIR)/usr/local/bin/wifi-setup.sh
+	$(INSTALL) -D -m 0755 $(@D)/init-provision-wifi \
+		$(TARGET_DIR)/usr/local/bin/init-provision-wifi
+	$(INSTALL) -D -m 0755 $(@D)/init-wifi-setup \
+		$(TARGET_DIR)/usr/local/bin/init-wifi-setup
 	$(INSTALL) -D -m 0644 $(@D)/config/02w-wifi-fix.conf \
 		$(TARGET_DIR)/etc/modprobe.d/02w-wifi-fix.conf
 	mkdir -p $(TARGET_DIR)/etc/systemd/system/multi-user.target.wants

@@ -411,8 +411,9 @@ if [[ -f "${ROOTFS}" ]] && command -v mount &>/dev/null; then
         fi
 
         # Scripts
-        for script in usb-gadget.sh wifi-setup.sh zram-swap.sh expand-data.sh \
-            provision-wifi.sh provision-ssh.sh fake-hwclock.sh; do
+        for script in \
+            init-usb-gadget init-wifi-setup init-zram-swap init-expand-data \
+            init-provision-wifi init-provision-ssh init-fake-hwclock; do
             assert_exec "${ROOTFS_MNT}/usr/local/bin/${script}" "Script ${script} installed and executable"
         done
 
@@ -430,7 +431,7 @@ if [[ -f "${ROOTFS}" ]] && command -v mount &>/dev/null; then
         fi
         if [[ -f "${ROOTFS_MNT}/etc/systemd/system/dropbear.service" ]]; then
             assert_contains "${ROOTFS_MNT}/etc/systemd/system/dropbear.service" \
-                "Requires=provision-ssh" "dropbear requires provision-ssh (hard dep)"
+                "Requires=provision-ssh" "dropbear requires init-provision-ssh (hard dep)"
         fi
 
         # Overlay files
@@ -663,7 +664,7 @@ if [[ -f "${ROOTFS}" ]] && command -v mount &>/dev/null; then
         assert_file "${DISCO_MNT}/etc/disco/config.yaml" "default config.yaml"
         assert_file "${DISCO_MNT}/etc/systemd/system/disco-daemon.service" "disco-daemon.service unit"
         assert_file "${DISCO_MNT}/etc/systemd/system/provision-disco.service" "provision-disco.service unit"
-        assert_exec "${DISCO_MNT}/usr/local/bin/provision-disco.sh" "provision-disco.sh script"
+        assert_exec "${DISCO_MNT}/usr/local/bin/init-provision-disco" "provision-disco script"
         assert_link "${DISCO_MNT}/etc/systemd/system/multi-user.target.wants/disco-daemon.service" "disco-daemon enabled"
         assert_link "${DISCO_MNT}/etc/systemd/system/multi-user.target.wants/provision-disco.service" "provision-disco enabled"
 

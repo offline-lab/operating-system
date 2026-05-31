@@ -449,6 +449,11 @@ function cmd_sync() {
             "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_WORK}/.rauc/"
     fi
 
+    bb_rsync \
+        --exclude '.git' \
+        "${BASEDIR}/framework/" \
+        "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_WORK}/framework/"
+
     log "Sync complete"
 }
 

@@ -17,8 +17,9 @@ Wants=boot-firmware.mount
 
 [Service]
 Type=oneshot
+Environment=PATH=/usr/lib/framework/bin:/usr/sbin:/usr/bin:/sbin:/bin
 RemainAfterExit=yes
-ExecStart=/usr/local/bin/provision-wifi.sh
+ExecStart=/usr/local/bin/init-provision-wifi
 
 [Install]
 WantedBy=multi-user.target

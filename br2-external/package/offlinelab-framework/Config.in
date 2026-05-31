@@ -1,0 +1,19 @@
+config BR2_PACKAGE_OFFLINELAB_FRAMEWORK
+	bool "offlinelab-framework"
+	default y
+	depends on BR2_PACKAGE_OFFLINELAB_BASE
+	select BR2_PACKAGE_FILE
+	select BR2_PACKAGE_JQ
+	select BR2_PACKAGE_NCURSES
+	select BR2_PACKAGE_LIBCURL
+	select BR2_PACKAGE_LIBCURL_CURL
+	select BR2_PACKAGE_RAUC
+	select BR2_PACKAGE_WPA_SUPPLICANT
+	select BR2_PACKAGE_IPROUTE2
+	select BR2_PACKAGE_FZF
+	select BR2_PACKAGE_DROPBEAR
+	help
+	  Bash utility library and system management CLI for Offline Lab OS.
+	  Fetched from github.com/offline-lab/offline-lab-framework at build time.
+	  Installs library modules to /usr/lib/framework/ and labctl + subcommands
+	  to /usr/lib/framework/bin/ (added to PATH via /etc/profile.d/framework.sh).

@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#      SPDX-License-Identifier: AGPL-3.0-only                                  #
+################################################################################
+# vi: ft=bash
+# shellcheck shell=bash disable=SC1091,SC2312
+set -euo pipefail
+
+source framework || exit 1
+
+readonly WIFI_CONFIG="/data/config/wifi/wpa_supplicant.conf"
+
+function wifi_setup::main() {
+    log::trace "${FUNCNAME[0]}: starting wpa_supplicant"
+
+    if ! fs::is_file "${WIFI_CONFIG}"; then
+        exit::ok "${FUNCNAME[0]}: no config at ${WIFI_CONFIG}, exiting"
+    fi
+
+    exec /usr/sbin/wpa_supplicant \
+        -c "${WIFI_CONFIG}" \
+        -i wlan0
+}
+
+wifi_setup::main "${@}"

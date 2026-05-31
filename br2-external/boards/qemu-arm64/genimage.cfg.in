@@ -1,0 +1,61 @@
+image bootfs.vfat {
+    size = 32M
+    vfat {
+        label = "bootfs"
+        files = {
+#BOOT_FILES#
+        }
+    }
+}
+
+image qemu.img {
+    hdimage {
+        partition-table-type = "mbr"
+        align = 1M
+        extended-partition = 2
+    }
+
+    partition boot {
+        partition-type = 0xC
+        bootable = "yes"
+        image = "bootfs.vfat"
+    }
+
+    partition kernel-a {
+        partition-type = 0x83
+        size = 24M
+        image = "kernel-a.img"
+    }
+
+    partition rootfs-a {
+        partition-type = 0x83
+        image = "rootfs.ext4"
+    }
+
+    partition kernel-b {
+        partition-type = 0x83
+        size = 24M
+    }
+
+    partition rootfs-b {
+        partition-type = 0x83
+        size = 512M
+    }
+
+    partition bootstate {
+        partition-type = 0x83
+        size = 8M
+    }
+
+    partition overlay {
+        partition-type = 0x83
+        image = "overlay.ext4"
+        forced-primary = "yes"
+    }
+
+    partition data {
+        partition-type = 0x83
+        image = "data.ext4"
+        forced-primary = "yes"
+    }
+}

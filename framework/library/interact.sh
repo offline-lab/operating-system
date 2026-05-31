@@ -1,0 +1,138 @@
+#!/usr/bin/env bash
+# vi: ft=bash
+# shellcheck shell=bash disable=SC2312
+
+#
+# Request confirmation
+#
+
+function interact::prompt_bool() {
+    log::trace "${FUNCNAME[0]}: Asking the user for confirmation"
+
+    local OPTIND
+    local opts
+    local input
+    local prompt="Continue?"
+    local -A opts
+
+    while getopts ":y" opt; do
+        case "${opt}" in
+            y) opts[default_yes]=1 ;;
+            *) log::warning "${FUNCNAME[0]}: Unknown option specified: ${opt}" ;;
+        esac
+    done
+
+    shift $((OPTIND - 1))
+
+    if [[ -n "${opts[default_yes]:-}" ]]; then
+        prompt+=" [Y/n]"
+    else
+        prompt+=" [y/N]"
+    fi
+
+    if [[ -z "${BATS_TEST_FILENAME:-}" ]]; then
+        # Remove all input that was accidentally inserted during wait
+        read -r -d '' -t 0.1 -n 10000
+    fi
+
+    log::input "${prompt} -> " 0
+    read -r input
+
+    # Explicit yes
+    if [[ "${input}" =~ ^[Yy]$ ]]; then
+        return 0
+    fi
+
+    # Implicit yes
+    if [[ "${input}" == "" ]] && [[ -n "${opts[default_yes]:-""}" ]]; then
+        return 0
+    fi
+
+    # No
+    return 1
+}
+
+#
+# Ask for permissions
+#
+
+function interact::ask_for_permission() {
+    log::trace "${FUNCNAME[0]}: Asking for permissions"
+
+    while true; do
+        read -r -p "Continue? Y(es) / N(o)? -> " answer
+
+        [[ "${answer,,}" =~ ^y ]] && break
+
+        [[ "${answer,,}" =~ ^n ]] && return 1
+
+        printf 'Please answer Yes or No....\n\n'
+    done
+
+    return 0
+}
+
+#
+# Input
+#
+
+function interact::prompt_response() {
+    log::trace "${FUNCNAME[0]}: Asking the user for input"
+
+    [[ "${#}" -lt 1 ]] && return 2
+
+    local response=""
+    local def_arg="${2:-""}"
+
+    if [[ -z "${BATS_TEST_FILENAME:-""}" ]]; then
+        # Remove all input that was accidentally inserted during wait
+        read -r -d '' -t 0.1 -n 10000
+    fi
+
+    while :; do
+        log::input "${1} "
+
+        [[ -n "${def_arg}" ]] && [[ "${def_arg}" != "-" ]] && printf "[%s] " "${def_arg}"
+
+        read -p "> " -r response
+        [[ -n "${response}" ]] && break
+
+        if [[ -z "${response}" ]] && [[ -n "${def_arg}" ]]; then
+            response="${def_arg}"
+            break
+        fi
+    done
+
+    [[ "${response}" == "-" ]] && response=""
+
+    printf "%s\n" "${response}"
+}
+
+#
+# Check if -h or --help is given in arguments
+#
+
+function interact::usage() {
+    log::trace "${FUNCNAME[0]}: Checking if usage flag is present"
+
+    local input=" ${*}"
+
+    if arguments::in_args ' -h' "${input}" || arguments::in_args '--help' "${input}"; then
+        return 0
+    fi
+
+    return 1
+}
+
+#
+# Check if session is interactive
+#
+function interact::active() {
+    log::trace "${FUNCNAME[0]}: Checking if session is interactive"
+
+    if [[ $- == *i* ]]; then
+        return 0
+    fi
+
+    return 1
+}

@@ -19,8 +19,11 @@ Before=network.target
 ConditionPathExists=/data/config/wifi/wpa_supplicant.conf
 
 [Service]
-Type=simple
-ExecStart=/usr/local/bin/wifi-setup.sh
+Type=notify
+NotifyAccess=main
+WatchdogSec=30
+Environment=PATH=/usr/lib/framework/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/usr/local/bin/init-wifi-setup
 Restart=on-failure
 RestartSec=10
 

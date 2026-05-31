@@ -33,7 +33,7 @@ Minimal read-only microvisor that boots on Raspberry Pi Zero 2W.
 
 Strip the stock `bcm2711_defconfig` down to what the Pi Zero 2W actually needs.
 See [KERNEL.md](KERNEL.md) for detailed analysis and implementation plan.
-See [TASKS.md](TASKS.md) for current task tracking.
+Tasks tracked at https://github.com/orgs/offline-lab/projects/3
 
 ### Goals
 - Expanded kernel fragment that disables unused driver categories
@@ -159,24 +159,43 @@ Boot sequence:
 
 ---
 
-## Phase 3: Portable services
+## Phase 3: Portable services & extensions
 
-Systemd portable service infrastructure and tooling.
+Systemd portable service, sysext/confext, and security infrastructure.
+App images stored on `/data/apps/` as squashfs.
 
-### Goals
-- CLI tool for managing portable service images (install, start, stop, remove)
-- Service image repository format (squashfs images on /data/portable)
-- USB drive import/export of service images
-- Service manifest format (JSON): dependencies, config.txt requirements, network ports,
-  resource limits, required mounts
-- Service lifecycle management (enable on boot, health checks)
-- Separate repo for building portable service images
+### Phase 3.1: Enable portabled + sysext + confext (DONE)
+- `BR2_PACKAGE_SYSTEMD_PORTABLED=y`, `BR2_PACKAGE_SYSTEMD_SYSEXT=y`
+- New package `offlinelab-portable`: symlinks to /data/{apps,extensions,confexts},
+  modules-load.d for squashfs+loop
+- First-boot provisioning creates `/data/apps/`, `/data/extensions/`, `/data/confexts/`
 
-### Open questions
-- How to handle service dependencies (service A needs service B running)?
-- How to handle shared state between services?
-- USB drive auto-import: scan on insert or require manual trigger?
-- How to handle service image updates (delta updates or full replacement)?
+### Phase 3.2: dm-verity + AppArmor (DONE)
+- `CONFIG_DM_VERITY=m` with `CONFIG_DM_VERITY_VERIFY_ROOTHASH_SIG=y`
+- `BR2_PACKAGE_APPARMOR=y` + binutils (parser, aa-enabled, aa-exec)
+- `CONFIG_LSM="apparmor"`, `apparmor=1 security=apparmor` in cmdline
+- No cryptsetup on target — `veritysetup` is build-host/CLI-tool only
+
+### Phase 3.3: Hello-world test + profiles + hardening (DONE)
+- Hello-world portable service (squashfs, test-only) on data partition
+- Default portable profile: `ProtectSystem=strict`, `NoNewPrivileges=yes`,
+  `MemoryMax=128M`, `CPUQuota=50%`
+- `admin` user has full sudo (covers portablectl/sysext/confext)
+
+### Architecture
+- Portable images: squashfs on `/data/apps/`, symlinked from `/var/lib/portables`
+- System extensions: overlay `/usr/` from `/data/extensions/`
+- Config extensions: overlay `/etc/` from `/data/confexts/`
+- dm-verity: kernel verifies image integrity, root hash signed with project key
+- AppArmor: portable services can ship their own profiles
+- Portabled/sysextd are D-Bus socket-activated (zero idle cost)
+- Overlayfs caveat: attached services are per-slot (A/B), images persist across slots
+
+### Future (separate repo)
+- CLI wrapper around portablectl for app management
+- Image signing workflow with dm-verity
+- USB drive import/export
+- Service manifest format, dependencies, lifecycle
 
 ---
 

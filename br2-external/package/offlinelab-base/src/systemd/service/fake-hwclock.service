@@ -19,9 +19,10 @@ Conflicts=shutdown.target
 
 [Service]
 Type=oneshot
+Environment=PATH=/usr/lib/framework/bin:/usr/sbin:/usr/bin:/sbin:/bin
 RemainAfterExit=yes
-ExecStart=/usr/local/bin/fake-hwclock.sh load
-ExecStop=/usr/local/bin/fake-hwclock.sh save
+ExecStart=/usr/local/bin/init-fake-hwclock load
+ExecStop=/usr/local/bin/init-fake-hwclock save
 
 [Install]
 WantedBy=sysinit.target
