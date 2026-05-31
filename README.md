@@ -122,21 +122,21 @@ sudo dd if=artifacts/offlinelab-sdcard-*.img of=/dev/diskN bs=4M status=progress
 
 ## Config provisioning
 
-Configuration files placed on the boot partition (FAT32, accessible from any OS) are
-automatically copied to `/data/` on first boot. The persistent copy is authoritative —
-to re-provision, delete the persistent copy and place a new file on boot.
+Configuration files placed in the `config/` directory on the boot partition (FAT32,
+accessible from any OS) are provisioned to `/data/` on first boot. The persistent copy
+is authoritative — to re-provision, delete the persistent copy and place a new file on boot.
 
 ```
-/boot/firmware/wpa_supplicant.conf  →  /data/config/wifi/wpa_supplicant.conf
-/boot/firmware/authorized_keys      →  /data/home/app/.ssh/authorized_keys
+/boot/firmware/config/wpa_supplicant.conf  →  /data/config/wifi/wpa_supplicant.conf
+/boot/firmware/config/authorized_keys      →  /data/home/admin/.ssh/authorized_keys
 ```
 
 ## WiFi setup
 
-Place a `wpa_supplicant.conf` file on the boot partition:
+Place a `wpa_supplicant.conf` file in the `config/` directory on the boot partition:
 
 ```
-ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+ctrl_interface=DIR=/run/wpa_supplicant GROUP=netdev
 update_config=1
 country=NL
 
@@ -146,25 +146,30 @@ network={
 }
 ```
 
+**Multi-network:** drop multiple `wpa_supplicant-*.conf` files (e.g. `wpa_supplicant-home.conf`,
+`wpa_supplicant-work.conf`). They are merged in alphabetical order; control priority via the
+`priority=` field within each `network {}` block.
+
 Or configure WiFi at build time via `.config`:
 ```
 BR2_PACKAGE_OFFLINELAB_WIFI_WPA_CREATE=y
 BR2_PACKAGE_OFFLINELAB_WIFI_WPA_SSID="your-network"
 BR2_PACKAGE_OFFLINELAB_WIFI_WPA_PASSWORD="your-password"
+BR2_PACKAGE_OFFLINELAB_WIFI_WPA_COUNTRY="NL"
 ```
 
 ## SSH access
 
 SSH is provided by dropbear with key-only authentication (no passwords).
 
-Place an `authorized_keys` file on the boot partition, or configure at build time:
+Place an `authorized_keys` file in `config/` on the boot partition, or configure at build time:
 ```
 BR2_PACKAGE_OFFLINELAB_SSH_CREATE_AUTHORIZED_KEYS=y
 BR2_PACKAGE_OFFLINELAB_SSH_CREATE_AUTHORIZED_KEYS_CONTENT="ssh-ed25519 AAAA... you@host"
 ```
 
 Host keys are generated on first boot and persist at `/data/config/ssh/dropbear/`.
-Connect as the `app` user (uid 1000, passwordless sudo).
+Connect as the `admin` user (uid 1000, passwordless sudo).
 
 ## Console access
 
@@ -180,13 +185,21 @@ USB also provides an ethernet interface (usb0) at `10.55.0.1/24` with DHCP serve
 Persistent storage at `/data`:
 ```
 /data/
-├── config/          # provisioned system config
-│   ├── wifi/        # wpa_supplicant.conf
-│   ├── ssh/         # dropbear host keys
-│   └── fake-hwclock.data
-├── home/app/        # app user home directory
-└── portable/        # systemd portable service images (Phase 3)
+├── config/                    # provisioned system config
+│   ├── wifi/                  # wpa_supplicant.conf
+│   ├── ssh/dropbear/          # dropbear host keys
+│   └── fake-hwclock.data      # last-known time (persisted each shutdown)
+├── home/admin/                # admin user home directory
+│   ├── .ssh/authorized_keys   # provisioned from boot partition
+│   ├── .config/
+│   └── bin/                   # user scripts, on PATH
+├── apps/                      # systemd portable service images (.raw)
+├── extensions/                # systemd sysext images
+└── confexts/                  # systemd confext images
 ```
+
+`/var/lib/portables`, `/var/lib/extensions`, and `/var/lib/confexts` are symlinked
+to their `/data/` counterparts so images survive across reboots.
 
 The overlayfs upper/work dirs live on the dedicated overlay partition (p3),
 not on `/data`. Each slot gets its own directory (`/overlay/a/`, `/overlay/b/`)
@@ -199,13 +212,15 @@ scripts, and config:
 
 | Package | Purpose |
 |---------|---------|
-| `offlinelab-base` | Boot-firmware mount, data partition expansion, fake-hwclock, serial console, /etc/issue |
+| `offlinelab-base` | Boot-firmware mount, data partition expansion, fake-hwclock, power profile, serial console, /etc/issue |
+| `offlinelab-framework` | Bash utility library and `labctl` CLI — installed to `/usr/lib/framework/` |
 | `offlinelab-usb-gadget` | USB composite gadget (ACM serial + ECM ethernet), ttyGS0, usb0 |
 | `offlinelab-wifi` | WiFi via wpa_supplicant, config provisioning from boot partition |
 | `offlinelab-ssh` | Dropbear SSH server, key-only auth, key provisioning from boot partition |
 | `offlinelab-zram` | Compressed RAM swap for low-memory operation |
-| `offlinelab-update` | RAUC A/B update integration, mark-good service — Phase 1 (WIP) |
-| `offlinelab-disco` | Service discovery, NSS name resolution, time sync — Phase 2 |
+| `offlinelab-portable` | Systemd portable services, sysext, and confext support; `/data/apps` symlinks |
+| `offlinelab-update` | RAUC A/B OTA update integration, mark-good service |
+| `offlinelab-disco` | Service discovery, NSS name resolution, time sync |
 
 ## Verification
 
@@ -217,6 +232,15 @@ Inspects built artifacts without hardware: partition layout, boot contents, init
 rootfs (systemd units, scripts, users), and kernel config.
 
 ## Documentation
+
+The documentation site is built with [Zensical](https://zensical.dev) and deployed to
+GitHub Pages on every push to `main`.
+
+```bash
+uv run bin/docs.py          # build site to docs/public/
+uv run bin/docs.py serve    # serve locally on :8000
+bin/generate-framework-docs # regenerate framework API reference (docs/framework/)
+```
 
 - [docs/PHASES.md](docs/PHASES.md) — development roadmap
 - [docs/KERNEL.md](docs/KERNEL.md) — kernel strategy and trimming plan
