@@ -12,7 +12,7 @@
 
 [Unit]
 Description=Dropbear SSH server
-After=provision-ssh.service network.target
+After=provision-ssh.service systemd-networkd.service
 Requires=provision-ssh.service
 
 [Service]

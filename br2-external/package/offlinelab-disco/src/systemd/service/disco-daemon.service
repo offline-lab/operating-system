@@ -11,19 +11,35 @@
 ################################################################################
 
 [Unit]
-Description=Disco discovery daemon
+Description=Disco - Service Discovery Daemon for offline networks
+Documentation=https://github.com/offline-lab/disco
 After=network-online.target provision-disco.service
 Wants=network-online.target provision-disco.service
 
 [Service]
-Type=simple
+Type=notify
 User=disco
 Group=disco
 ExecStart=/usr/bin/disco-daemon --config /data/config/disco/config.yaml
 Restart=on-failure
-RestartSec=10
+RestartSec=5
+LimitNOFILE=65536
 RuntimeDirectory=disco
+RuntimeDirectoryMode=0750
+ConfigurationDirectory=disco
+ConfigurationDirectoryMode=0750
+StateDirectory=disco
+StateDirectoryMode=0750
+CapabilityBoundingSet=CAP_NET_RAW CAP_NET_BIND_SERVICE CAP_SYS_TIME
 AmbientCapabilities=CAP_NET_RAW CAP_NET_BIND_SERVICE CAP_SYS_TIME
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadOnlyPaths=/data/config/disco
+ReadWritePaths=/run/disco /var/lib/disco
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target

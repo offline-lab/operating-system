@@ -43,12 +43,12 @@ if [[ -f "${TARGET_DIR}/usr/lib/libnss_disco.so.2" ]]; then
     fi
 fi
 
-# QEMU: configure eth0 (virtio-net) with DHCP via systemd-networkd
-# pi-zero-2w is WiFi-only; no eth0 there. This file only matters on QEMU.
+# QEMU: configure the virtio-net interface with DHCP via systemd-networkd.
+# Match by driver so dummy0 and sit0 are not picked up by this rule.
 mkdir -p "${TARGET_DIR}/etc/systemd/network"
 cat > "${TARGET_DIR}/etc/systemd/network/10-eth0.network" <<'EOF'
 [Match]
-Name=eth0
+Driver=virtio_net
 
 [Network]
 DHCP=yes

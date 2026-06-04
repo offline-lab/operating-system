@@ -61,6 +61,9 @@ function gen_config() {
     # Boot partition for QEMU: boot.scr + initramfs only.
     # u-boot.bin is passed directly to QEMU via -bios, not stored on disk.
     local -a files=("boot.scr" "initramfs.cpio.gz")
+    if [[ -d "${BINARIES_DIR}/config" ]] && [[ -n "$(ls -A "${BINARIES_DIR}/config" 2>/dev/null)" ]]; then
+        files+=("config")
+    fi
     local boot_files="$(printf '\\t\\t\\t"%s",\\n' "${files[@]}")"
     sed "s|#BOOT_FILES#|${boot_files}|" "${BOARD_DIR}/genimage.cfg.in" > "${output}"
 }

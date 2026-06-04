@@ -1,0 +1,19 @@
+Drop the install-data-hook creation of var/run/dbus in cross builds.
+
+In a merged-usr image var/run is a symlink to ../run (a tmpfs).  The
+directory does not exist at image-assembly time, so both mkinstalldirs and
+mkdir -p fail when building with BR2_ROOTFS_MERGED_USR=y.
+
+The directory is created at runtime by systemd-tmpfiles (dbus.conf) so
+omitting it from the install hook has no functional impact.
+
+--- a/bus/Makefile.am
++++ b/bus/Makefile.am
+@@ -185,7 +185,6 @@ install-data-hook:
+ 	$(mkinstalldirs) $(DESTDIR)$(dbusdatadir)/session.d
+ 	$(mkinstalldirs) $(DESTDIR)$(dbusdatadir)/services
+ if DBUS_UNIX
+-	$(mkinstalldirs) $(DESTDIR)$(localstatedir)/run/dbus
+ 	$(mkinstalldirs) $(DESTDIR)$(dbusdatadir)/system.d
+ 	$(mkinstalldirs) $(DESTDIR)$(dbusdatadir)/system-services
+ endif

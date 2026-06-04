@@ -15,6 +15,7 @@
 set -euo pipefail
 
 source framework || exit 1
+import files
 
 readonly KEY_DIR="/data/config/ssh/dropbear"
 readonly HOST_KEY="${KEY_DIR}/dropbear_ed25519_host_key"
@@ -33,12 +34,11 @@ function provision_ssh::main() {
         log::info "${FUNCNAME[0]}: generated ed25519 host key"
     fi
 
-    if ! fs::is_file "${AUTH_KEYS}" && fs::is_file "${BOOT_AUTH_KEYS}"; then
+    if fs::is_file "${BOOT_AUTH_KEYS}"; then
         fs::ensure_dir "${AUTH_KEYS}"
-        cp "${BOOT_AUTH_KEYS}" "${AUTH_KEYS}"
+        files::append_unique_lines "${BOOT_AUTH_KEYS}" "${AUTH_KEYS}"
         chown 1000:1000 "${AUTH_KEYS}"
         chmod 600 "${AUTH_KEYS}"
-        log::info "${FUNCNAME[0]}: provisioned authorized_keys from ${BOOT_AUTH_KEYS}"
     fi
 }
 

@@ -1,0 +1,19 @@
+# Offline Lab OS — USB OTA update trigger
+#
+# When a USB mass storage partition appears with a recognisable filesystem,
+# ask systemd to start usb-update@<device>.service.  That service mounts the
+# drive, looks for a single *.raucb bundle, and calls `rauc install`.
+#
+# Constraints:
+#   - DEVTYPE=="partition": only trigger on partitions, not the raw disk device.
+#     If the drive has no partition table (formatted directly), it won't be
+#     detected.  Most USB drives are partitioned; adjust if needed.
+#   - The Pi Zero 2W DWC2 USB port must be in host mode (not gadget mode) for
+#     USB drives to appear.  See offlinelab-usb-gadget for mode switching.
+
+ACTION=="add", \
+    SUBSYSTEM=="block", \
+    ENV{ID_BUS}=="usb", \
+    ENV{DEVTYPE}=="partition", \
+    TAG+="systemd", \
+    ENV{SYSTEMD_WANTS}+="usb-update@%k.service"

@@ -10,5 +10,8 @@
 #      SPDX-License-Identifier: AGPL-3.0-only                                  #
 ################################################################################
 
+Defaults !fqdn
+Defaults !lecture
+
 admin ALL=(ALL) ALL
 admin ALL=(root) NOPASSWD: /usr/lib/framework/bin/labctl-su

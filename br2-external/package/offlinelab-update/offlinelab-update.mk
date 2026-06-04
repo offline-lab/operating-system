@@ -41,6 +41,15 @@ define OFFLINELAB_UPDATE_INSTALL_TARGET_CMDS
 		$(TARGET_DIR)/etc/systemd/system/rauc-mark-good.service
 	ln -sf /etc/systemd/system/rauc-mark-good.service \
 		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/rauc-mark-good.service
+
+	$(INSTALL) -D -m 0755 $(@D)/init-usb-update \
+		$(TARGET_DIR)/usr/local/bin/init-usb-update
+
+	$(INSTALL) -D -m 0644 $(@D)/systemd/service/usb-update@.service \
+		$(TARGET_DIR)/etc/systemd/system/usb-update@.service
+
+	$(INSTALL) -D -m 0644 $(@D)/udev/99-offlinelab-usb-update.rules \
+		$(TARGET_DIR)/usr/lib/udev/rules.d/99-offlinelab-usb-update.rules
 endef
 
 $(eval $(generic-package))

@@ -19,10 +19,17 @@ source framework || exit 1
 function usb_gadget::main() {
     log::trace "${FUNCNAME[0]}: configuring USB composite gadget"
 
-    # If USB devices are connected (keyboard, mouse, etc.), the port is in host
-    # mode and we must not switch it to gadget mode — that would kill the device.
-    if ls /sys/bus/usb/devices/[0-9]*/product &>/dev/null; then
-        exit::ok "${FUNCNAME[0]}: USB device(s) connected, staying in host mode"
+    # If the DWC2 is already in host mode (USB device connected), do not switch
+    # to gadget mode — writing to UDC while the host controller is active causes
+    # dwc2_hc_halt() failures that kill both the USB device and the WiFi IRQ path.
+    #
+    # Read the mode from the DWC2 sysfs node directly rather than checking for
+    # enumerated devices: the product sysfs file only appears after full
+    # enumeration, which loses the race against sysinit on faster kernels.
+    local dwc2_mode
+    dwc2_mode="$(cat /sys/bus/platform/devices/3f980000.usb/mode 2>/dev/null || true)"
+    if [[ "${dwc2_mode}" == "host" ]]; then
+        exit::ok "${FUNCNAME[0]}: DWC2 is in host mode — USB device connected, skipping gadget setup"
     fi
 
     local udc

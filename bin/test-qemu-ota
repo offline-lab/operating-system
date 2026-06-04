@@ -1,0 +1,385 @@
+#!/usr/bin/env bash
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#      SPDX-License-Identifier: AGPL-3.0-only                                  #
+################################################################################
+# vi: ft=bash
+# shellcheck shell=bash
+#
+# End-to-end RAUC A/B OTA update test using QEMU arm64.
+#
+# Test sequence:
+#   1. Fresh boot — verify system is on slot A
+#   2. Run init-usb-update with an update image → installs to slot B, reboots
+#   3. After reboot — verify system is on slot B and rauc-mark-good ran
+#   4. "Downgrade": run init-usb-update again → installs to slot A, reboots
+#   5. After reboot — verify back on slot A
+#
+# Prerequisites (macOS):
+#   brew install qemu
+#
+# Usage:
+#   bin/test-qemu-ota            # uses existing artifacts/qemu/
+#   bin/test-qemu-ota --build    # runs qemu-build + qemu-fetch first
+#
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${0}")/.." && pwd)"
+BASEDIR="${REPO_ROOT}"
+ARTIFACTS="${REPO_ROOT}/artifacts/qemu"
+TEST_DIR="/tmp/qemu-ota-test-$$"
+SSH_KEY="${REPO_ROOT}/.ssh/builder"
+SSH_PORT=2222
+SSH_ADMIN=(
+    ssh -i "${SSH_KEY}"
+    -o IdentitiesOnly=yes
+    -o IdentityAgent=none
+    -o StrictHostKeyChecking=no
+    -o UserKnownHostsFile=/dev/null
+    -o LogLevel=ERROR
+    -o ConnectTimeout=30
+    -o BatchMode=yes
+    -p "${SSH_PORT}"
+    admin@localhost
+)
+QEMU_PID_FILE="${TEST_DIR}/qemu.pid"
+QEMU_LOG="${TEST_DIR}/qemu.log"
+PASS=0
+FAIL=0
+
+# shellcheck source=lib/common.sh disable=SC1091
+source "$(dirname "${0}")/lib/common.sh"
+
+################################################################################
+# Helpers
+################################################################################
+
+function pass_check() {
+    PASS=$((PASS + 1))
+    printf '  \e[1;32m✓\e[0m %s\n' "${*}"
+}
+
+function fail_check() {
+    FAIL=$((FAIL + 1))
+    printf '  \e[1;31m✗\e[0m %s\n' "${*}"
+}
+
+function assert_eq() {
+    local label="${1}" got="${2}" want="${3}"
+    if [[ "${got}" == "${want}" ]]; then
+        pass_check "${label}: got '${got}'"
+    else
+        fail_check "${label}: got '${got}', want '${want}'"
+    fi
+}
+
+# Run a command as admin on the guest; pipe sudo password via stdin
+function guest_cmd() {
+    "${SSH_ADMIN[@]}" "${@}"
+}
+
+function guest_sudo() {
+    echo "offlinelab" | "${SSH_ADMIN[@]}" "sudo -S -k ${*} 2>/dev/null"
+}
+
+function wait_for_ssh() {
+    log "Waiting for SSH on port ${SSH_PORT}..."
+    local attempt=0
+    while [[ ${attempt} -lt 120 ]]; do
+        if "${SSH_ADMIN[@]}" true 2>/dev/null; then
+            log "SSH available (attempt $((attempt + 1)))"
+            return 0
+        fi
+        attempt=$((attempt + 1))
+        sleep 5
+    done
+    fail_check "SSH not available after 600s"
+    return 1
+}
+
+function wait_for_ssh_gone() {
+    log "Waiting for system to shut down..."
+    local attempt=0
+    while [[ ${attempt} -lt 30 ]]; do
+        if ! "${SSH_ADMIN[@]}" true 2>/dev/null; then
+            return 0
+        fi
+        attempt=$((attempt + 1))
+        sleep 3
+    done
+    return 0 # gone or timed out, proceed either way
+}
+
+function current_slot() {
+    guest_cmd "grep -o 'rauc.slot=[AB]' /proc/cmdline | cut -d= -f2" 2>/dev/null ||
+        echo "UNKNOWN"
+}
+
+################################################################################
+# Image preparation (runs on buildbox)
+################################################################################
+
+function prepare_images() {
+    log "Verifying SSH key exists..."
+    if [[ ! -f "${SSH_KEY}" ]]; then
+        log_err "Builder SSH key not found: ${SSH_KEY}"
+        exit 1
+    fi
+
+    log "Preparing update drive on buildbox..."
+    "${BASEDIR}/bin/buildbox.sh" ssh "bash -s" <<'REMOTE'
+set -euo pipefail
+
+ARTIFACTS="${HOME}/artifacts/qemu"
+TEST="${HOME}/work-ota-test"
+mkdir -p "${TEST}"
+
+# ── 1. Verify RAUC bundle exists ───────────────────────────────────────────────
+if [[ ! -f "${ARTIFACTS}/offlinelab-update.raucb" ]]; then
+    echo "ERROR: ${ARTIFACTS}/offlinelab-update.raucb not found" >&2
+    echo "       Ensure .rauc/signing.key exists and rebuild with --build" >&2
+    exit 1
+fi
+
+# ── 2. Create update drive image (ext4 with the RAUC bundle) ───────────────────
+BUNDLE_DIR=$(mktemp -d)
+cp "${ARTIFACTS}/offlinelab-update.raucb" "${BUNDLE_DIR}/"
+
+BUNDLE_SIZE_MiB=$(( ( $(stat -c%s "${ARTIFACTS}/offlinelab-update.raucb") / 1048576 ) + 64 ))
+
+dd if=/dev/zero of="${TEST}/update-drive.img" bs=1M count="${BUNDLE_SIZE_MiB}" status=none
+/sbin/mkfs.ext4 -q -d "${BUNDLE_DIR}" -L offlinelab-update "${TEST}/update-drive.img"
+rm -rf "${BUNDLE_DIR}"
+
+echo "Update drive image created (${BUNDLE_SIZE_MiB}M)"
+ls -lh "${TEST}/"
+REMOTE
+
+    log "Fetching update drive from buildbox..."
+    "${BASEDIR}/bin/buildbox.sh" ssh "cat /home/builder/work-ota-test/update-drive.img" \
+        > "${TEST_DIR}/update-drive.img"
+
+    log "Test images ready"
+}
+
+################################################################################
+# QEMU lifecycle
+################################################################################
+
+function start_qemu() {
+    log "Starting QEMU (serial log: ${QEMU_LOG})..."
+    qemu-system-aarch64 \
+        -machine virt \
+        -cpu cortex-a53 \
+        -m 512M \
+        -smp 4 \
+        -bios "${ARTIFACTS}/u-boot.bin" \
+        -drive "file=${ARTIFACTS}/qemu.img,format=raw,if=virtio,id=hd0" \
+        -drive "file=${TEST_DIR}/update-drive.img,format=raw,if=virtio,id=hd1,read-only=on" \
+        -netdev "user,id=net0,hostfwd=tcp::${SSH_PORT}-:22" \
+        -device "virtio-net-pci,netdev=net0" \
+        -chardev "file,id=serial0,path=${QEMU_LOG}" \
+        -serial "chardev:serial0" \
+        -monitor none \
+        -display none \
+        >/dev/null 2>&1 &
+
+    echo "${!}" >"${QEMU_PID_FILE}"
+    local qemu_pid="${!}"
+    log "QEMU PID: ${qemu_pid}"
+}
+
+function stop_qemu() {
+    if [[ -f "${QEMU_PID_FILE}" ]]; then
+        local pid
+        pid="$(cat "${QEMU_PID_FILE}")"
+        kill "${pid}" 2>/dev/null || true
+        wait "${pid}" 2>/dev/null || true
+        rm -f "${QEMU_PID_FILE}"
+    fi
+}
+
+################################################################################
+# Cleanup
+################################################################################
+
+function cleanup() {
+    local exit_code="${?}"
+    stop_qemu
+    if [[ "${FAIL}" -eq 0 && "${exit_code}" -eq 0 ]]; then
+        rm -rf "${TEST_DIR}"
+        "${BASEDIR}/bin/buildbox.sh" ssh "rm -rf \${HOME}/work-ota-test" 2>/dev/null || true
+    else
+        printf '\n\e[1;33m>>> Artefacts preserved for post-mortem:\e[0m\n'
+        printf '    Serial log:  %s\n' "${QEMU_LOG}"
+        printf '    Test dir:    %s\n\n' "${TEST_DIR}"
+    fi
+}
+trap cleanup EXIT
+
+################################################################################
+# Test phases
+################################################################################
+
+function phase_1_initial_slot() {
+    printf '\n\e[1;97m=== Phase 1: Initial state ===\e[0m\n'
+
+    local slot
+    slot="$(current_slot)"
+    assert_eq "Initial slot" "${slot}" "A"
+
+    local rauc_status
+    rauc_status="$(guest_sudo "rauc status")"
+    if echo "${rauc_status}" | grep -q "good"; then
+        pass_check "RAUC slot A marked good"
+    else
+        fail_check "RAUC slot A not marked good (rauc-mark-good may not have run yet)"
+    fi
+}
+
+function phase_2_update_to_b() {
+    printf '\n\e[1;97m=== Phase 2: OTA update → slot B ===\e[0m\n'
+
+    log "Starting usb-update@vdb.service (may take several minutes)..."
+
+    local rc=0
+    guest_sudo "systemctl start usb-update@vdb.service" || rc="${?}"
+
+    if [[ "${rc}" -eq 0 ]]; then
+        pass_check "usb-update@vdb.service completed"
+    else
+        fail_check "usb-update@vdb.service failed (rc=${rc})"
+        guest_sudo "journalctl -n 50 --no-pager -u 'usb-update@vdb.service'" 2>/dev/null || true
+        return
+    fi
+
+    log "Waiting for reboot..."
+    wait_for_ssh_gone
+    wait_for_ssh
+
+    local slot
+    slot="$(current_slot)"
+    assert_eq "After update: active slot" "${slot}" "B"
+
+    # Verify rauc-mark-good ran in the new slot
+    local rauc_status
+    rauc_status="$(guest_sudo "rauc status")"
+    if echo "${rauc_status}" | grep -q "good"; then
+        pass_check "Slot B marked good after reboot"
+    else
+        fail_check "Slot B not marked good"
+    fi
+
+    # Verify the update log on the device
+    if guest_cmd "test -f /data/config/update.log" 2>/dev/null; then
+        pass_check "/data/config/update.log created"
+        local log_entry
+        log_entry="$(guest_cmd "grep SUCCESS /data/config/update.log" 2>/dev/null || echo '')"
+        if [[ -n "${log_entry}" ]]; then
+            pass_check "update.log records SUCCESS"
+        else
+            fail_check "update.log missing SUCCESS entry"
+        fi
+    else
+        fail_check "/data/config/update.log not found"
+    fi
+}
+
+function phase_3_downgrade_to_a() {
+    printf '\n\e[1;97m=== Phase 3: Downgrade → slot A ===\e[0m\n'
+
+    log "Starting usb-update@vdb.service from slot B..."
+    local rc=0
+    guest_sudo "systemctl start usb-update@vdb.service" || rc="${?}"
+
+    if [[ "${rc}" -eq 0 ]]; then
+        pass_check "Downgrade: usb-update@vdb.service completed"
+    else
+        fail_check "Downgrade: usb-update@vdb.service failed (rc=${rc})"
+        guest_sudo "journalctl -n 50 --no-pager -u 'usb-update@vdb.service'" 2>/dev/null || true
+        return
+    fi
+
+    log "Waiting for reboot..."
+    wait_for_ssh_gone
+    wait_for_ssh
+
+    local slot
+    slot="$(current_slot)"
+    assert_eq "After downgrade: active slot" "${slot}" "A"
+
+    # rauc status should show both slots as good after two successful updates
+    local rauc_status
+    rauc_status="$(guest_sudo "rauc status")"
+    if echo "${rauc_status}" | grep -q "good"; then
+        pass_check "Slot A marked good after downgrade"
+    else
+        fail_check "Slot A not marked good after downgrade"
+    fi
+}
+
+################################################################################
+# Main
+################################################################################
+
+function main() {
+    local do_build=0
+    for arg in "${@}"; do
+        case "${arg}" in
+        --build) do_build=1 ;;
+        *)
+            log_err "Unknown argument: ${arg}"
+            exit 1
+            ;;
+        esac
+    done
+
+    require_tools qemu-system-aarch64 ssh
+
+    if [[ "${do_build}" -eq 1 ]]; then
+        log "Building QEMU image..."
+        "${BASEDIR}/bin/buildbox.sh" qemu-build
+        "${BASEDIR}/bin/buildbox.sh" qemu-fetch
+    fi
+
+    if [[ ! -f "${ARTIFACTS}/u-boot.bin" ]] || [[ ! -f "${ARTIFACTS}/qemu.img" ]]; then
+        log_err "QEMU artifacts not found at ${ARTIFACTS}/"
+        log_err "Run: bin/buildbox.sh qemu-build && bin/buildbox.sh qemu-fetch"
+        log_err "Or:  bin/test-qemu-ota --build"
+        exit 1
+    fi
+
+    mkdir -p "${TEST_DIR}"
+
+    log "=== Offline Lab OS — QEMU OTA end-to-end test ==="
+    log "Artifacts: ${ARTIFACTS}"
+
+    prepare_images
+    start_qemu
+    wait_for_ssh
+
+    phase_1_initial_slot
+    phase_2_update_to_b
+    phase_3_downgrade_to_a
+
+    printf '\n\e[1;97m=== Summary ===\e[0m\n'
+    printf '\n  Total: %d  |  \e[1;32mPass: %d\e[0m  |  \e[1;31mFail: %d\e[0m\n\n' \
+        "$((PASS + FAIL))" "${PASS}" "${FAIL}"
+
+    if [[ "${FAIL}" -gt 0 ]]; then
+        printf '  \e[1;31mTest FAILED — %d check(s) did not pass.\e[0m\n\n' "${FAIL}"
+        log "QEMU serial log saved at: ${QEMU_LOG}"
+        exit 1
+    fi
+
+    printf '  \e[1;32mAll checks passed.\e[0m\n\n'
+}
+
+main "${@}"

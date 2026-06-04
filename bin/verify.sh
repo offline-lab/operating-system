@@ -427,7 +427,7 @@ if [[ -f "${ROOTFS}" ]] && command -v mount &>/dev/null; then
         # Service dependency checks
         if [[ -f "${ROOTFS_MNT}/etc/systemd/system/boot-firmware.mount" ]]; then
             assert_contains "${ROOTFS_MNT}/etc/systemd/system/boot-firmware.mount" \
-                "dev-mmcblk0p1.device" "boot-firmware.mount waits for device unit"
+                "LABEL=bootfs" "boot-firmware.mount uses label-based mount"
         fi
         if [[ -f "${ROOTFS_MNT}/etc/systemd/system/dropbear.service" ]]; then
             assert_contains "${ROOTFS_MNT}/etc/systemd/system/dropbear.service" \
@@ -623,6 +623,30 @@ if [[ -f "${ROOTFS}" ]] && command -v mount &>/dev/null; then
             pass "rauc-mark-good.service enabled (wanted by multi-user)"
         else
             fail "rauc-mark-good.service not enabled"
+        fi
+
+        # USB OTA update handler
+        assert_exec "${RAUC_MNT}/usr/local/bin/init-usb-update" \
+            "init-usb-update installed and executable"
+        assert_file "${RAUC_MNT}/etc/systemd/system/usb-update@.service" \
+            "usb-update@.service template installed"
+        assert_file "${RAUC_MNT}/usr/lib/udev/rules.d/99-offlinelab-usb-update.rules" \
+            "udev rule 99-offlinelab-usb-update.rules installed"
+
+        if [[ -f "${RAUC_MNT}/usr/lib/udev/rules.d/99-offlinelab-usb-update.rules" ]]; then
+            assert_contains \
+                "${RAUC_MNT}/usr/lib/udev/rules.d/99-offlinelab-usb-update.rules" \
+                "usb-update@" "udev rule triggers usb-update@ service"
+            assert_contains \
+                "${RAUC_MNT}/usr/lib/udev/rules.d/99-offlinelab-usb-update.rules" \
+                'ID_BUS.*usb' "udev rule matches USB bus"
+        fi
+
+        if [[ -f "${RAUC_MNT}/etc/systemd/system/usb-update@.service" ]]; then
+            assert_contains "${RAUC_MNT}/etc/systemd/system/usb-update@.service" \
+                "BindsTo=dev-%i.device" "usb-update@ binds to device unit"
+            assert_contains "${RAUC_MNT}/etc/systemd/system/usb-update@.service" \
+                "init-usb-update" "usb-update@ calls init-usb-update"
         fi
 
         sudo umount "${RAUC_MNT}" 2>/dev/null || true

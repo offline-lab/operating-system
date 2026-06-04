@@ -34,11 +34,11 @@ set -eu -o pipefail
 #   Then inside the VM: mount -t 9p host0 /mnt -o trans=virtio
 
 REPO_ROOT="$(cd "$(dirname "${0}")/.." && pwd)"
-IMAGES_DIR="${1:-${REPO_ROOT}/output/images}"
+IMAGES_DIR="${1:-${REPO_ROOT}/artifacts/qemu}"
 
 if [[ ! -f "${IMAGES_DIR}/u-boot.bin" ]]; then
     printf 'ERROR: u-boot.bin not found in %s\n' "${IMAGES_DIR}" >&2
-    printf 'Build the image first: bin/buildbox.sh make offlinelab_qemu_arm64_defconfig && bin/buildbox.sh make\n' >&2
+    printf 'Build the image first: bin/buildbox.sh qemu-build && bin/buildbox.sh qemu-fetch\n' >&2
     exit 1
 fi
 

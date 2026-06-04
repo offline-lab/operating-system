@@ -14,20 +14,46 @@
 # shellcheck shell=bash disable=SC1091,SC2312
 set -euo pipefail
 
-source framework || exit 1
-
 readonly WIFI_CONFIG="/data/config/wifi/wpa_supplicant.conf"
+readonly CTRL_DIR="/run/wpa-supplicant"
+
+# Called by wpa_cli as action script: <interface> <event>
+# Runs as a subprocess — NOTIFY_SOCKET is inherited so systemd-notify works.
+# Framework is intentionally not sourced here: this runs on every wpa event.
+function wifi_setup::on_event() {
+    local event="${2:-}"
+    case "${event}" in
+        CONNECTED)
+            systemd-notify --ready --status="wlan0 connected"
+            ;;
+        DISCONNECTED)
+            systemd-notify --status="wlan0 disconnected"
+            ;;
+    esac
+}
 
 function wifi_setup::main() {
+    source framework || exit 1
     log::trace "${FUNCNAME[0]}: starting wpa_supplicant"
 
     if ! fs::is_file "${WIFI_CONFIG}"; then
         exit::ok "${FUNCNAME[0]}: no config at ${WIFI_CONFIG}, exiting"
     fi
 
-    exec /usr/sbin/wpa_supplicant \
+    /usr/sbin/wpa_supplicant \
+        -B \
         -c "${WIFI_CONFIG}" \
-        -i wlan0
+        -i wlan0 \
+        -C "${CTRL_DIR}"
+
+    exec /usr/sbin/wpa_cli \
+        -i wlan0 \
+        -p "${CTRL_DIR}" \
+        -a "${0}"
 }
 
-wifi_setup::main "${@}"
+if [[ "${#}" -ge 2 ]]; then
+    wifi_setup::on_event "${@}"
+else
+    wifi_setup::main
+fi

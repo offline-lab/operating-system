@@ -15,13 +15,12 @@ Description=WiFi setup via wpa_supplicant
 After=provision-wifi.service
 BindsTo=sys-subsystem-net-devices-wlan0.device
 After=sys-subsystem-net-devices-wlan0.device
-Before=network.target
 ConditionPathExists=/data/config/wifi/wpa_supplicant.conf
 
 [Service]
 Type=notify
-NotifyAccess=main
-WatchdogSec=30
+NotifyAccess=all
+RuntimeDirectory=wpa-supplicant
 Environment=PATH=/usr/lib/framework/bin:/usr/sbin:/usr/bin:/sbin:/bin
 ExecStart=/usr/local/bin/init-wifi-setup
 Restart=on-failure

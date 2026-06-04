@@ -10,9 +10,19 @@
 #      SPDX-License-Identifier: AGPL-3.0-only                                  #
 ################################################################################
 
-CONFIG_STATIC=y
-CONFIG_FEATURE_SYSLOGD_READ_BUFFER_SIZE=0
-CONFIG_FEATURE_IPC_SYSLOG_BUFFER_SIZE=0
-CONFIG_REALPATH=y
-CONFIG_SEQ=y
-CONFIG_WATCH=y
+[Unit]
+Description=USB OTA update from /dev/%I
+# Stop if the device is removed mid-install
+BindsTo=dev-%i.device
+After=dev-%i.device rauc.service multi-user.target
+Requires=rauc.service
+
+[Service]
+Type=oneshot
+Environment=PATH=/usr/lib/framework/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/usr/local/bin/init-usb-update %I
+StandardOutput=journal
+StandardError=journal
+# Prevent concurrent updates from two drives inserted at once
+ExecStartPre=/bin/sh -c 'test ! -f /run/usb-update.lock && touch /run/usb-update.lock'
+ExecStopPost=/bin/rm -f /run/usb-update.lock

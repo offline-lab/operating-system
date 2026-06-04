@@ -12,6 +12,7 @@ config BR2_PACKAGE_OFFLINELAB_FRAMEWORK
 	select BR2_PACKAGE_IPROUTE2
 	select BR2_PACKAGE_FZF
 	select BR2_PACKAGE_DROPBEAR
+	select BR2_PACKAGE_OPENSSL
 	help
 	  Bash utility library and system management CLI for Offline Lab OS.
 	  Fetched from github.com/offline-lab/offline-lab-framework at build time.

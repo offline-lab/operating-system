@@ -15,7 +15,7 @@
 # shellcheck shell=bash
 #
 # Buildbox: non-interactive pipeline for building and testing Offline Lab OS
-# images on a UTM virtual machine.
+# images on a lima VM (Apple Virtualization Framework).
 #
 # Manages the full lifecycle: VM creation, provisioning, code sync, build,
 # verification, and artifact retrieval.
@@ -37,15 +37,12 @@ set -e -u -o pipefail
 ################################################################################
 
 BASEDIR="$(cd "$(dirname "${0}")/.." && pwd)"
-VM_NAME="${BUILDBOX_VM_NAME:-Buildbox}"
-CACHE_DIR="${HOME}/.cache/buildroot/vm"
-UTM_DIR="${HOME}/Library/Containers/com.utmapp.UTM/Data/Documents"
+VM_NAME="${BUILDBOX_VM_NAME:-buildbox}"
 SSH_KEY="${BASEDIR}/.ssh/builder"
-DEBIAN_URL="https://cloud.debian.org/images/cloud/trixie/daily/latest/debian-13-generic-arm64-daily.qcow2"
 
 VM_CPUS=8
-VM_MEMORY=24576
-VM_DISK="60G"
+VM_MEMORY="24GiB"
+VM_DISK="60GiB"
 
 REMOTE_USER="builder"
 REMOTE_WORK="/home/builder/work"
@@ -53,6 +50,7 @@ REMOTE_ARTIFACTS="/home/builder/artifacts"
 
 SSH_OPTS=(-F /dev/null -i "${SSH_KEY}" -o IdentityAgent=none -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10 -o BatchMode=yes)
 REMOTE_HOST=""
+SSH_PORT=""
 
 ################################################################################
 # Shared library
@@ -67,54 +65,43 @@ source "$(dirname "${0}")/lib/common.sh"
 
 # shellcheck disable=SC2029
 function bb_ssh() {
-    SSH_AUTH_SOCK=/dev/null ssh "${SSH_OPTS[@]}" "${REMOTE_USER}@${REMOTE_HOST}" "${@}"
+    SSH_AUTH_SOCK=/dev/null ssh "${SSH_OPTS[@]}" -p "${SSH_PORT}" "${REMOTE_USER}@${REMOTE_HOST}" "${@}"
 }
 
 function bb_rsync() {
     local ssh_cmd
-    ssh_cmd="ssh $(printf '%q ' "${SSH_OPTS[@]}")"
+    ssh_cmd="ssh $(printf '%q ' "${SSH_OPTS[@]}") -p ${SSH_PORT}"
     SSH_AUTH_SOCK=/dev/null rsync -a --delete \
         -e "${ssh_cmd}" \
         "${@}"
 }
 
 function bb_scp() {
-    SSH_AUTH_SOCK=/dev/null scp "${SSH_OPTS[@]}" "${@}"
+    SSH_AUTH_SOCK=/dev/null scp "${SSH_OPTS[@]}" -P "${SSH_PORT}" "${@}"
 }
 
 ################################################################################
-# Resolve VM IP address
+# Resolve VM SSH endpoint from lima
 ################################################################################
 
 function resolve_host() {
     if [[ -n "${BUILDBOX_HOST:-}" ]]; then
-        REMOTE_HOST="${BUILDBOX_HOST}"
+        REMOTE_HOST="${BUILDBOX_HOST%%:*}"
+        SSH_PORT="${BUILDBOX_HOST##*:}"
+        [[ "${SSH_PORT}" == "${BUILDBOX_HOST}" ]] && SSH_PORT="22"
         return 0
     fi
 
-    local hosts_ip
-    hosts_ip="$(awk '/^[^#].*buildbox/{print $1; exit}' /etc/hosts 2>/dev/null || true)"
-    if [[ -n "${hosts_ip}" ]]; then
-        REMOTE_HOST="${hosts_ip}"
-        return 0
+    local port
+    port="$(limactl list --json 2>/dev/null | jq -r "select(.name == \"${VM_NAME}\") | .sshLocalPort")"
+
+    if [[ -z "${port}" ]] || [[ "${port}" == "null" ]] || [[ "${port}" == "0" ]]; then
+        log_err "Lima VM '${VM_NAME}' not found or not running. Run: ${0} create"
+        return 1
     fi
 
-    if command -v utmctl &>/dev/null; then
-        local status
-        status="$(utmctl status "${VM_NAME}" 2>/dev/null || true)"
-        if [[ "${status}" == *"started"* ]]; then
-            local ip
-            ip="$(utmctl ip-address "${VM_NAME}" 2>/dev/null | head -1 || true)"
-            if [[ -n "${ip}" ]]; then
-                REMOTE_HOST="${ip}"
-                return 0
-            fi
-        fi
-    fi
-
-    log_err "Cannot resolve buildbox address."
-    log_err "Set BUILDBOX_HOST=<ip>, add 'buildbox' to /etc/hosts, or create a VM with: ${0} create"
-    return 1
+    REMOTE_HOST="127.0.0.1"
+    SSH_PORT="${port}"
 }
 
 ################################################################################
@@ -122,14 +109,13 @@ function resolve_host() {
 ################################################################################
 
 function wait_for_ssh() {
-    local host="${1}"
-    local max_attempts="${2:-60}"
+    local max_attempts="${1:-60}"
     local attempt=0
 
-    log "Waiting for SSH on ${host}..."
+    log "Waiting for SSH on ${REMOTE_HOST}:${SSH_PORT}..."
     while [[ ${attempt} -lt ${max_attempts} ]]; do
-        if SSH_AUTH_SOCK=/dev/null ssh "${SSH_OPTS[@]}" -o ConnectTimeout=3 \
-            "${REMOTE_USER}@${host}" true 2>/dev/null; then
+        if SSH_AUTH_SOCK=/dev/null ssh "${SSH_OPTS[@]}" -p "${SSH_PORT}" -o ConnectTimeout=3 \
+            "${REMOTE_USER}@${REMOTE_HOST}" true 2>/dev/null; then
             log "SSH available"
             return 0
         fi
@@ -147,7 +133,7 @@ function wait_for_ssh() {
 
 function wait_for_cloudinit() {
     log "Waiting for cloud-init to complete provisioning..."
-    local max_attempts=60
+    local max_attempts=90
     local attempt=0
 
     while [[ ${attempt} -lt ${max_attempts} ]]; do
@@ -164,259 +150,116 @@ function wait_for_cloudinit() {
 }
 
 ################################################################################
-# Create cloud-init ISO
-################################################################################
-
-function create_cidata_iso() {
-    local iso="${CACHE_DIR}/cidata.iso"
-    local tmpdir
-    tmpdir="$(mktemp -d)"
-    # shellcheck disable=SC2064
-    trap "rm -rf '${tmpdir}'" RETURN
-
-    cp "${BASEDIR}/bin/buildbox/cloud-init/user-data" "${tmpdir}/user-data"
-    cp "${BASEDIR}/bin/buildbox/cloud-init/meta-data" "${tmpdir}/meta-data"
-
-    hdiutil makehybrid -o "${iso}" "${tmpdir}" \
-        -iso -joliet -default-volume-name cidata 2>/dev/null
-
-    if [[ -f "${iso}.iso" ]] && [[ ! -f "${iso}" ]]; then
-        mv "${iso}.iso" "${iso}"
-    fi
-
-    echo "${iso}"
-}
-
-################################################################################
-# Create UTM VM
+# Create lima VM
 ################################################################################
 
 function cmd_create() {
-    for cmd in qemu-img curl hdiutil utmctl; do
-        if ! command -v "${cmd}" &>/dev/null; then
-            log_err "Required: ${cmd}"
-            exit 1
-        fi
-    done
-
-    local vm_dir="${UTM_DIR}/${VM_NAME}.utm"
-    if [[ -d "${vm_dir}" ]]; then
-        log_err "VM '${VM_NAME}' already exists. Run '${0} destroy' first."
+    if ! command -v limactl &>/dev/null; then
+        log_err "limactl not found. Install: brew install lima"
         exit 1
     fi
 
-    mkdir -p "${CACHE_DIR}"
-
-    # Download Debian cloud image
-    local img="${CACHE_DIR}/debian-13-generic-arm64.qcow2"
-    if [[ ! -f "${img}" ]]; then
-        log "Downloading Debian 13 arm64 cloud image..."
-        curl -L -o "${img}" "${DEBIAN_URL}"
-    else
-        log "Using cached Debian cloud image"
-    fi
-
-    # Create cloud-init ISO
-    log "Creating cloud-init ISO..."
-    local iso
-    iso="$(create_cidata_iso)"
-
-    # Assemble UTM bundle
-    log "Creating UTM VM: ${VM_NAME}"
-    mkdir -p "${vm_dir}/Data"
-
-    local disk_uuid cidata_uuid vm_uuid
-    disk_uuid="$(uuidgen)"
-    cidata_uuid="$(uuidgen)"
-    vm_uuid="$(uuidgen)"
-
-    cp "${img}" "${vm_dir}/Data/${disk_uuid}.qcow2"
-    qemu-img resize "${vm_dir}/Data/${disk_uuid}.qcow2" "${VM_DISK}"
-    cp "${iso}" "${vm_dir}/Data/${cidata_uuid}.iso"
-
-    cat >"${vm_dir}/config.plist" <<PLIST
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-	<key>Backend</key>
-	<string>QEMU</string>
-	<key>ConfigurationVersion</key>
-	<integer>4</integer>
-	<key>Display</key>
-	<array>
-		<dict>
-			<key>DownscalingFilter</key>
-			<string>Linear</string>
-			<key>DynamicResolution</key>
-			<true/>
-			<key>Hardware</key>
-			<string>virtio-gpu-gl-pci</string>
-			<key>NativeResolution</key>
-			<false/>
-			<key>UpscalingFilter</key>
-			<string>Nearest</string>
-		</dict>
-	</array>
-	<key>Drive</key>
-	<array>
-		<dict>
-			<key>Identifier</key>
-			<string>${cidata_uuid}</string>
-			<key>ImageName</key>
-			<string>${cidata_uuid}.iso</string>
-			<key>ImageType</key>
-			<string>CD</string>
-			<key>Interface</key>
-			<string>USB</string>
-			<key>InterfaceVersion</key>
-			<integer>1</integer>
-			<key>ReadOnly</key>
-			<true/>
-		</dict>
-		<dict>
-			<key>Identifier</key>
-			<string>${disk_uuid}</string>
-			<key>ImageName</key>
-			<string>${disk_uuid}.qcow2</string>
-			<key>ImageType</key>
-			<string>Disk</string>
-			<key>Interface</key>
-			<string>VirtIO</string>
-			<key>InterfaceVersion</key>
-			<integer>1</integer>
-			<key>ReadOnly</key>
-			<false/>
-		</dict>
-	</array>
-	<key>Information</key>
-	<dict>
-		<key>Icon</key>
-		<string>linux</string>
-		<key>IconCustom</key>
-		<false/>
-		<key>Name</key>
-		<string>${VM_NAME}</string>
-		<key>UUID</key>
-		<string>${vm_uuid}</string>
-	</dict>
-	<key>Input</key>
-	<dict>
-		<key>MaximumUsbShare</key>
-		<integer>3</integer>
-		<key>UsbBusSupport</key>
-		<string>3.0</string>
-		<key>UsbSharing</key>
-		<false/>
-	</dict>
-	<key>Network</key>
-	<array>
-		<dict>
-			<key>BridgeInterface</key>
-			<string>en0</string>
-			<key>Hardware</key>
-			<string>virtio-net-pci</string>
-			<key>IsolateFromHost</key>
-			<false/>
-			<key>Mode</key>
-			<string>Bridged</string>
-			<key>PortForward</key>
-			<array/>
-		</dict>
-	</array>
-	<key>QEMU</key>
-	<dict>
-		<key>AdditionalArguments</key>
-		<array/>
-		<key>BalloonDevice</key>
-		<false/>
-		<key>DebugLog</key>
-		<false/>
-		<key>Hypervisor</key>
-		<true/>
-		<key>PS2Controller</key>
-		<false/>
-		<key>RNGDevice</key>
-		<true/>
-		<key>RTCLocalTime</key>
-		<false/>
-		<key>TPMDevice</key>
-		<false/>
-		<key>TSO</key>
-		<false/>
-		<key>UEFIBoot</key>
-		<true/>
-	</dict>
-	<key>Serial</key>
-	<array/>
-	<key>Sharing</key>
-	<dict>
-		<key>ClipboardSharing</key>
-		<true/>
-		<key>DirectoryShareMode</key>
-		<string>VirtFS</string>
-		<key>DirectoryShareReadOnly</key>
-		<false/>
-	</dict>
-	<key>Sound</key>
-	<array/>
-	<key>System</key>
-	<dict>
-		<key>Architecture</key>
-		<string>aarch64</string>
-		<key>CPU</key>
-		<string>default</string>
-		<key>CPUCount</key>
-		<integer>${VM_CPUS}</integer>
-		<key>CPUFlagsAdd</key>
-		<array/>
-		<key>CPUFlagsRemove</key>
-		<array/>
-		<key>ForceMulticore</key>
-		<false/>
-		<key>JITCacheSize</key>
-		<integer>0</integer>
-		<key>MemorySize</key>
-		<integer>${VM_MEMORY}</integer>
-		<key>Target</key>
-		<string>virt</string>
-	</dict>
-</dict>
-</plist>
-PLIST
-
-    log "VM created. Starting..."
-    utmctl start "${VM_NAME}" --hide
-
-    # Wait for SSH
-    sleep 10
-    local ip=""
-    local attempts=0
-    while [[ -z "${ip}" ]] && [[ ${attempts} -lt 30 ]]; do
-        ip="$(utmctl ip-address "${VM_NAME}" 2>/dev/null | head -1 || true)"
-        attempts=$((attempts + 1))
-        sleep 5
-    done
-
-    if [[ -z "${ip}" ]]; then
-        log_err "Could not determine VM IP address"
+    if limactl list --json 2>/dev/null | grep -q "\"name\":\"${VM_NAME}\""; then
+        log_err "Lima VM '${VM_NAME}' already exists. Run '${0} destroy' first."
         exit 1
     fi
 
-    REMOTE_HOST="${ip}"
-    log "VM IP: ${ip}"
+    if [[ ! -f "${SSH_KEY}.pub" ]]; then
+        log_err "SSH public key not found: ${SSH_KEY}.pub"
+        exit 1
+    fi
 
-    wait_for_ssh "${ip}" 60
+    local pub_key
+    pub_key="$(cat "${SSH_KEY}.pub")"
+
+    local tmpconfig
+    tmpconfig="$(mktemp /tmp/buildbox-lima-XXXX.yaml)"
+    # shellcheck disable=SC2064
+    trap "rm -f '${tmpconfig}'" RETURN
+
+    cat >"${tmpconfig}" <<YAML
+vmType: vz
+arch: aarch64
+rosetta:
+  enabled: false
+
+images:
+  - location: "https://cloud.debian.org/images/cloud/trixie/daily/latest/debian-13-generic-arm64-daily.qcow2"
+    arch: aarch64
+
+cpus: ${VM_CPUS}
+memory: "${VM_MEMORY}"
+disk: "${VM_DISK}"
+
+networks:
+  - vzNAT: true
+
+mounts: []
+
+ssh:
+  loadDotSSHPubKeys: false
+
+provision:
+  - mode: system
+    script: |
+      #!/bin/bash
+      set -eux
+      id builder &>/dev/null && exit 0
+      useradd -m -s /bin/bash -c "Buildroot Builder" builder
+      echo "builder ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/builder
+      chmod 440 /etc/sudoers.d/builder
+      mkdir -p /home/builder/.ssh
+      echo "${pub_key}" > /home/builder/.ssh/authorized_keys
+      chown -R builder:builder /home/builder/.ssh
+      chmod 700 /home/builder/.ssh
+      chmod 600 /home/builder/.ssh/authorized_keys
+
+  - mode: system
+    script: |
+      #!/bin/bash
+      set -eux
+      export DEBIAN_FRONTEND=noninteractive
+      apt-get update -qq
+      apt-get install -y --no-install-recommends \
+        bc bison build-essential bzip2 ca-certificates ccache cmake \
+        coreutils cpio curl device-tree-compiler dosfstools e2fsprogs \
+        fakeroot fdisk file flex g++ gawk gcc genimage git grep gzip \
+        jq kmod less librsvg2-bin libncurses-dev libssl-dev make \
+        moreutils mtools ncdu parted pigz pkg-config procps rsync \
+        squashfs-tools sudo u-boot-tools unzip util-linux vim wget \
+        wpasupplicant xz-utils zip zstd
+
+  - mode: user
+    script: |
+      #!/bin/bash
+      # This runs as the lima default user, not builder — skip
+      exit 0
+
+  - mode: system
+    script: |
+      #!/bin/bash
+      set -eux
+      su - builder -c 'git clone --depth 1 https://github.com/offline-lab/buildroot.git /home/builder/buildroot'
+      su - builder -c 'mkdir -p /home/builder/work /home/builder/downloads /home/builder/artifacts /home/builder/.ccache'
+      su - builder -c 'ccache --max-size=15G'
+YAML
+
+    log "Creating lima VM: ${VM_NAME} (Apple Virt, ${VM_CPUS} CPUs, ${VM_MEMORY}, ${VM_DISK} disk)"
+    limactl start --name="${VM_NAME}" --tty=false "${tmpconfig}"
+
+    resolve_host
+    log "VM SSH: ${REMOTE_HOST}:${SSH_PORT}"
+
+    wait_for_ssh 60
     wait_for_cloudinit
 
-    # Verify buildroot was cloned by cloud-init
-    if ! bb_ssh 'test -d /home/builder/buildroot/Makefile' 2>/dev/null; then
-        log "Buildroot not ready, cloning..."
+    if ! bb_ssh 'test -f /home/builder/buildroot/Makefile' 2>/dev/null; then
+        log "Cloning buildroot..."
         bb_ssh 'git clone --depth 1 https://github.com/offline-lab/buildroot.git /home/builder/buildroot'
     fi
 
-    log "Buildbox ready at ${ip}"
-    log "Add to /etc/hosts:  ${ip}  buildbox"
+    log "Buildbox ready."
+    log "To connect: SSH_AUTH_SOCK=/dev/null ssh -i .ssh/builder -p ${SSH_PORT} builder@127.0.0.1"
 }
 
 ################################################################################
@@ -426,7 +269,7 @@ PLIST
 function cmd_sync() {
     resolve_host
 
-    log "Syncing code to ${REMOTE_HOST}..."
+    log "Syncing code to ${REMOTE_HOST}:${SSH_PORT}..."
 
     bb_ssh "mkdir -p ${REMOTE_WORK}/bin ${REMOTE_WORK}/br2-external ${REMOTE_ARTIFACTS}"
 
@@ -465,7 +308,7 @@ function cmd_build() {
     resolve_host
     cmd_sync
 
-    log "Starting build on ${REMOTE_HOST}..."
+    log "Starting build on ${REMOTE_HOST}:${SSH_PORT}..."
     local start_time
     start_time="$(date +%s)"
 
@@ -475,7 +318,7 @@ function cmd_build() {
         fi
     done; then
         log_err "Build failed"
-        log_err "Full log: ssh builder@${REMOTE_HOST} cat /home/builder/build.log"
+        log_err "Full log: ssh -p ${SSH_PORT} builder@127.0.0.1 cat /home/builder/build.log"
         return 1
     fi
 
@@ -486,13 +329,41 @@ function cmd_build() {
 }
 
 ################################################################################
+# QEMU build on buildbox
+################################################################################
+
+function cmd_qemu_build() {
+    resolve_host
+    cmd_sync
+
+    log "Starting QEMU build on ${REMOTE_HOST}:${SSH_PORT}..."
+    local start_time
+    start_time="$(date +%s)"
+
+    if ! bb_ssh "bash ${REMOTE_WORK}/bin/build-native-qemu.sh" 2>&1 | while IFS= read -r line; do
+        if [[ "${line}" == *">>>"* ]]; then
+            log_dim "${line}"
+        fi
+    done; then
+        log_err "QEMU build failed"
+        log_err "Full log: ssh -p ${SSH_PORT} builder@127.0.0.1 cat /home/builder/build-qemu.log"
+        return 1
+    fi
+
+    local end_time elapsed
+    end_time="$(date +%s)"
+    elapsed="$((end_time - start_time))"
+    log "QEMU build completed in $((elapsed / 60))m $((elapsed % 60))s"
+}
+
+################################################################################
 # Verify on buildbox
 ################################################################################
 
 function cmd_verify() {
     resolve_host
 
-    log "Running verification on ${REMOTE_HOST}..."
+    log "Running verification on ${REMOTE_HOST}:${SSH_PORT}..."
 
     if ! bb_ssh "sudo bash ${REMOTE_WORK}/bin/verify.sh ${REMOTE_ARTIFACTS}/" 2>&1; then
         log_err "Verification failed"
@@ -512,7 +383,7 @@ function cmd_fetch() {
     local local_artifacts="${BASEDIR}/artifacts"
     mkdir -p "${local_artifacts}"
 
-    log "Fetching artifacts from ${REMOTE_HOST}..."
+    log "Fetching artifacts from ${REMOTE_HOST}:${SSH_PORT}..."
 
     bb_rsync \
         --include='offlinelab-sdcard-*.img.gz' \
@@ -531,12 +402,53 @@ function cmd_fetch() {
 }
 
 ################################################################################
+# Fetch QEMU artifacts from buildbox
+################################################################################
+
+function cmd_qemu_fetch() {
+    resolve_host
+
+    local local_artifacts="${BASEDIR}/artifacts/qemu"
+    mkdir -p "${local_artifacts}"
+
+    log "Fetching QEMU artifacts from ${REMOTE_HOST}:${SSH_PORT}..."
+
+    bb_rsync \
+        --include='qemu.img' \
+        --include='u-boot.bin' \
+        --include='Image' \
+        --include='rootfs.ext4' \
+        --include='initramfs.cpio.gz' \
+        --include='boot.scr' \
+        --include='kernel-a.img' \
+        --include='offlinelab-update.raucb' \
+        --exclude='*' \
+        "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_ARTIFACTS}/qemu/" \
+        "${local_artifacts}/"
+
+    log "QEMU artifacts saved to ${local_artifacts}/"
+    ls -lh "${local_artifacts}/qemu.img" 2>/dev/null || true
+}
+
+################################################################################
 # SSH into buildbox
 ################################################################################
 
 function cmd_ssh() {
     resolve_host
-    SSH_AUTH_SOCK=/dev/null ssh "${SSH_OPTS[@]}" -t "${REMOTE_USER}@${REMOTE_HOST}" "${@}"
+    SSH_AUTH_SOCK=/dev/null ssh "${SSH_OPTS[@]}" -p "${SSH_PORT}" -t "${REMOTE_USER}@${REMOTE_HOST}" "${@}"
+}
+
+################################################################################
+# Clean artifacts on buildbox
+################################################################################
+
+function cmd_clean_artifacts() {
+    resolve_host
+
+    log "Cleaning artifacts on ${REMOTE_HOST}:${SSH_PORT}..."
+    bb_ssh "rm -rf ${REMOTE_ARTIFACTS:?}/* && echo 'done'"
+    log "Artifacts cleaned"
 }
 
 ################################################################################
@@ -544,27 +456,23 @@ function cmd_ssh() {
 ################################################################################
 
 function cmd_destroy() {
-    if ! command -v utmctl &>/dev/null; then
-        log_err "utmctl not found"
+    if ! command -v limactl &>/dev/null; then
+        log_err "limactl not found"
         exit 1
     fi
 
-    local status
-    status="$(utmctl status "${VM_NAME}" 2>/dev/null || true)"
-
-    if [[ "${status}" == *"started"* ]]; then
-        log "Stopping ${VM_NAME}..."
-        utmctl stop "${VM_NAME}" --kill
-        sleep 3
+    if ! limactl list --json 2>/dev/null | grep -q "\"name\":\"${VM_NAME}\""; then
+        log_err "Lima VM '${VM_NAME}' not found"
+        exit 1
     fi
 
-    log "Deleting ${VM_NAME}..."
-    utmctl delete "${VM_NAME}" 2>/dev/null || true
+    log "Deleting lima VM: ${VM_NAME}..."
+    limactl delete --force "${VM_NAME}"
     log "VM deleted"
 }
 
 ################################################################################
-# Full pipeline: sync + build + verify
+# Full pipeline: sync + build + verify + fetch
 ################################################################################
 
 function cmd_pipeline() {
@@ -594,22 +502,25 @@ function cmd_usage() {
   Buildbox — non-interactive build pipeline for Offline Lab OS
 
   Usage:
-    bin/buildbox.sh                     Full pipeline: sync + build + verify + fetch
+    bin/buildbox.sh                     Full pipeline: sync + build + verify + fetch (pi-zero-2w)
     bin/buildbox.sh create              Create and provision a new buildbox VM
     bin/buildbox.sh sync                Sync code to buildbox
-    bin/buildbox.sh build               Sync + build
+    bin/buildbox.sh build               Sync + build (pi-zero-2w)
     bin/buildbox.sh verify              Run verification on remote artifacts
-    bin/buildbox.sh fetch               Download artifacts from buildbox
+    bin/buildbox.sh fetch               Download pi-zero-2w artifacts from buildbox
+    bin/buildbox.sh qemu-build          Sync + build (QEMU arm64)
+    bin/buildbox.sh qemu-fetch          Download QEMU artifacts to artifacts/qemu/
+    bin/buildbox.sh clean-artifacts     Remove all artifacts from buildbox
     bin/buildbox.sh ssh [cmd]           SSH into buildbox
     bin/buildbox.sh destroy             Delete the buildbox VM
 
   Environment:
-    BUILDBOX_HOST=<ip>                  Override buildbox address (default: from /etc/hosts or UTM)
-    BUILDBOX_VM_NAME=<name>             Override VM name (default: Buildbox)
+    BUILDBOX_HOST=<ip>:<port>           Override buildbox SSH endpoint
+    BUILDBOX_VM_NAME=<name>             Override VM name (default: buildbox)
 
   Requires:
     - .ssh/builder key pair in the repo root
-    - UTM + utmctl for VM management (or an existing host in /etc/hosts)
+    - limactl (brew install lima)
 
 EOF
     exit 0
@@ -626,34 +537,16 @@ if [[ ! -f "${SSH_KEY}" ]]; then
 fi
 
 case "${1:-}" in
-    create)
-        shift
-        cmd_create "${@}"
-        ;;
-    sync)
-        shift
-        cmd_sync "${@}"
-        ;;
-    build)
-        shift
-        cmd_build "${@}"
-        ;;
-    verify)
-        shift
-        cmd_verify "${@}"
-        ;;
-    fetch)
-        shift
-        cmd_fetch "${@}"
-        ;;
-    ssh)
-        shift
-        cmd_ssh "${@}"
-        ;;
-    destroy)
-        shift
-        cmd_destroy "${@}"
-        ;;
+    create)         shift; cmd_create "${@}" ;;
+    sync)           shift; cmd_sync "${@}" ;;
+    build)          shift; cmd_build "${@}" ;;
+    verify)         shift; cmd_verify "${@}" ;;
+    fetch)          shift; cmd_fetch "${@}" ;;
+    qemu-build)     shift; cmd_qemu_build "${@}" ;;
+    qemu-fetch)     shift; cmd_qemu_fetch "${@}" ;;
+    ssh)            shift; cmd_ssh "${@}" ;;
+    clean-artifacts) shift; cmd_clean_artifacts "${@}" ;;
+    destroy)        shift; cmd_destroy "${@}" ;;
     -h | --help | help) cmd_usage ;;
     "") cmd_pipeline ;;
     *)

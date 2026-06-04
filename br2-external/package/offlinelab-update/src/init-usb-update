@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#      SPDX-License-Identifier: AGPL-3.0-only                                  #
+################################################################################
+# vi: ft=bash
+# shellcheck shell=bash disable=SC1091,SC2312
+set -euo pipefail
+
+source framework || exit 1
+
+# Called by usb-update@<device>.service with the kernel device name (e.g. sda1).
+readonly DEVICE_NAME="${1:?usage: init-usb-update <device-name>}"
+readonly DEVICE="/dev/${DEVICE_NAME}"
+readonly MOUNT_DIR="/run/usb-update"
+readonly LOG_FILE="/data/config/update.log"
+readonly USB_RESULT_FILE="offlinelab-update-result.txt"
+
+function usb_update::log_result() {
+    log::trace "${FUNCNAME[0]}: recording result"
+    local status="${1}" message="${2}"
+    local timestamp
+    timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+    mkdir -p "$(dirname "${LOG_FILE}")"
+    printf '%s [%s] device=%s %s\n' "${timestamp}" "${status}" "${DEVICE_NAME}" "${message}" \
+        >> "${LOG_FILE}"
+    log::info "${FUNCNAME[0]}: [${status}] ${message}"
+
+    # Write result file to USB drive so operator can inspect without SSH
+    if mountpoint -q "${MOUNT_DIR}" 2>/dev/null; then
+        mount -o remount,rw "${MOUNT_DIR}" 2>/dev/null || true
+        printf '%s [%s] %s\n' "${timestamp}" "${status}" "${message}" \
+            > "${MOUNT_DIR}/${USB_RESULT_FILE}" 2>/dev/null || true
+        sync
+    fi
+}
+
+function usb_update::cleanup() {
+    log::trace "${FUNCNAME[0]}: unmounting ${MOUNT_DIR}"
+    if mountpoint -q "${MOUNT_DIR}" 2>/dev/null; then
+        umount "${MOUNT_DIR}" 2>/dev/null \
+            || log::warn "${FUNCNAME[0]}: umount ${MOUNT_DIR} failed"
+        sync
+    fi
+    rmdir "${MOUNT_DIR}" 2>/dev/null || true
+}
+
+function usb_update::main() {
+    log::trace "${FUNCNAME[0]}: USB device ${DEVICE} appeared — checking for RAUC bundle"
+
+    depends::check_list rauc mount umount
+
+    if ! fs::is_blockdev "${DEVICE}"; then
+        log::warn "${FUNCNAME[0]}: ${DEVICE} is not a block device — skipping"
+        return 0
+    fi
+
+    mkdir -p "${MOUNT_DIR}"
+    trap 'usb_update::cleanup' EXIT
+
+    if ! mount -o ro,noatime "${DEVICE}" "${MOUNT_DIR}"; then
+        log::warn "${FUNCNAME[0]}: could not mount ${DEVICE} — skipping"
+        return 0
+    fi
+
+    # Find .raucb bundles at the root of the drive only (depth 1)
+    local bundles=()
+    while IFS= read -r -d '' f; do
+        bundles+=("${f}")
+    done < <(find "${MOUNT_DIR}" -maxdepth 1 -name "*.raucb" -print0 2>/dev/null)
+
+    if [[ "${#bundles[@]}" -eq 0 ]]; then
+        log::info "${FUNCNAME[0]}: no .raucb bundle found on ${DEVICE} — not an update drive"
+        return 0
+    fi
+
+    if [[ "${#bundles[@]}" -gt 1 ]]; then
+        log::error "${FUNCNAME[0]}: ${#bundles[@]} bundles found — ambiguous, refusing to install"
+        usb_update::log_result "ERROR" \
+            "${#bundles[@]} .raucb files found on ${DEVICE_NAME} — remove duplicates and retry"
+        return 1
+    fi
+
+    local bundle="${bundles[0]}"
+    local bundle_name
+    bundle_name="$(basename "${bundle}")"
+
+    log::info "${FUNCNAME[0]}: installing ${bundle_name} from ${DEVICE}"
+    usb_update::log_result "START" "installing ${bundle_name}"
+
+    local rauc_out rauc_rc=0
+    rauc_out="$(rauc install "${bundle}" 2>&1)" || rauc_rc="${?}"
+
+    if [[ "${rauc_rc}" -eq 0 ]]; then
+        log::info "${FUNCNAME[0]}: ${bundle_name} installed — rebooting in 5s"
+        usb_update::log_result "SUCCESS" "installed ${bundle_name} — system will reboot"
+        usb_update::cleanup
+        trap - EXIT
+        systemd-run --on-active=5s systemctl reboot
+    else
+        log::error "${FUNCNAME[0]}: rauc install failed (rc=${rauc_rc}): ${rauc_out}"
+        usb_update::log_result "FAILED" "rauc install failed: ${rauc_out}"
+        return 1
+    fi
+}
+
+usb_update::main "${@}"

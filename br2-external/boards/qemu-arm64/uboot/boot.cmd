@@ -11,14 +11,16 @@
 ################################################################################
 
 # Offline Lab OS — QEMU arm64 A/B boot script
-# Same logic as pi-zero-2w but for virtio block (vda) device names.
-# Partition layout mirrors pi-zero-2w:
+# Partition layout (virtio block → /dev/vda):
 #   p1=boot(FAT) p2=extended p3=overlay p4=data
 #   p5=kernel-a p6=rootfs-a p7=kernel-b p8=rootfs-b p9=bootstate
 
-# Locate bootstate partition (p9) and set up raw block read/write
+# virtio block device — always virtio 0 on QEMU virt machine
+setenv devtype virtio
+setenv devnum 0
+
+# Read bootstate from p9 (raw block read/write, 32 sectors = 16KB)
 part start ${devtype} ${devnum} 9 dev_env
-${devtype} dev ${devnum}
 
 setenv loadbootstate " \
     echo 'Loading bootstate...'; \
@@ -38,21 +40,16 @@ test -n "${BOOT_B_LEFT}" || setenv BOOT_B_LEFT 3
 # ConditionFirstBoot= support
 test -n "${MACHINE_ID}" || setenv BOOT_CONDITION "systemd.condition-first-boot=true"
 
-# QEMU virt passes a clean DTB with no GPU bootargs in /chosen.
-# Move it to fdt_addr_r so we can resize it for initrd properties.
-setenv fdt_org ${fdt_addr}
+# QEMU virt: use the DTB QEMU passed to U-Boot (stored in fdtcontroladdr).
+# No RPi firmware bootargs to extract — /chosen/bootargs is empty on virt.
+setenv fdt_org ${fdtcontroladdr}
 fdt addr ${fdt_org}
-fdt get value bootargs_rpi /chosen bootargs
-fdt move ${fdt_org} ${fdt_addr_r}
-fdt addr ${fdt_addr_r}
-fdt resize
-setenv fdt_org ${fdt_addr_r}
+fdt resize 0x1000
 
 # QEMU console is ttyAMA0 (PL011); apparmor enabled as on pi-zero-2w.
 setenv bootargs_ol "console=ttyAMA0,115200 rootwait apparmor=1 security=apparmor systemd.machine_id=${MACHINE_ID} ${BOOT_CONDITION}"
 
-# Slot partition mapping (virtio block → /dev/vda):
-#   A: kernel=p5 rootfs=p6   B: kernel=p7 rootfs=p8
+# Slot selection
 setenv bootargs
 for BOOT_SLOT in "${BOOT_ORDER}"; do
   if test "x${bootargs}" != "x"; then
@@ -62,7 +59,7 @@ for BOOT_SLOT in "${BOOT_ORDER}"; do
       setexpr BOOT_A_LEFT ${BOOT_A_LEFT} - 1
       echo "Trying slot A, ${BOOT_A_LEFT} attempts remaining..."
       if load ${devtype} ${devnum}:5 ${kernel_addr_r} Image; then
-          setenv bootargs "${bootargs_rpi} ${bootargs_ol} root=/dev/vda6 rootfstype=ext4 rauc.slot=A"
+          setenv bootargs "${bootargs_ol} root=/dev/vda6 rootfstype=ext4 rauc.slot=A"
       fi
     fi
   elif test "x${BOOT_SLOT}" = "xB"; then
@@ -70,7 +67,7 @@ for BOOT_SLOT in "${BOOT_ORDER}"; do
       setexpr BOOT_B_LEFT ${BOOT_B_LEFT} - 1
       echo "Trying slot B, ${BOOT_B_LEFT} attempts remaining..."
       if load ${devtype} ${devnum}:7 ${kernel_addr_r} Image; then
-          setenv bootargs "${bootargs_rpi} ${bootargs_ol} root=/dev/vda8 rootfstype=ext4 rauc.slot=B"
+          setenv bootargs "${bootargs_ol} root=/dev/vda8 rootfstype=ext4 rauc.slot=B"
       fi
     fi
   fi

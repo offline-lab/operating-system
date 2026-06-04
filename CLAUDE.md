@@ -100,7 +100,7 @@ All internal variables use `FRAMEWORK_` prefix. Never `TOOLSET_`.
 /usr/lib/framework/bin/framework   ← source this: source framework || exit 1
 /usr/lib/framework/bin/labctl      ← device management CLI
 /usr/lib/framework/bin/chronic     ← bash port of moreutils chronic(1)
-/usr/lib/framework/*.sh            ← library modules
+/usr/lib/framework/library/*.sh    ← library modules
 /etc/labctl/su.conf                ← labctl-su allowlist
 /etc/profile.d/framework.sh       ← adds /usr/lib/framework/bin to PATH
 ```

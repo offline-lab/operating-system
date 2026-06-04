@@ -30,34 +30,39 @@ function labctl_service::main() {
     depends::check_list portablectl systemctl
 
     case "${subcmd}" in
-        list)
-            priv::run portablectl list
+
+    list)
+        priv::run portablectl list
+        ;;
+
+    start | stop | enable | disable)
+        [[ "${#}" -lt 1 ]] && exit::error "${FUNCNAME[0]}: ${subcmd} requires a service name"
+
+        local svc="${1}"
+        case "${subcmd}" in
+
+        start)
+            priv::run systemctl start "${svc}"
             ;;
-        start | stop | enable | disable)
-            [[ "${#}" -lt 1 ]] && exit::error "${FUNCNAME[0]}: ${subcmd} requires a service name"
-            local svc="${1}"
-            case "${subcmd}" in
-                start)
-                    priv::run systemctl start "${svc}"
-                    ;;
-                stop)
-                    priv::run systemctl stop "${svc}"
-                    ;;
-                enable)
-                    priv::run portablectl attach "${svc}"
-                    priv::run systemctl enable --now "${svc}"
-                    ;;
-                disable)
-                    priv::run systemctl disable --now "${svc}"
-                    priv::run portablectl detach "${svc}"
-                    ;;
-                *) ;; # unreachable
-            esac
-            log::info "${FUNCNAME[0]}: done"
+        stop)
+            priv::run systemctl stop "${svc}"
             ;;
-        *)
-            exit::error "${FUNCNAME[0]}: unknown subcommand: ${subcmd}"
+        enable)
+            priv::run portablectl attach "${svc}"
+            priv::run systemctl enable --now "${svc}"
             ;;
+        disable)
+            priv::run systemctl disable --now "${svc}"
+            priv::run portablectl detach "${svc}"
+            ;;
+        *) ;;
+        esac
+
+        log::info "${FUNCNAME[0]}: done"
+        ;;
+    *)
+        exit::error "${FUNCNAME[0]}: unknown subcommand: ${subcmd}"
+        ;;
     esac
 }
 

@@ -14,6 +14,7 @@ OFFLINELAB_FRAMEWORK_DEPENDENCIES = \
 	jq \
 	ncurses \
 	libcurl \
+	openssl \
 	rauc \
 	wpa_supplicant \
 	iproute2 \
@@ -21,8 +22,8 @@ OFFLINELAB_FRAMEWORK_DEPENDENCIES = \
 
 define OFFLINELAB_FRAMEWORK_INSTALL_TARGET_CMDS
 	# Library modules
-	$(INSTALL) -d $(TARGET_DIR)/usr/lib/framework
-	$(INSTALL) -m 0644 $(@D)/library/*.sh $(TARGET_DIR)/usr/lib/framework/
+	$(INSTALL) -d $(TARGET_DIR)/usr/lib/framework/library
+	$(INSTALL) -m 0644 $(@D)/library/*.sh $(TARGET_DIR)/usr/lib/framework/library/
 
 	# Executables — dev-setup and tools are host-only, not included
 	$(INSTALL) -d $(TARGET_DIR)/usr/lib/framework/bin

@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(utmctl list *)",
+      "Read(//Users/flip/.media/projects/offline-lab/br2-builder/**)",
+      "Bash(bin/buildbox.sh destroy *)",
+      "Bash(utmctl version *)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(bin/buildbox.sh create *)",
+      "Bash(tee /tmp/buildbox-create.log)",
+      "Bash(utmctl status *)",
+      "Bash(defaults read *)",
+      "WebFetch(domain:blog.vkhitrin.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(plutil -p /Applications/UTM.app/Contents/Info.plist)",
+      "Bash(sdef /Applications/UTM.app)",
+      "Bash(lsof -iTCP -sTCP:LISTEN)",
+      "Bash(bin/buildbox.sh ssh *)",
+      "Bash(sips -s format jpeg /Users/flip/Downloads/IMG_1133.HEIC --out /tmp/img1133.jpg --resampleWidth 1200)",
+      "Bash(sips -s format jpeg /Users/flip/Downloads/IMG_1135.HEIC --out /tmp/img1135.jpg --resampleWidth 1200)",
+      "WebFetch(domain:wiki.archlinux.org)",
+      "Bash(bin/buildbox.sh verify *)"
+    ]
+  }
+}

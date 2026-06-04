@@ -10,6 +10,9 @@
 #      SPDX-License-Identifier: AGPL-3.0-only                                  #
 ################################################################################
 
+# profile.d only runs for login shells; set PATH here for sudo su and other non-login shells
+export PATH="/usr/lib/framework/bin:${PATH}"
+
 if [ "$(id -u)" -eq 0 ]; then
     PS1='\[\e[1;31m\]\u@\h\[\e[0m\]:\[\e[1;34m\]\w\[\e[0m\]# '
 else
