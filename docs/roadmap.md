@@ -68,7 +68,7 @@ Defines the `.olab` package format, the tooling to build and run apps, and the a
   (`webservice`, `audio`, `network`). Defaults live in `offlinelab-portable`; apps may
   ship their own. Profile docs published on website with source links.
 - **CLI split** — three distinct binaries, clearly documented:
-  - `labctl` — OS management (status, update, reboot, net, logs, diagnose)
+  - `boxctl` — OS management (status, update, reboot, net, logs, diagnose)
   - `pkgctl` — package index management (list, search, info, publish)
   - `appctl` — app lifecycle (install, start, stop, restart, enable, disable, remove, list)
 - **Build pipeline** — Docker (`FROM scratch` final stage) → `mksquashfs` → dm-verity

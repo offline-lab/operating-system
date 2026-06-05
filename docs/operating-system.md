@@ -1,6 +1,6 @@
 # Operating System
 
-The base OS (**MoreOS**) is a minimal read-only Linux image built with Buildroot. Its job is to boot the hardware, provide connectivity, and host portable services.
+The base OS (**Offline Lab OS**) is a minimal read-only Linux image built with Buildroot. Its job is to boot the hardware, provide connectivity, and host portable services.
 
 ## Design principles
 
@@ -14,7 +14,7 @@ The base OS (**MoreOS**) is a minimal read-only Linux image built with Buildroot
 
 ## Build system
 
-MoreOS is built with [Buildroot](https://buildroot.org/) using the Raspberry Pi foundation kernel and firmware. Builds run in Docker on macOS or on a native arm64 Debian VM (the "buildbox").
+Offline Lab OS is built with [Buildroot](https://buildroot.org/) using the Raspberry Pi foundation kernel and firmware. Builds run in Docker on macOS or on a native arm64 Debian VM (the "buildbox").
 
 The [builder repository](https://github.com/offline-lab/builder) contains the Buildroot configuration, external tree, and tooling for producing SD card images.
 

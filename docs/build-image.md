@@ -14,7 +14,7 @@ Both produce the same output: a compressed SD card image in `artifacts/`.
 - ~15 GB free disk for the build cache
 
 **Buildbox path:**
-- UTM (macOS virtualisation) or any arm64 Debian host
+- Lima (`limactl`) or any arm64 Debian host
 - SSH access to the VM (`buildbox` in `/etc/hosts` or `BUILDBOX_HOST` env var)
 - ~15 GB free disk on the VM
 

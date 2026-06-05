@@ -2,7 +2,7 @@
 
 **Source:** `framework/library/wifi.sh`
 
-WiFi management via wpa_cli for labctl. All functions require the framework to be sourced before this file. Requires: wpa_cli (privileged — called via priv::run), ip
+WiFi management via wpa_cli for boxctl. All functions require the framework to be sourced before this file. Requires: wpa_cli (privileged — called via priv::run), ip
 
 !!! note "Return codes"
     All functions return `0` on success, `1` on failure, `2` on wrong argument count.

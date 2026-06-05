@@ -2,7 +2,7 @@
 
 ## Supported devices
 
-The platform targets the **Raspberry Pi Zero 2W** on **arm64**. Support for other hardware is planned but not yet on the roadmap.
+The primary deployment target is the **Raspberry Pi Zero 2W** on **arm64**. A **QEMU arm64** target is also supported for development and testing without hardware.
 
 The Zero 2W is small, low-power, and capable enough for a small group of users. The goal is a setup that fits in a bag with a stack of powerbanks.
 

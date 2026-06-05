@@ -2,7 +2,7 @@
 
 **Source:** `framework/library/rauc.sh`
 
-RAUC slot and bundle operations for labctl. All functions require the framework to be sourced before this file. Requires: rauc (privileged — called via priv::run), jq
+RAUC slot and bundle operations for boxctl. All functions require the framework to be sourced before this file. Requires: rauc (privileged — called via priv::run), jq
 
 !!! note "Return codes"
     All functions return `0` on success, `1` on failure, `2` on wrong argument count.

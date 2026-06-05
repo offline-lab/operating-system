@@ -8,7 +8,7 @@ See [Building the OS](../builder/) for buildroot packaging details.
 
 | Command | Description |
 |---|---|
-| [labctl](commands.md) | Device management CLI |
+| [boxctl](commands.md) | Device management CLI |
 
 ## Utility modules
 
@@ -19,7 +19,7 @@ See [Building the OS](../builder/) for buildroot packaging details.
 | [`cache`](cache.md) | key/value store with TTL | 8 |
 | [`credentials`](credentials.md) | random username and password generation | 2 |
 | [`depends`](depends.md) | tool availability checks | 7 |
-| [`files`](files.md) | merge and deduplication | 1 |
+| [`files`](files.md) | merge and deduplication | 2 |
 | [`fs`](fs.md) | path and file checks | 16 |
 | [`interact`](interact.md) | prompts and user input | 5 |
 | [`net`](net.md) | IP, FQDN, email validation | 6 |

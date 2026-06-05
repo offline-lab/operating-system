@@ -14,14 +14,14 @@ For build setup and coding conventions, see the [Development guide](development.
 
 | Repository | Description |
 |---|---|
-| [builder](https://github.com/offline-lab/builder) | MoreOS image builder (Buildroot), framework, labctl, and on-device tooling |
+| [builder](https://github.com/offline-lab/builder) | Offline Lab OS image builder (Buildroot), framework, boxctl, and on-device tooling |
 | [disco](https://github.com/offline-lab/disco) | Service discovery and name resolution for offline networks |
 | services | Portable systemd service images (planned) |
 | sync | Data synchronization tools (planned) |
 
 ## Framework
 
-The [Framework](framework/index.md) is the most actively developed part of the codebase. It's a Bash utility library installed on every MoreOS device. See the [framework contributor guide](https://github.com/offline-lab/builder/blob/main/framework/.claude/CLAUDE.md) for coding conventions, and run `bin/test-framework --lint` before submitting changes.
+The [Framework](framework/index.md) is the most actively developed part of the codebase. It's a Bash utility library installed on every Offline Lab OS device. See the [framework contributor guide](https://github.com/offline-lab/builder/blob/main/framework/.claude/CLAUDE.md) for coding conventions, and run `bin/test-framework --lint` before submitting changes.
 
 ## Submitting a pull request
 

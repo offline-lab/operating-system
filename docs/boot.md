@@ -94,6 +94,8 @@ When the data partition has no filesystem (fresh SD card write), the initramfs d
 
 After `expand-data.sh` completes, boot continues normally.
 
+**First boot duration scales with card size.** `resize2fs` must initialise the entire partition. On an 8 GB card this takes a few seconds; on large cards (512 GB–1 TB) it can take several minutes on the Zero 2W. The device will reach the login prompt once it finishes — no intervention needed, just wait.
+
 First-boot provisioning (WiFi credentials, SSH keys) runs as separate systemd services after the data partition is available. See [Configuration](configuration.md).
 
 ## Boot partition contents
@@ -125,4 +127,4 @@ The boot partition is mounted read-only at `/boot/firmware` by `boot-firmware.mo
 
 **Overlay persistence.** After a rootfs update, the old slot's overlay directory is not automatically cleared. If the slot is later activated again, it may see stale overlay state. Manual cleanup is required.
 
-**No boot splash yet.** psplash integration is planned for a later phase.
+**Boot splash.** psplash is enabled. It runs during early boot and is dismissed once systemd's `psplash-quit.service` fires.

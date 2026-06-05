@@ -14,15 +14,15 @@ Start here if you want to understand the platform:
 
 - [Getting Started](getting-started.md) — set up your first device
 - [Hardware](hardware.md) — supported devices, storage, power, networking
-- [Operating System](operating-system.md) — MoreOS design principles
+- [Operating System](operating-system.md) — Offline Lab OS design principles
 - [Offline design](offline.md) — design decisions for offline-first computing
 
 ### Build
 
 Step-by-step guides for working with the platform:
 
-- [Install MoreOS](burn-image.md) — write a pre-built image
-- [Build the OS image](build-image.md) — build MoreOS from source
+- [Install Offline Lab OS](burn-image.md) — write a pre-built image
+- [Build the OS image](build-image.md) — build Offline Lab OS from source
 
 ### Look things up
 
@@ -34,7 +34,7 @@ Reference material for the platform and framework:
 - [Service model](components.md) — portable service model
 - [App format](app-format.md) — .olab package format spec
 - [Disco](discovery/) — service discovery and name resolution
-- [Framework](framework/index.md) — bash library and labctl CLI reference
+- [Framework](framework/index.md) — bash library and boxctl CLI reference
 
 ### Contribute
 

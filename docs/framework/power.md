@@ -2,7 +2,7 @@
 
 **Source:** `framework/library/power.sh`
 
-Runtime power profile management for labctl. All functions require the framework to be sourced before this file. Requires: config module, systemctl (for set_profile), root (for apply_profile)
+Runtime power profile management for boxctl. All functions require the framework to be sourced before this file. Requires: config module, systemctl (for set_profile), root (for apply_profile)
 
 !!! note "Return codes"
     All functions return `0` on success, `1` on failure, `2` on wrong argument count.
@@ -56,7 +56,7 @@ Runtime power profile management for labctl. All functions require the framework
 > Applying profile: <value>
 
 Apply the named profile to the running kernel — requires root.
-Called by power-profile.service on boot and by labctl power apply.
+Called by power-profile.service on boot and by boxctl power apply.
 
 **Arguments:** exactly 1 argument(s)
 

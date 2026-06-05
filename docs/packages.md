@@ -7,10 +7,13 @@ The OS is organised as a Buildroot external tree (`br2-external`). Functionality
 | Package | Purpose |
 |---|---|
 | `offlinelab-base` | Core OS setup: boot partition mount, data partition expansion, fake-hwclock, serial console, /etc/issue |
+| `offlinelab-framework` | Bash utility library and boxctl CLI installed at `/usr/lib/framework/` |
 | `offlinelab-usb-gadget` | USB composite gadget: ACM serial (ttyGS0) + ECM ethernet (usb0, 10.55.0.1/24) |
 | `offlinelab-wifi` | WiFi via wpa_supplicant, credential provisioning from boot partition |
 | `offlinelab-ssh` | Dropbear SSH, key-only auth, host key generation and key provisioning from boot partition |
 | `offlinelab-zram` | Compressed RAM swap for low-memory operation |
+| `offlinelab-portable` | systemd portable service support: `/data/portable` mount, `systemd-portabled`, module loading |
+| `offlinelab-update` | RAUC A/B OTA updates and USB update via udev (`usb-update@.service`, `rauc-mark-good.service`) |
 | `offlinelab-disco` | Service discovery, NSS name resolution, time sync |
 
 ## Package structure

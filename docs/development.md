@@ -13,41 +13,62 @@ This page covers the development workflow after your build environment is workin
 ```
 builder/
 ├── bin/
-│   ├── builder.sh          # Docker build environment wrapper
-│   ├── buildbox.sh         # native arm64 VM build pipeline
-│   ├── build.sh            # build script (runs inside Docker)
-│   ├── build-native.sh     # build script (runs on buildbox)
-│   ├── clean.sh            # buildroot distclean
-│   ├── verify.sh           # automated artifact inspection (137 checks)
+│   ├── builder.sh              # Docker build environment wrapper
+│   ├── buildbox.sh             # Lima VM management and build pipeline
+│   ├── build.sh                # build script (runs inside Docker)
+│   ├── build-native.sh         # build script (runs on buildbox, Pi target)
+│   ├── build-native-qemu.sh    # build script (runs on buildbox, QEMU target)
+│   ├── clean.sh                # buildroot distclean
+│   ├── verify.sh               # automated artifact inspection (200+ checks)
+│   ├── run-qemu                # run a built QEMU image locally
+│   ├── test-qemu-ota           # end-to-end OTA test in QEMU
+│   ├── test-framework          # framework lint and unit tests
+│   ├── generate-framework-docs # rebuild docs/framework/ from source
+│   ├── lib/                    # shared bash library for bin/ scripts
 │   └── buildbox/
-│       └── cloud-init/     # cloud-init for the buildbox VM
+│       └── cloud-init/         # cloud-init for the Lima buildbox VM
 ├── br2-external/
-│   ├── boards/pi-zero-2w/  # board support
-│   │   ├── configs/        # custom kernel config (linux.config)
-│   │   ├── fragments/      # kernel and busybox config fragments
-│   │   ├── initramfs/      # initramfs init script
-│   │   ├── uboot/          # U-Boot boot.cmd
-│   │   ├── config.txt      # RPi firmware config
-│   │   ├── cmdline.txt     # kernel command line
-│   │   ├── genimage.cfg.in # partition layout template
-│   │   ├── post-build.sh   # runs after rootfs build
-│   │   └── post-image.sh   # runs after image creation
+│   ├── boards/
+│   │   ├── common/             # shared between all targets
+│   │   │   ├── fragments/      # busybox.config, linux-kernel.config
+│   │   │   ├── genimage.cfg.in # partition layout template
+│   │   │   └── initramfs/      # initramfs init script
+│   │   ├── pi-zero-2w/         # Pi Zero 2W board files
+│   │   │   ├── fragments/      # uboot-fragment.config
+│   │   │   ├── cmdline.txt
+│   │   │   ├── config.txt      # RPi firmware config
+│   │   │   └── splash.png      # psplash boot image
+│   │   ├── rpi/                # shared RPi support
+│   │   │   ├── fragments/      # linux-hardware.config
+│   │   │   ├── pi-zero-2w/meta # board identity (image name, compatible string)
+│   │   │   ├── hook.sh         # post-image hook
+│   │   │   └── uboot/boot.cmd  # U-Boot boot script
+│   │   ├── qemu-arm64/         # QEMU arm64 target
+│   │   │   ├── fragments/      # linux-hardware.config, uboot-fragment.config
+│   │   │   ├── meta            # board identity
+│   │   │   ├── hook.sh         # post-image hook
+│   │   │   └── uboot/boot.cmd  # U-Boot boot script
+│   │   └── scripts/            # shared post-build/post-image scripts
+│   │       ├── post-build.sh
+│   │       ├── post-image-lib.sh
+│   │       └── post-image.sh
 │   ├── configs/
-│   │   └── offlinelab_pi_zero_2w_defconfig
+│   │   ├── offlinelab_pi_zero_2w_defconfig
+│   │   └── offlinelab_qemu_arm64_defconfig
 │   ├── package/
-│   │   └── offlinelab-*/   # OS packages
-│   ├── rootfs_overlay/     # static files merged into rootfs
-│   ├── skeleton/           # custom rootfs directory skeleton
-│   ├── Config.in           # top-level Kconfig
+│   │   └── offlinelab-*/       # OS packages
+│   ├── rootfs_overlay/         # static files merged into rootfs
+│   ├── skeleton/               # custom rootfs directory skeleton
+│   ├── Config.in               # top-level Kconfig
 │   ├── external.desc
 │   ├── external.mk
-│   ├── users.txt           # user accounts
-│   └── devices.txt         # device nodes
-├── framework/              # first-party Bash utility library and labctl CLI
-├── docs/                   # documentation site (Zensical)
+│   ├── users.txt               # user accounts
+│   └── devices.txt             # device nodes
+├── framework/                  # first-party Bash utility library and boxctl CLI
+├── docs/                       # documentation site (Zensical)
 ├── Dockerfile
-├── config.example          # build-time config template
-└── env.example             # environment template
+├── config.example              # build-time config template
+└── env.example                 # environment template
 ```
 
 No binaries, pre-built images, or third-party source code is stored in git. Build artifacts go to `artifacts/` (gitignored). External dependencies are fetched at build time.
@@ -121,7 +142,7 @@ The machine-id is stored in the U-Boot environment on the bootstate partition (`
 
 ## Verification
 
-`bin/verify.sh` runs 137 checks against the build artifacts without requiring hardware:
+`bin/verify.sh` runs 200+ checks against the build artifacts without requiring hardware:
 
 ```bash
 bin/verify.sh artifacts/
