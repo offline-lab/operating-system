@@ -22,7 +22,7 @@ teardown() {
 }
 
 @test "config::ensure_writable: returns 1 when CONFIG_DIR does not exist" {
-    export CONFIG_DIR="/tmp/nonexistent_labctl_config_xyz"
+    export CONFIG_DIR="/tmp/nonexistent_boxctl_config_xyz"
     run config::ensure_writable
     [ "${status}" -eq 1 ]
 }
@@ -108,7 +108,7 @@ teardown() {
 }
 
 @test "config::list: returns 1 when CONFIG_DIR does not exist" {
-    export CONFIG_DIR="/tmp/nonexistent_labctl_xyz"
+    export CONFIG_DIR="/tmp/nonexistent_boxctl_xyz"
     run config::list
     [ "${status}" -eq 1 ]
 }

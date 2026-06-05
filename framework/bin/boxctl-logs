@@ -6,10 +6,10 @@ set -euo pipefail
 source framework || exit 1
 import depends
 
-function labctl_logs::usage() {
+function boxctl_logs::usage() {
     cat >&2 <<EOF
 
-Usage: labctl logs [options]
+Usage: boxctl logs [options]
 
 Options:
   -u, --unit <unit>     Filter by systemd unit
@@ -22,8 +22,8 @@ EOF
     exit 0
 }
 
-function labctl_logs::main() {
-    [[ "${1:-}" =~ ^(-h|--help)$ ]] && labctl_logs::usage
+function boxctl_logs::main() {
+    [[ "${1:-}" =~ ^(-h|--help)$ ]] && boxctl_logs::usage
 
     depends::check journalctl
 
@@ -65,4 +65,4 @@ function labctl_logs::main() {
     journalctl "${args[@]}"
 }
 
-labctl_logs::main "${@}"
+boxctl_logs::main "${@}"

@@ -2,7 +2,7 @@
 # vi: ft=bash
 # shellcheck shell=bash disable=SC2312
 
-# WiFi management via wpa_cli for labctl.
+# WiFi management via wpa_cli for boxctl.
 # All functions require the framework to be sourced before this file.
 # Requires: wpa_cli (privileged — called via priv::run), ip
 

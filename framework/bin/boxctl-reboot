@@ -6,10 +6,10 @@ set -euo pipefail
 source framework || exit 1
 import interact rauc system
 
-function labctl_reboot::usage() {
+function boxctl_reboot::usage() {
     cat >&2 <<EOF
 
-Usage: labctl reboot [<slot>]
+Usage: boxctl reboot [<slot>]
 
 Reboot the device, optionally into a specific RAUC slot.
 If no slot is given, performs a normal reboot.
@@ -21,8 +21,8 @@ EOF
     exit 0
 }
 
-function labctl_reboot::main() {
-    [[ "${1:-}" =~ ^(-h|--help)$ ]] && labctl_reboot::usage
+function boxctl_reboot::main() {
+    [[ "${1:-}" =~ ^(-h|--help)$ ]] && boxctl_reboot::usage
 
     local slot="${1:-}"
 
@@ -46,4 +46,4 @@ function labctl_reboot::main() {
     priv::run reboot
 }
 
-labctl_reboot::main "${@}"
+boxctl_reboot::main "${@}"

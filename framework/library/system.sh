@@ -5,7 +5,7 @@
 #
 # Run a command as root.
 # If already root: exec directly.
-# If not: delegate to sudo labctl-su, which enforces the /etc/labctl/su.conf allowlist.
+# If not: delegate to sudo boxctl-su, which enforces the /etc/boxctl/su.conf allowlist.
 #
 function priv::run() {
     log::trace "${FUNCNAME[0]}: Running privileged command: ${*}"
@@ -15,7 +15,7 @@ function priv::run() {
     if [[ "${EUID}" -eq 0 ]]; then
         "${@}"
     else
-        sudo labctl-su "${@}"
+        sudo boxctl-su "${@}"
     fi
 }
 

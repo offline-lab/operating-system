@@ -6,10 +6,10 @@ set -euo pipefail
 source framework || exit 1
 import interact config system
 
-function labctl_config::usage() {
+function boxctl_config::usage() {
     cat >&2 <<EOF
 
-Usage: labctl config <subcommand> [args]
+Usage: boxctl config <subcommand> [args]
 
 Subcommands:
   get <key>           Read a config value
@@ -25,9 +25,9 @@ EOF
     exit 0
 }
 
-function labctl_config::main() {
+function boxctl_config::main() {
     local subcmd="${1:-}"
-    (var::is_empty "${subcmd}" || var::matches "${subcmd}" '^(-h|--help)$') && labctl_config::usage
+    (var::is_empty "${subcmd}" || var::matches "${subcmd}" '^(-h|--help)$') && boxctl_config::usage
     shift
 
     case "${subcmd}" in
@@ -54,4 +54,4 @@ function labctl_config::main() {
     esac
 }
 
-labctl_config::main "${@}"
+boxctl_config::main "${@}"

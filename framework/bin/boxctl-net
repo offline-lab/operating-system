@@ -6,10 +6,10 @@ set -euo pipefail
 source framework || exit 1
 import interact wifi system
 
-function labctl_net::usage() {
+function boxctl_net::usage() {
     cat >&2 <<EOF
 
-Usage: labctl net <subcommand> [args]
+Usage: boxctl net <subcommand> [args]
 
 Subcommands:
   status                Show current WiFi state and IP
@@ -20,9 +20,9 @@ EOF
     exit 0
 }
 
-function labctl_net::main() {
+function boxctl_net::main() {
     local subcmd="${1:-}"
-    (var::is_empty "${subcmd}" || var::matches "${subcmd}" '^(-h|--help)$') && labctl_net::usage
+    (var::is_empty "${subcmd}" || var::matches "${subcmd}" '^(-h|--help)$') && boxctl_net::usage
     shift
 
     case "${subcmd}" in
@@ -38,4 +38,4 @@ function labctl_net::main() {
     esac
 }
 
-labctl_net::main "${@}"
+boxctl_net::main "${@}"

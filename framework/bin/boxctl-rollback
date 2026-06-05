@@ -6,23 +6,23 @@ set -euo pipefail
 source framework || exit 1
 import interact rauc system
 
-function labctl_rollback::usage() {
+function boxctl_rollback::usage() {
     cat >&2 <<EOF
 
-Usage: labctl rollback
+Usage: boxctl rollback
 
 Roll back to the previously installed RAUC slot.
 
 Finds the inactive rootfs slot, marks it as the boot target, and offers
 to reboot. The current slot is not modified — you can roll forward again
-by running: labctl update
+by running: boxctl update
 
 EOF
     exit 0
 }
 
-function labctl_rollback::main() {
-    [[ "${1:-}" =~ ^(-h|--help)$ ]] && labctl_rollback::usage
+function boxctl_rollback::main() {
+    [[ "${1:-}" =~ ^(-h|--help)$ ]] && boxctl_rollback::usage
 
     local active inactive active_version inactive_version
 
@@ -50,4 +50,4 @@ function labctl_rollback::main() {
     log::info "${FUNCNAME[0]}: rollback staged. Reboot to complete."
 }
 
-labctl_rollback::main "${@}"
+boxctl_rollback::main "${@}"

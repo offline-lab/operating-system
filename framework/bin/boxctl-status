@@ -6,10 +6,10 @@ set -euo pipefail
 source framework || exit 1
 import interact rauc health system
 
-function labctl_status::usage() {
+function boxctl_status::usage() {
     cat >&2 <<EOF
 
-Usage: labctl status
+Usage: boxctl status
 
 Show system health: RAUC slot info, AppArmor, dm-verity, failed units,
 disk and memory usage.
@@ -18,8 +18,8 @@ EOF
     exit 0
 }
 
-function labctl_status::main() {
-    [[ "${1:-}" =~ ^(-h|--help)$ ]] && labctl_status::usage
+function boxctl_status::main() {
+    [[ "${1:-}" =~ ^(-h|--help)$ ]] && boxctl_status::usage
 
     printf 'RAUC Slots\n'
     rauc::print_slots
@@ -28,4 +28,4 @@ function labctl_status::main() {
     health::print_health
 }
 
-labctl_status::main "${@}"
+boxctl_status::main "${@}"

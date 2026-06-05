@@ -6,10 +6,10 @@ set -euo pipefail
 source framework || exit 1
 import interact rauc system
 
-function labctl_update::usage() {
+function boxctl_update::usage() {
     cat >&2 <<EOF
 
-Usage: labctl update [<bundle>]
+Usage: boxctl update [<bundle>]
 
 Apply a RAUC bundle. If no path is given, searches /mnt for *.raucb files.
 Prompts for confirmation before installing.
@@ -21,8 +21,8 @@ EOF
     exit 0
 }
 
-function labctl_update::main() {
-    [[ "${1:-}" =~ ^(-h|--help)$ ]] && labctl_update::usage
+function boxctl_update::main() {
+    [[ "${1:-}" =~ ^(-h|--help)$ ]] && boxctl_update::usage
 
     local bundle="${1:-}"
 
@@ -60,4 +60,4 @@ function labctl_update::main() {
     interact::prompt_bool "Reboot now?" && priv::run reboot
 }
 
-labctl_update::main "${@}"
+boxctl_update::main "${@}"

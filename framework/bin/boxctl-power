@@ -6,10 +6,10 @@ set -euo pipefail
 source framework || exit 1
 import config power system
 
-function labctl_power::usage() {
+function boxctl_power::usage() {
     cat >&2 <<EOF
 
-Usage: labctl power [<subcommand>]
+Usage: boxctl power [<subcommand>]
 
 Manage runtime power profile (cpufreq governor + USB autosuspend).
 
@@ -28,9 +28,9 @@ EOF
     exit 0
 }
 
-function labctl_power::main() {
+function boxctl_power::main() {
     local subcmd="${1:-get}"
-    (var::matches "${subcmd}" '^(-h|--help)$') && labctl_power::usage
+    (var::matches "${subcmd}" '^(-h|--help)$') && boxctl_power::usage
     shift || true
 
     case "${subcmd}" in
@@ -55,4 +55,4 @@ function labctl_power::main() {
     esac
 }
 
-labctl_power::main "${@}"
+boxctl_power::main "${@}"

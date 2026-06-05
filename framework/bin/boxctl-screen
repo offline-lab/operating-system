@@ -10,10 +10,10 @@ SCREEN_BOOTFS_LABEL="bootfs"
 SCREEN_BOOTFS_MOUNT="/mnt/bootfs"
 SCREEN_CONFIG_TXT="${SCREEN_BOOTFS_MOUNT}/config.txt"
 
-function labctl_screen::usage() {
+function boxctl_screen::usage() {
     cat >&2 <<EOF
 
-Usage: labctl screen <subcommand> [args]
+Usage: boxctl screen <subcommand> [args]
 
 Manage HDMI display configuration. Settings are stored in /data/config and
 written to /boot/firmware/config.txt on apply. A reboot is required for
@@ -33,7 +33,7 @@ EOF
     exit 0
 }
 
-function labctl_screen::config_txt_set() {
+function boxctl_screen::config_txt_set() {
     log::trace "${FUNCNAME[0]}: setting ${1} in config.txt"
 
     [[ "${#}" -ne 2 ]] && return 2
@@ -48,20 +48,20 @@ function labctl_screen::config_txt_set() {
     fi
 }
 
-function labctl_screen::mount_bootfs() {
+function boxctl_screen::mount_bootfs() {
     log::trace "${FUNCNAME[0]}: mounting ${SCREEN_BOOTFS_LABEL} at ${SCREEN_BOOTFS_MOUNT}"
 
     mkdir -p "${SCREEN_BOOTFS_MOUNT}"
     priv::run mount -L "${SCREEN_BOOTFS_LABEL}" "${SCREEN_BOOTFS_MOUNT}"
 }
 
-function labctl_screen::umount_bootfs() {
+function boxctl_screen::umount_bootfs() {
     log::trace "${FUNCNAME[0]}: unmounting ${SCREEN_BOOTFS_MOUNT}"
 
     priv::run umount "${SCREEN_BOOTFS_MOUNT}"
 }
 
-function labctl_screen::apply() {
+function boxctl_screen::apply() {
     log::trace "${FUNCNAME[0]}: writing screen config to config.txt"
 
     local rotate hdmi_group hdmi_mode
@@ -73,20 +73,20 @@ function labctl_screen::apply() {
         exit::error "${FUNCNAME[0]}: no screen settings stored — nothing to apply"
     fi
 
-    labctl_screen::mount_bootfs || return 1
+    boxctl_screen::mount_bootfs || return 1
 
-    [[ -n "${rotate}" ]] && labctl_screen::config_txt_set "display_rotate" "${rotate}"
-    [[ -n "${hdmi_group}" ]] && labctl_screen::config_txt_set "hdmi_group" "${hdmi_group}"
-    [[ -n "${hdmi_mode}" ]] && labctl_screen::config_txt_set "hdmi_mode" "${hdmi_mode}"
+    [[ -n "${rotate}" ]] && boxctl_screen::config_txt_set "display_rotate" "${rotate}"
+    [[ -n "${hdmi_group}" ]] && boxctl_screen::config_txt_set "hdmi_group" "${hdmi_group}"
+    [[ -n "${hdmi_mode}" ]] && boxctl_screen::config_txt_set "hdmi_mode" "${hdmi_mode}"
 
-    labctl_screen::umount_bootfs
+    boxctl_screen::umount_bootfs
 
     log::info "${FUNCNAME[0]}: config.txt updated — reboot to apply"
 }
 
-function labctl_screen::main() {
+function boxctl_screen::main() {
     local subcmd="${1:-}"
-    (var::is_empty "${subcmd}" || var::matches "${subcmd}" '^(-h|--help)$') && labctl_screen::usage
+    (var::is_empty "${subcmd}" || var::matches "${subcmd}" '^(-h|--help)$') && boxctl_screen::usage
     shift
 
     case "${subcmd}" in
@@ -112,7 +112,7 @@ function labctl_screen::main() {
             esac
             config::write "screen/rotate" "${rpi_val}"
             log::info "${FUNCNAME[0]}: rotation stored as ${degrees}° (display_rotate=${rpi_val})"
-            interact::prompt_bool "Apply to config.txt now?" && labctl_screen::apply
+            interact::prompt_bool "Apply to config.txt now?" && boxctl_screen::apply
             ;;
         resolution)
             [[ "${#}" -lt 2 ]] && exit::error "${FUNCNAME[0]}: resolution requires <group> <mode>"
@@ -121,10 +121,10 @@ function labctl_screen::main() {
             config::write "screen/hdmi_group" "${grp}"
             config::write "screen/hdmi_mode" "${mode}"
             log::info "${FUNCNAME[0]}: resolution stored as group=${grp} mode=${mode}"
-            interact::prompt_bool "Apply to config.txt now?" && labctl_screen::apply
+            interact::prompt_bool "Apply to config.txt now?" && boxctl_screen::apply
             ;;
         apply)
-            labctl_screen::apply
+            boxctl_screen::apply
             ;;
         *)
             exit::error "${FUNCNAME[0]}: unknown subcommand: ${subcmd}"
@@ -132,4 +132,4 @@ function labctl_screen::main() {
     esac
 }
 
-labctl_screen::main "${@}"
+boxctl_screen::main "${@}"

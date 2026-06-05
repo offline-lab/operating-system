@@ -1,33 +1,33 @@
 #!/usr/bin/env bash
-# labctl-su — privileged command wrapper for labctl scripts.
+# boxctl-su — privileged command wrapper for boxctl scripts.
 #
-# Usage: sudo labctl-su <command> [args...]
+# Usage: sudo boxctl-su <command> [args...]
 #
 # Executes <command> only when it appears in the allowlist at
-# /etc/labctl/su.conf. This lets labctl scripts perform privileged operations
+# /etc/boxctl/su.conf. This lets boxctl scripts perform privileged operations
 # without embedding sudo calls throughout each subcommand script.
 #
 # The allowlist file must be owned by root and not world-writable.
 
 set -euo pipefail
 
-readonly LABCTL_SU_CONF="${LABCTL_SU_CONF:-/etc/labctl/su.conf}"
+readonly BOXCTL_SU_CONF="${BOXCTL_SU_CONF:-/etc/boxctl/su.conf}"
 
 _die() {
-    printf 'labctl-su: %s\n' "${1}" >&2
+    printf 'boxctl-su: %s\n' "${1}" >&2
     exit 1
 }
 
 _check_conf() {
-    [[ -f "${LABCTL_SU_CONF}" ]] || _die "allowlist not found: ${LABCTL_SU_CONF}"
-    [[ -r "${LABCTL_SU_CONF}" ]] || _die "allowlist not readable: ${LABCTL_SU_CONF}"
+    [[ -f "${BOXCTL_SU_CONF}" ]] || _die "allowlist not found: ${BOXCTL_SU_CONF}"
+    [[ -r "${BOXCTL_SU_CONF}" ]] || _die "allowlist not readable: ${BOXCTL_SU_CONF}"
 
     local perms
-    perms="$(stat -c '%a' "${LABCTL_SU_CONF}")" || _die "cannot stat: ${LABCTL_SU_CONF}"
+    perms="$(stat -c '%a' "${BOXCTL_SU_CONF}")" || _die "cannot stat: ${BOXCTL_SU_CONF}"
 
     # Refuse to run if the config is world-writable
     [[ "${perms: -1}" =~ [2367] ]] &&
-        _die "allowlist is world-writable (${perms}) — refusing to run: ${LABCTL_SU_CONF}"
+        _die "allowlist is world-writable (${perms}) — refusing to run: ${BOXCTL_SU_CONF}"
 }
 
 _is_allowed() {
@@ -37,18 +37,18 @@ _is_allowed() {
     while read -r line; do
         [[ "${line}" == \#* || -z "${line}" ]] && continue
         [[ "${line}" == "${target}" ]] && return 0
-    done <"${LABCTL_SU_CONF}"
+    done <"${BOXCTL_SU_CONF}"
 
     return 1
 }
 
 [[ "${#}" -eq 0 ]] && {
-    printf 'Usage: sudo labctl-su <command> [args...]\n' >&2
+    printf 'Usage: sudo boxctl-su <command> [args...]\n' >&2
     exit 1
 }
 
 uid="$(id -u)"
-[[ "${uid}" -eq 0 ]] || _die "must be run as root — use: sudo labctl-su ${*}"
+[[ "${uid}" -eq 0 ]] || _die "must be run as root — use: sudo boxctl-su ${*}"
 
 _check_conf
 
@@ -59,7 +59,7 @@ cmd_path="$(command -v "${cmd}" 2>/dev/null || true)"
 [[ -z "${cmd_path}" ]] && _die "command not found: ${cmd}"
 
 if ! _is_allowed "${cmd_path}" && ! _is_allowed "${cmd}"; then
-    _die "denied: '${cmd}' is not in the allowlist (${LABCTL_SU_CONF})"
+    _die "denied: '${cmd}' is not in the allowlist (${BOXCTL_SU_CONF})"
 fi
 
 exec "${cmd_path}" "${@}"

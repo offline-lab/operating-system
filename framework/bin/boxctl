@@ -6,16 +6,16 @@ set -euo pipefail
 
 cmd="${1:-}"
 
-# No command: hand off to labctl-help for interactive browsing
-[[ -z "${cmd}" ]] && exec labctl-help
+# No command: hand off to boxctl-help for interactive browsing
+[[ -z "${cmd}" ]] && exec boxctl-help
 
 shift
 
-exec_path="$(command -v "labctl-${cmd}" 2>/dev/null || true)"
+exec_path="$(command -v "boxctl-${cmd}" 2>/dev/null || true)"
 
 if [[ -z "${exec_path}" ]]; then
-    printf 'labctl: unknown command "%s"\n\n' "${cmd}" >&2
-    exec labctl-help
+    printf 'boxctl: unknown command "%s"\n\n' "${cmd}" >&2
+    exec boxctl-help
 fi
 
 exec "${exec_path}" "${@}"

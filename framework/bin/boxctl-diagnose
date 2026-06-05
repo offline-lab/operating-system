@@ -6,10 +6,10 @@ set -euo pipefail
 source framework || exit 1
 import interact rauc health wifi system
 
-function labctl_diagnose::usage() {
+function boxctl_diagnose::usage() {
     cat >&2 <<EOF
 
-Usage: labctl diagnose [--output <dir>]
+Usage: boxctl diagnose [--output <dir>]
 
 Collect diagnostics and write a tarball to /tmp (or <dir>).
 
@@ -29,8 +29,8 @@ EOF
     exit 0
 }
 
-function labctl_diagnose::main() {
-    [[ "${1:-}" =~ ^(-h|--help)$ ]] && labctl_diagnose::usage
+function boxctl_diagnose::main() {
+    [[ "${1:-}" =~ ^(-h|--help)$ ]] && boxctl_diagnose::usage
 
     local outdir="/tmp"
     if [[ "${1:-}" == "--output" ]]; then
@@ -43,7 +43,7 @@ function labctl_diagnose::main() {
     stamp="$(date +%Y%m%d-%H%M%S)"
     workdir="$(mktemp -d)"
     trap 'rm -rf "${workdir}"' EXIT
-    tarball="${outdir}/labctl-diag-${stamp}.tar.gz"
+    tarball="${outdir}/boxctl-diag-${stamp}.tar.gz"
 
     log::info "${FUNCNAME[0]}: collecting diagnostics"
 
@@ -67,4 +67,4 @@ function labctl_diagnose::main() {
     log::info "${FUNCNAME[0]}: diagnostics written to ${tarball}"
 }
 
-labctl_diagnose::main "${@}"
+boxctl_diagnose::main "${@}"
