@@ -305,20 +305,20 @@ function cmd_sync() {
 ################################################################################
 
 function cmd_build() {
+    local board="${1:-pi-zero-2w}"
     resolve_host
     cmd_sync
 
-    log "Starting build on ${REMOTE_HOST}:${SSH_PORT}..."
+    log "Starting ${board} build on ${REMOTE_HOST}:${SSH_PORT}..."
     local start_time
     start_time="$(date +%s)"
 
-    if ! bb_ssh "bash ${REMOTE_WORK}/bin/build-native.sh" 2>&1 | while IFS= read -r line; do
+    if ! bb_ssh "bash ${REMOTE_WORK}/bin/build-image.sh ${board}" 2>&1 | while IFS= read -r line; do
         if [[ "${line}" == *">>>"* ]]; then
             log_dim "${line}"
         fi
     done; then
-        log_err "Build failed"
-        log_err "Full log: ssh -p ${SSH_PORT} builder@127.0.0.1 cat /home/builder/build.log"
+        log_err "${board} build failed"
         return 1
     fi
 
@@ -329,43 +329,16 @@ function cmd_build() {
 }
 
 ################################################################################
-# QEMU build on buildbox
-################################################################################
-
-function cmd_qemu_build() {
-    resolve_host
-    cmd_sync
-
-    log "Starting QEMU build on ${REMOTE_HOST}:${SSH_PORT}..."
-    local start_time
-    start_time="$(date +%s)"
-
-    if ! bb_ssh "bash ${REMOTE_WORK}/bin/build-native-qemu.sh" 2>&1 | while IFS= read -r line; do
-        if [[ "${line}" == *">>>"* ]]; then
-            log_dim "${line}"
-        fi
-    done; then
-        log_err "QEMU build failed"
-        log_err "Full log: ssh -p ${SSH_PORT} builder@127.0.0.1 cat /home/builder/build-qemu.log"
-        return 1
-    fi
-
-    local end_time elapsed
-    end_time="$(date +%s)"
-    elapsed="$((end_time - start_time))"
-    log "QEMU build completed in $((elapsed / 60))m $((elapsed % 60))s"
-}
-
-################################################################################
 # Verify on buildbox
 ################################################################################
 
 function cmd_verify() {
+    local board="${1:-pi-zero-2w}"
     resolve_host
 
     log "Running verification on ${REMOTE_HOST}:${SSH_PORT}..."
 
-    if ! bb_ssh "sudo bash ${REMOTE_WORK}/bin/verify.sh ${REMOTE_ARTIFACTS}/" 2>&1; then
+    if ! bb_ssh "sudo bash ${REMOTE_WORK}/bin/verify.sh ${REMOTE_ARTIFACTS}/${board}/" 2>&1; then
         log_err "Verification failed"
         return 1
     fi
@@ -378,56 +351,30 @@ function cmd_verify() {
 ################################################################################
 
 function cmd_fetch() {
+    local board="${1:-pi-zero-2w}"
     resolve_host
 
-    local local_artifacts="${BASEDIR}/artifacts"
+    local local_artifacts="${BASEDIR}/artifacts/${board}"
     mkdir -p "${local_artifacts}"
 
-    log "Fetching artifacts from ${REMOTE_HOST}:${SSH_PORT}..."
+    log "Fetching ${board} artifacts from ${REMOTE_HOST}:${SSH_PORT}..."
 
     bb_rsync \
-        --include='offlinelab-sdcard-*.img.gz' \
-        --include='rootfs.ext4' \
-        --include='rootfs.ext2' \
-        --include='Image' \
-        --include='initramfs.cpio.gz' \
-        --include='sdcard.img' \
+        --include='*.img.gz' \
+        --include='*.img' \
+        --include='*.bin' \
         --include='*.dtb' \
-        --exclude='*' \
-        "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_ARTIFACTS}/" \
-        "${local_artifacts}/"
-
-    log "Artifacts saved to ${local_artifacts}/"
-    ls -lh "${local_artifacts}"/offlinelab-sdcard-*.img.gz 2>/dev/null || true
-}
-
-################################################################################
-# Fetch QEMU artifacts from buildbox
-################################################################################
-
-function cmd_qemu_fetch() {
-    resolve_host
-
-    local local_artifacts="${BASEDIR}/artifacts/qemu"
-    mkdir -p "${local_artifacts}"
-
-    log "Fetching QEMU artifacts from ${REMOTE_HOST}:${SSH_PORT}..."
-
-    bb_rsync \
-        --include='qemu.img' \
-        --include='u-boot.bin' \
+        --include='*.raucb' \
         --include='Image' \
-        --include='rootfs.ext4' \
         --include='initramfs.cpio.gz' \
         --include='boot.scr' \
         --include='kernel-a.img' \
-        --include='offlinelab-update.raucb' \
         --exclude='*' \
-        "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_ARTIFACTS}/qemu/" \
+        "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_ARTIFACTS}/${board}/" \
         "${local_artifacts}/"
 
-    log "QEMU artifacts saved to ${local_artifacts}/"
-    ls -lh "${local_artifacts}/qemu.img" 2>/dev/null || true
+    log "Artifacts saved to ${local_artifacts}/"
+    ls -lh "${local_artifacts}/"*.img.gz 2>/dev/null || true
 }
 
 ################################################################################
@@ -476,14 +423,15 @@ function cmd_destroy() {
 ################################################################################
 
 function cmd_pipeline() {
+    local board="${1:-pi-zero-2w}"
     local start_time
     start_time="$(date +%s)"
 
-    log "=== Offline Lab OS build pipeline ==="
+    log "=== Offline Lab OS build pipeline (${board}) ==="
 
-    cmd_build
-    cmd_verify
-    cmd_fetch
+    cmd_build "${board}"
+    cmd_verify "${board}"
+    cmd_fetch "${board}"
 
     local end_time elapsed
     end_time="$(date +%s)"
@@ -502,17 +450,20 @@ function cmd_usage() {
   Buildbox — non-interactive build pipeline for Offline Lab OS
 
   Usage:
-    bin/buildbox.sh                     Full pipeline: sync + build + verify + fetch (pi-zero-2w)
+    bin/buildbox.sh [board]             Full pipeline: sync + build + verify + fetch
     bin/buildbox.sh create              Create and provision a new buildbox VM
     bin/buildbox.sh sync                Sync code to buildbox
-    bin/buildbox.sh build               Sync + build (pi-zero-2w)
-    bin/buildbox.sh verify              Run verification on remote artifacts
-    bin/buildbox.sh fetch               Download pi-zero-2w artifacts from buildbox
-    bin/buildbox.sh qemu-build          Sync + build (QEMU arm64)
-    bin/buildbox.sh qemu-fetch          Download QEMU artifacts to artifacts/qemu/
+    bin/buildbox.sh build [board]       Sync + build (default: pi-zero-2w)
+    bin/buildbox.sh verify [board]      Run verification on remote artifacts
+    bin/buildbox.sh fetch [board]       Download artifacts from buildbox
     bin/buildbox.sh clean-artifacts     Remove all artifacts from buildbox
     bin/buildbox.sh ssh [cmd]           SSH into buildbox
     bin/buildbox.sh destroy             Delete the buildbox VM
+
+  Board examples:
+    bin/buildbox.sh build pi-zero-2w
+    bin/buildbox.sh build qemu-arm64
+    bin/buildbox.sh fetch qemu-arm64
 
   Environment:
     BUILDBOX_HOST=<ip>:<port>           Override buildbox SSH endpoint
@@ -542,8 +493,6 @@ case "${1:-}" in
     build)          shift; cmd_build "${@}" ;;
     verify)         shift; cmd_verify "${@}" ;;
     fetch)          shift; cmd_fetch "${@}" ;;
-    qemu-build)     shift; cmd_qemu_build "${@}" ;;
-    qemu-fetch)     shift; cmd_qemu_fetch "${@}" ;;
     ssh)            shift; cmd_ssh "${@}" ;;
     clean-artifacts) shift; cmd_clean_artifacts "${@}" ;;
     destroy)        shift; cmd_destroy "${@}" ;;

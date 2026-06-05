@@ -2,7 +2,7 @@
 """
 generate-framework-docs — API reference generator for the offline-lab-framework.
 
-Extracts documentation from framework/library/*.sh and framework/bin/labctl-*
+Extracts documentation from framework/library/*.sh and framework/bin/boxctl-*
 and produces Markdown pages compatible with the Zensical docs site.
 
 Usage:
@@ -15,7 +15,7 @@ Options:
 
 Sources:
     framework/library/*.sh    → docs/framework/<name>.md per module
-    framework/bin/labctl-*    → docs/framework/commands.md
+    framework/bin/boxctl-*    → docs/framework/commands.md
     All modules               → docs/framework/index.md
 """
 
@@ -295,8 +295,8 @@ def parse_library_file(path: Path) -> Module:
 
 
 def parse_command_script(path: Path) -> Command | None:
-    """Extract the usage heredoc from a labctl-* script."""
-    name = path.name.removeprefix('labctl-')
+    """Extract the usage heredoc from a boxctl-* script."""
+    name = path.name.removeprefix('boxctl-')
     if name in ('su', 'help'):  # skip internal tools
         return None
 
@@ -424,18 +424,18 @@ def render_module(module: Module) -> str:
 
 
 def render_commands(commands: list[Command]) -> str:
-    """Render all labctl commands to a single Markdown page."""
+    """Render all boxctl commands to a single Markdown page."""
     lines: list[str] = []
-    lines.append('# labctl — Command Reference')
+    lines.append('# boxctl — Command Reference')
     lines.append('')
-    lines.append('`labctl` is the device management CLI installed on the Offline Lab OS.')
-    lines.append('Run `labctl help` or `labctl <command> --help` for interactive help.')
+    lines.append('`boxctl` is the device management CLI installed on the Offline Lab OS.')
+    lines.append('Run `boxctl help` or `boxctl <command> --help` for interactive help.')
     lines.append('')
     lines.append('---')
     lines.append('')
 
     for cmd in sorted(commands, key=lambda c: c.name):
-        lines.append(f'## `labctl {cmd.name}`')
+        lines.append(f'## `boxctl {cmd.name}`')
         lines.append('')
         lines.append('```')
         lines.append(cmd.usage.strip())
@@ -463,7 +463,7 @@ def render_index(modules: list[Module], has_commands: bool) -> str:
         lines.append('')
         lines.append('| Command | Description |')
         lines.append('|---|---|')
-        lines.append('| [labctl](commands.md) | Device management CLI |')
+        lines.append('| [boxctl](commands.md) | Device management CLI |')
         lines.append('')
 
     # Separate utility and OS-specific modules
@@ -588,10 +588,10 @@ def main() -> int:
         modules.append(module)
         print(f'  parsed {sh_file.name}: {len(module.functions)} functions')
 
-    # Parse all labctl-* commands
+    # Parse all boxctl-* commands
     commands: list[Command] = []
     if bin_dir.is_dir():
-        for cmd_file in sorted(bin_dir.glob('labctl-*')):
+        for cmd_file in sorted(bin_dir.glob('boxctl-*')):
             cmd = parse_command_script(cmd_file)
             if cmd:
                 commands.append(cmd)

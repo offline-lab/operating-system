@@ -26,14 +26,14 @@
 #   brew install qemu
 #
 # Usage:
-#   bin/test-qemu-ota            # uses existing artifacts/qemu/
-#   bin/test-qemu-ota --build    # runs qemu-build + qemu-fetch first
+#   bin/test-qemu-ota            # uses existing artifacts/qemu-arm64/
+#   bin/test-qemu-ota --build    # runs build qemu-arm64 + fetch qemu-arm64 first
 #
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${0}")/.." && pwd)"
 BASEDIR="${REPO_ROOT}"
-ARTIFACTS="${REPO_ROOT}/artifacts/qemu"
+ARTIFACTS="${REPO_ROOT}/artifacts/qemu-arm64"
 TEST_DIR="/tmp/qemu-ota-test-$$"
 SSH_KEY="${REPO_ROOT}/.ssh/builder"
 SSH_PORT=2222
@@ -137,7 +137,7 @@ function prepare_images() {
     "${BASEDIR}/bin/buildbox.sh" ssh "bash -s" <<'REMOTE'
 set -euo pipefail
 
-ARTIFACTS="${HOME}/artifacts/qemu"
+ARTIFACTS="${HOME}/artifacts/qemu-arm64"
 TEST="${HOME}/work-ota-test"
 mkdir -p "${TEST}"
 
@@ -345,13 +345,13 @@ function main() {
 
     if [[ "${do_build}" -eq 1 ]]; then
         log "Building QEMU image..."
-        "${BASEDIR}/bin/buildbox.sh" qemu-build
-        "${BASEDIR}/bin/buildbox.sh" qemu-fetch
+        "${BASEDIR}/bin/buildbox.sh" build qemu-arm64
+        "${BASEDIR}/bin/buildbox.sh" fetch qemu-arm64
     fi
 
     if [[ ! -f "${ARTIFACTS}/u-boot.bin" ]] || [[ ! -f "${ARTIFACTS}/qemu.img" ]]; then
         log_err "QEMU artifacts not found at ${ARTIFACTS}/"
-        log_err "Run: bin/buildbox.sh qemu-build && bin/buildbox.sh qemu-fetch"
+        log_err "Run: bin/buildbox.sh build qemu-arm64 && bin/buildbox.sh fetch qemu-arm64"
         log_err "Or:  bin/test-qemu-ota --build"
         exit 1
     fi
