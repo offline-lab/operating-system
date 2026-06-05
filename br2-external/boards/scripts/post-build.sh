@@ -12,8 +12,14 @@
 ################################################################################
 
 # vi: ft=bash
-# shellcheck shell=bash
+# shellcheck shell=bash disable=SC1090,SC1091
 set -e -u -o pipefail
+
+declare BOARD_DIR="${2}"
+declare _HOOK_FILE="${3}"
+
+source "${BOARD_DIR}/meta"
+source "${_HOOK_FILE}"
 
 declare TARGET_DIR="${TARGET_DIR:-}"
 
@@ -31,6 +37,7 @@ for file in "${remove[@]}"; do
     rm -rf "${TARGET_DIR}${file}"
 done
 
+# Package installs can clobber /var/run symlink with a real directory
 rm -rf "${TARGET_DIR}/var/run"
 ln -sf ../run "${TARGET_DIR}/var/run"
 
@@ -43,26 +50,4 @@ if [[ -f "${TARGET_DIR}/usr/lib/libnss_disco.so.2" ]]; then
     fi
 fi
 
-# QEMU: configure the virtio-net interface with DHCP via systemd-networkd.
-# Match by driver so dummy0 and sit0 are not picked up by this rule.
-mkdir -p "${TARGET_DIR}/etc/systemd/network"
-cat > "${TARGET_DIR}/etc/systemd/network/10-eth0.network" <<'EOF'
-[Match]
-Driver=virtio_net
-
-[Network]
-DHCP=yes
-EOF
-
-# Patch RAUC config for virtio block device names (/dev/vda instead of /dev/mmcblk0p)
-if [[ -f "${TARGET_DIR}/etc/rauc/system.conf" ]]; then
-    sed -i \
-        -e 's|/dev/mmcblk0p|/dev/vda|g' \
-        -e 's|compatible=offlinelab-pi-zero-2w|compatible=offlinelab-qemu-arm64|' \
-        "${TARGET_DIR}/etc/rauc/system.conf"
-fi
-
-# Patch fw_env.config for virtio block bootstate partition
-if [[ -f "${TARGET_DIR}/etc/fw_env.config" ]]; then
-    sed -i 's|/dev/mmcblk0p9|/dev/vda9|g' "${TARGET_DIR}/etc/fw_env.config"
-fi
+board_post_build

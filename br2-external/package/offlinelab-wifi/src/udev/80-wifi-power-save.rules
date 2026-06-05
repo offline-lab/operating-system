@@ -1,0 +1,2 @@
+# Disable WiFi power save on wlan0 — prevents brcmfmac from going unresponsive
+ACTION=="add", SUBSYSTEM=="net", KERNEL=="wlan0", RUN+="/usr/sbin/iw dev wlan0 set power_save off"

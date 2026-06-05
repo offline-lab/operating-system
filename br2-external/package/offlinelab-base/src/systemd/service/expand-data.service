@@ -20,6 +20,7 @@ Type=oneshot
 Environment=PATH=/usr/lib/framework/bin:/usr/sbin:/usr/bin:/sbin:/bin
 ExecStart=/usr/local/bin/init-expand-data
 RemainAfterExit=yes
+TimeoutStartSec=infinity
 
 [Install]
 WantedBy=multi-user.target

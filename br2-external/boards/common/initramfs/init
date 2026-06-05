@@ -17,9 +17,6 @@ mount -t devtmpfs devtmpfs /dev
 
 echo "offlinelab: initramfs starting"
 
-echo /bin/mdev > /proc/sys/kernel/hotplug
-mdev -s
-
 # Parse slot from kernel cmdline (default: A)
 SLOT="a"
 for arg in $(cat /proc/cmdline); do
@@ -29,14 +26,33 @@ for arg in $(cat /proc/cmdline); do
     esac
 done
 
-# Partition mapping (MBR extended layout)
-# p1=boot p3=overlay p4=data p5=kernel-a p6=rootfs-a p7=kernel-b p8=rootfs-b p9=bootstate
+# Detect block device at runtime — wait up to 10s for MMC to initialize
+# Partition layout (MBR extended): p1=boot p3=overlay p4=data
+#   p5=kernel-a p6=rootfs-a p7=kernel-b p8=rootfs-b p9=bootstate
+i=0
+while [ $i -lt 10 ]; do
+    [ -b /dev/vda ]      && break
+    [ -b /dev/mmcblk0 ] && break
+    i=$((i + 1))
+    sleep 1
+done
+
+if [ -b /dev/vda ]; then
+    P="/dev/vda"
+elif [ -b /dev/mmcblk0 ]; then
+    P="/dev/mmcblk0p"
+else
+    echo "offlinelab: FATAL - no block device found"
+    cat /proc/partitions
+    exec sh
+fi
+
 case "${SLOT}" in
-    a) ROOTFS_DEV="/dev/mmcblk0p6" ;;
-    b) ROOTFS_DEV="/dev/mmcblk0p8" ;;
+    a) ROOTFS_DEV="${P}6" ;;
+    b) ROOTFS_DEV="${P}8" ;;
 esac
-OVERLAY_DEV="/dev/mmcblk0p3"
-DATA_DEV="/dev/mmcblk0p4"
+OVERLAY_DEV="${P}3"
+DATA_DEV="${P}4"
 
 echo "offlinelab: slot=${SLOT} rootfs=${ROOTFS_DEV}"
 

@@ -29,12 +29,12 @@ define OFFLINELAB_FRAMEWORK_INSTALL_TARGET_CMDS
 	$(INSTALL) -d $(TARGET_DIR)/usr/lib/framework/bin
 	$(INSTALL) -m 0755 $(@D)/bin/chronic   $(TARGET_DIR)/usr/lib/framework/bin/
 	$(INSTALL) -m 0755 $(@D)/bin/framework $(TARGET_DIR)/usr/lib/framework/bin/
-	$(foreach cmd,$(wildcard $(@D)/bin/labctl*),\
+	$(foreach cmd,$(wildcard $(@D)/bin/boxctl*),\
 		$(INSTALL) -m 0755 $(cmd) $(TARGET_DIR)/usr/lib/framework/bin/$(notdir $(cmd));)
 
-	# labctl-su command allowlist
-	$(INSTALL) -D -m 0644 $(@D)/etc/labctl/su.conf \
-		$(TARGET_DIR)/etc/labctl/su.conf
+	# boxctl-su command allowlist
+	$(INSTALL) -D -m 0644 $(@D)/etc/boxctl/su.conf \
+		$(TARGET_DIR)/etc/boxctl/su.conf
 
 	# PATH entry so scripts can do: source framework
 	$(INSTALL) -d $(TARGET_DIR)/etc/profile.d

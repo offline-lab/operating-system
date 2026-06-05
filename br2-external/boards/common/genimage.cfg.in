@@ -8,7 +8,7 @@ image bootfs.vfat {
     }
 }
 
-image sdcard.img {
+image #IMAGE_NAME# {
     hdimage {
         partition-table-type = "mbr"
         align = 1M

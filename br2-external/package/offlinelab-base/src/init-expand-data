@@ -58,7 +58,7 @@ function expand_data::main() {
     echo ",+" | sfdisk -N "${PART_NUM}" "${DISK}" --no-reread \
         || exit::error "${FUNCNAME[0]}: sfdisk failed to resize partition"
     partprobe "${DISK}" || log::warn "${FUNCNAME[0]}: partprobe returned non-zero (may be harmless)"
-    sleep 1
+    udevadm settle --timeout=10
     resize2fs "${PART}" || exit::error "${FUNCNAME[0]}: resize2fs failed on ${PART}"
 
     log::info "${FUNCNAME[0]}: done"
