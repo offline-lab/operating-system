@@ -84,21 +84,50 @@ This provisions the VM with the right dependencies via cloud-init. Set the VM's 
 echo "192.168.64.X  buildbox" | sudo tee -a /etc/hosts
 ```
 
+### Available boards
+
+| Board | Defconfig | Artifact path | Image type |
+|---|---|---|---|
+| `pi-zero-2w` | `offlinelab_pi_zero_2w_defconfig` | `artifacts/pi-zero-2w/` | SD card image + RAUC bundle |
+| `qemu-arm64` | `offlinelab_qemu_arm64_defconfig` | `artifacts/qemu-arm64/` | QEMU disk image + U-Boot |
+
+Each board gets its own output directory (`~/buildroot-<board>/`) and artifact path so builds don't clobber each other.
+
 ### Running a build
 
+All `buildbox.sh` commands accept an optional `[board]` argument. Default is `pi-zero-2w`.
+
 ```bash
-# Full pipeline: sync code → build → verify → download artifacts
+# Full pipeline (pi-zero-2w): sync → build → verify → fetch
 bin/buildbox.sh
 
-# Or run steps individually:
-bin/buildbox.sh sync      # push local repo to buildbox
-bin/buildbox.sh build     # sync + build
-bin/buildbox.sh verify    # run verification checks on artifacts
-bin/buildbox.sh fetch     # download artifacts/ to local machine
-bin/buildbox.sh ssh       # open an interactive shell
+# Full pipeline for a specific board
+bin/buildbox.sh qemu-arm64
+
+# Or run steps individually
+bin/buildbox.sh sync                        # push local repo to buildbox
+bin/buildbox.sh build                       # build pi-zero-2w (default)
+bin/buildbox.sh build qemu-arm64            # build QEMU image
+bin/buildbox.sh verify [board]              # run verification checks
+bin/buildbox.sh fetch [board]               # download artifacts to local machine
+bin/buildbox.sh ssh                         # open an interactive shell
 ```
 
-The image lands in `artifacts/` on your local machine after `fetch`.
+Artifacts land in `artifacts/<board>/` on your local machine after `fetch`.
+
+### Running a QEMU image locally
+
+After fetching the QEMU artifacts:
+
+```bash
+bin/run-qemu
+# or: bin/run-qemu artifacts/qemu-arm64/
+
+# SSH into the running VM (once booted):
+ssh admin@localhost -p 2222
+```
+
+Expected service failures in QEMU (no hardware): `usb-gadget.service`, `wifi-setup.service`, `psplash.service`. Everything else should start normally.
 
 ## Writing to SD card
 
@@ -117,7 +146,8 @@ On macOS, use `diskutil list` to identify the SD card device. Unmount it first w
 `bin/verify.sh` checks the artifacts without needing hardware:
 
 ```bash
-bin/verify.sh artifacts/
+bin/verify.sh artifacts/pi-zero-2w/
+bin/verify.sh artifacts/qemu-arm64/
 ```
 
 It inspects partition layout, boot contents, initramfs structure, rootfs, systemd units, kernel config, and module dependencies. It does not boot the image.
