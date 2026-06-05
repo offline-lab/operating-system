@@ -12,7 +12,7 @@ before making changes — conventions, tools, and constraints differ between the
 | Area | Path | What it is |
 |---|---|---|
 | **Builder** | `br2-external/`, `bin/`, `Dockerfile` | Buildroot external tree and build pipeline |
-| **Framework** | `framework/` | Bash utility library and `labctl` CLI for the OS |
+| **Framework** | `framework/` | Bash utility library and `boxctl` CLI for the OS |
 | **Docs** | `docs/`, `zensical.toml` | Documentation site (Zensical static site) |
 
 **Git:** Never run `git commit`, `git push`, or `git amend` — user handles all git operations.
@@ -83,7 +83,7 @@ Use `/kanban` to list, update, and create tasks. Config is in `.claude/kanban.js
 
 ## Framework
 
-Bash utility library (`framework/library/`) and device management CLI (`framework/bin/labctl*`).
+Bash utility library (`framework/library/`) and device management CLI (`framework/bin/boxctl*`).
 Installed to `/usr/lib/framework/` on the target device.
 
 See `framework/.claude/CLAUDE.md` for full context including variable namespace,
@@ -105,8 +105,8 @@ bin/test-framework --lint
 bin/test-framework --filter var
 
 # Lint only
-shellcheck -s bash framework/library/*.sh framework/bin/labctl*
-shfmt -d -i 4 -ci framework/library/*.sh framework/bin/labctl*
+shellcheck -s bash framework/library/*.sh framework/bin/boxctl*
+shfmt -d -i 4 -ci framework/library/*.sh framework/bin/boxctl*
 ```
 
 **Before claiming work is done:** `bin/test-framework --lint`
@@ -206,9 +206,9 @@ Busybox compatibility rules:
 
 ### Privilege escalation
 
-Scripts use `sudo labctl-su <cmd>` — never embed `sudo` inline. The `priv::run`
+Scripts use `sudo boxctl-su <cmd>` — never embed `sudo` inline. The `priv::run`
 function in `system.sh` handles this: runs directly if already root, otherwise
-delegates to `sudo labctl-su`. Allowlist at `framework/etc/labctl/su.conf`.
+delegates to `sudo boxctl-su`. Allowlist at `framework/etc/boxctl/su.conf`.
 
 ### Internet-requiring functions
 
@@ -280,7 +280,7 @@ docs/                       # source markdown files
 ├── index.md                # landing page
 ├── framework-index.md      # framework module overview (generated)
 ├── framework-*.md          # per-module API reference (generated)
-├── framework-commands.md   # labctl command reference (generated)
+├── framework-commands.md   # boxctl command reference (generated)
 ├── framework-integration.md # buildroot integration guide
 └── ...                     # other OS docs
 

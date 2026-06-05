@@ -212,7 +212,7 @@ scripts, and config:
 | Package | Purpose |
 |---------|---------|
 | `offlinelab-base` | Boot-firmware mount, data partition expansion, fake-hwclock, power profile, serial console, /etc/issue |
-| `offlinelab-framework` | Bash utility library and `labctl` CLI — installed to `/usr/lib/framework/` |
+| `offlinelab-framework` | Bash utility library and `boxctl` CLI — installed to `/usr/lib/framework/` |
 | `offlinelab-usb-gadget` | USB composite gadget (ACM serial + ECM ethernet), ttyGS0, usb0 |
 | `offlinelab-wifi` | WiFi via wpa_supplicant, config provisioning from boot partition |
 | `offlinelab-ssh` | Dropbear SSH server, key-only auth, key provisioning from boot partition |
