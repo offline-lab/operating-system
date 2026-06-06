@@ -10,16 +10,15 @@
 #      SPDX-License-Identifier: AGPL-3.0-only                                  #
 ################################################################################
 
-[Unit]
-Description=Dropbear SSH server
-After=provision-ssh.service systemd-networkd.service
-Requires=provision-ssh.service
-
-[Service]
-Type=simple
-ExecStart=/usr/sbin/dropbear -F -E -s -g -p 22 -r /data/config/ssh/dropbear/dropbear_ed25519_host_key -b /etc/issue.net
-Restart=on-failure
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
+config BR2_PACKAGE_OFFLINELAB_FIREWALL
+	bool "offlinelab-firewall"
+	default y
+	depends on BR2_INIT_SYSTEMD
+	select BR2_PACKAGE_IPTABLES
+	help
+	  iptables-based firewall loaded at boot via systemd.
+	  Static rules (SSH, ICMP, established) live on the readonly rootfs at
+	  /etc/iptables/rules.v4 and rules.v6.
+	  Per-app dynamic rules are persisted as fragments under
+	  /data/config/firewall/rules.d/<app>.rules and replayed on boot.
+	  Managed at runtime via fw.sh framework module.

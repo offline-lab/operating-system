@@ -10,16 +10,29 @@
 #      SPDX-License-Identifier: AGPL-3.0-only                                  #
 ################################################################################
 
-[Unit]
-Description=Dropbear SSH server
-After=provision-ssh.service systemd-networkd.service
-Requires=provision-ssh.service
+arm_64bit=1
+device_tree=bcm2710-rpi-3-b-plus.dtb
+start_file=start.elf
+fixup_file=fixup.dat
 
-[Service]
-Type=simple
-ExecStart=/usr/sbin/dropbear -F -E -s -g -p 22 -r /data/config/ssh/dropbear/dropbear_ed25519_host_key -b /etc/issue.net
-Restart=on-failure
-RestartSec=5
+# U-Boot as second-stage bootloader
+kernel=u-boot.bin
+disable_splash=1
 
-[Install]
-WantedBy=multi-user.target
+# Media: keep audio, GPU for portable service use cases
+dtparam=audio=on
+gpu_mem=64
+disable_overscan=1
+max_framebuffers=2
+disable_fw_kms_setup=1
+
+# Performance
+arm_boost=1
+
+[all]
+dtoverlay=vc4-kms-v3d
+dtparam=act_led_trigger=actpwr
+
+# Serial: mini UART on GPIO (BT keeps ttyAMA0/PL011)
+enable_uart=1
+init_uart_baud=115200

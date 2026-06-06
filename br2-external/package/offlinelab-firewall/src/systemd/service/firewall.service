@@ -1,0 +1,13 @@
+[Unit]
+Description=Offline Lab Firewall
+DefaultDependencies=no
+Before=network-pre.target
+Wants=network-pre.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/fw-init
+
+[Install]
+WantedBy=multi-user.target

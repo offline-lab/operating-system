@@ -10,6 +10,8 @@
 #      SPDX-License-Identifier: AGPL-3.0-only                                  #
 ################################################################################
 
-CONFIG_FS_SQUASHFS=y
-CONFIG_LZO=y
-# CONFIG_VIDEO_LOGO is not set
+config BR2_PACKAGE_BOARD_RPI4
+	bool "Raspberry Pi 4B board support"
+	select BR2_PACKAGE_RPI_FIRMWARE
+	help
+	  Offline Lab board support for Raspberry Pi 4B

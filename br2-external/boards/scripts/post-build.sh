@@ -22,6 +22,7 @@ source "${BOARD_DIR}/meta"
 source "${_HOOK_FILE}"
 
 declare TARGET_DIR="${TARGET_DIR:-}"
+declare BR2_EXTERNAL_OFFLINELAB_PATH="${BR2_EXTERNAL_OFFLINELAB_PATH:-}"
 
 declare -a remove=(
     /etc/passwd- /etc/group- /etc/shadow- /etc/gshadow-
@@ -32,6 +33,11 @@ declare -a remove=(
 )
 
 printf 'uninitialized\n' >"${TARGET_DIR}/etc/machine-id"
+
+declare BUILD_DATE BUILD_ID
+BUILD_DATE="$(date -u +%Y-%m-%d)"
+BUILD_ID="$(git -C "${BR2_EXTERNAL_OFFLINELAB_PATH}" describe --tags --always --dirty 2>/dev/null || echo 'dev')"
+printf 'BUILD_ID=%s\nBUILD_DATE=%s\n' "${BUILD_ID}" "${BUILD_DATE}" >>"${TARGET_DIR}/etc/os-release"
 
 for file in "${remove[@]}"; do
     rm -rf "${TARGET_DIR}${file}"

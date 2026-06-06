@@ -4,11 +4,12 @@
 # SC2154: BOARD_DIR, TARGET_DIR, BINARIES_DIR, COMMON_DIR, BOARD_IMAGE_NAME are set by post-image.sh
 # SC2312: ls in subshell return value intentionally not checked
 # Sourced by boards/scripts/post-build.sh and post-image.sh.
-# BOARD_DIR  = boards/qemu-arm64  (set by post-image.sh from POST_SCRIPT_ARGS)
-# COMMON_DIR = boards/common      (set by post-image.sh)
+# BOARD_DIR  = boards/qemu/<arch>  (set by post-image.sh from POST_SCRIPT_ARGS)
+# COMMON_DIR = boards/common       (set by post-image.sh)
 # BOARD_COMPATIBLE, BOARD_IMAGE_NAME come from the board's meta file.
 
-export BOOT_CMD_FILE="${BOARD_DIR}/uboot/boot.cmd"
+_FAMILY_DIR="$(dirname "${BOARD_DIR}")"
+export BOOT_CMD_FILE="${_FAMILY_DIR}/uboot/boot.cmd"
 
 function board_post_build() {
     # Configure virtio-net interface with DHCP via systemd-networkd.

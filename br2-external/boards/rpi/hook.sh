@@ -12,7 +12,12 @@ _FAMILY_DIR="$(dirname "${BOARD_DIR}")"
 export BOOT_CMD_FILE="${_FAMILY_DIR}/uboot/boot.cmd"
 
 function board_post_build() {
-    :
+    # Patch RAUC config with the board-specific compatible string from meta.
+    # For Pi Zero 2W this is a no-op (value matches the hardcoded default).
+    if [[ -f "${TARGET_DIR}/etc/rauc/system.conf" ]]; then
+        sed -i "s|compatible=offlinelab-pi-zero-2w|compatible=${BOARD_COMPATIBLE}|" \
+            "${TARGET_DIR}/etc/rauc/system.conf"
+    fi
 }
 
 function gen_config() {

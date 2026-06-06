@@ -10,16 +10,8 @@
 #      SPDX-License-Identifier: AGPL-3.0-only                                  #
 ################################################################################
 
-[Unit]
-Description=Dropbear SSH server
-After=provision-ssh.service systemd-networkd.service
-Requires=provision-ssh.service
-
-[Service]
-Type=simple
-ExecStart=/usr/sbin/dropbear -F -E -s -g -p 22 -r /data/config/ssh/dropbear/dropbear_ed25519_host_key -b /etc/issue.net
-Restart=on-failure
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
+config BR2_PACKAGE_BOARD_RPI3
+	bool "Raspberry Pi 3B+ board support"
+	select BR2_PACKAGE_RPI_FIRMWARE
+	help
+	  Offline Lab board support for Raspberry Pi 3B+

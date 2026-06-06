@@ -1,2 +1,0 @@
-BOARD_COMPATIBLE="offlinelab-qemu-arm64"
-BOARD_IMAGE_NAME="qemu.img"

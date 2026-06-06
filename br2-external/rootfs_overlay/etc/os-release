@@ -1,4 +1,9 @@
 NAME="Offline Lab OS"
 ID=offlinelab
 VERSION_ID=0.1
-PRETTY_NAME="Offline Lab OS"
+VERSION="0.1"
+PRETTY_NAME="Offline Lab OS 0.1"
+HOME_URL="https://offline-lab.com"
+DOCUMENTATION_URL="https://docs.offline-lab.com"
+BUG_REPORT_URL="https://github.com/offline-lab/builder/issues"
+SUPPORT_URL="https://offline-lab.com"

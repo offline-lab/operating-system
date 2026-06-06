@@ -10,17 +10,30 @@
 #      SPDX-License-Identifier: AGPL-3.0-only                                  #
 ################################################################################
 
-# Override distro_bootcmd to directly load our boot.scr from virtio disk p1.
-# ${loadaddr} is always defined in U-Boot arm64; boot.scr is tiny so overlap
-# with the kernel load address is not a concern before source executes.
-CONFIG_BOOTCOMMAND="load virtio 0:1 ${loadaddr} boot.scr; source ${loadaddr}"
+arm_64bit=1
+device_tree=bcm2711-rpi-4-b.dtb
+# Pi 4 requires start4.elf / fixup4.dat
+start_file=start4.elf
+fixup_file=fixup4.dat
 
-# Squashfs read support (kernel-a.img is squashfs)
-CONFIG_FS_SQUASHFS=y
-CONFIG_LZO=y
-# Disable video/splash — no display in -nographic QEMU; missing logo symbol
-# causes linker error when CONFIG_VIDEO_BMP_LOGO is set by qemu_arm64 defconfig
-# CONFIG_VIDEO_LOGO is not set
-# CONFIG_VIDEO_BMP_LOGO is not set
-# CONFIG_SPLASH_SCREEN is not set
-# CONFIG_VIDEO is not set
+# U-Boot as second-stage bootloader
+kernel=u-boot.bin
+disable_splash=1
+
+# Media: keep audio, GPU for portable service use cases
+dtparam=audio=on
+gpu_mem=64
+disable_overscan=1
+max_framebuffers=2
+disable_fw_kms_setup=1
+
+# Performance
+arm_boost=1
+
+[all]
+dtoverlay=vc4-kms-v3d
+dtparam=act_led_trigger=actpwr
+
+# Serial: ttyAMA0 (PL011) is free on Pi 4 — BT uses mini UART (ttyS0)
+enable_uart=1
+init_uart_baud=115200
