@@ -56,7 +56,7 @@ bin/builder.sh --build-docker
 bin/builder.sh --build
 ```
 
-The image file lands in `artifacts/offlinelab-sdcard-<date>.img.gz`.
+The image file lands in `artifacts/pi-zero-2w/offlinelab-rpi-pi-zero-2w-arm64<date>.img.gz`.
 
 To open a shell inside the build container for debugging:
 
@@ -86,34 +86,36 @@ echo "192.168.64.X  buildbox" | sudo tee -a /etc/hosts
 
 ### Available boards
 
+Boards are defined by defconfigs in `br2-external/configs/`. Each gets its own build output directory (`~/buildroot-<board>/`) and artifact path.
+
 | Board | Defconfig | Artifact path | Image type |
 |---|---|---|---|
 | `pi-zero-2w` | `offlinelab_pi_zero_2w_defconfig` | `artifacts/pi-zero-2w/` | SD card image + RAUC bundle |
+| `rpi3` | `offlinelab_rpi3_defconfig` | `artifacts/rpi3/` | SD card image + RAUC bundle |
+| `rpi4` | `offlinelab_rpi4_defconfig` | `artifacts/rpi4/` | SD card image + RAUC bundle |
 | `qemu-arm64` | `offlinelab_qemu_arm64_defconfig` | `artifacts/qemu-arm64/` | QEMU disk image + U-Boot |
-
-Each board gets its own output directory (`~/buildroot-<board>/`) and artifact path so builds don't clobber each other.
 
 ### Running a build
 
-All `buildbox.sh` commands accept an optional `[board]` argument. Default is `pi-zero-2w`.
-
 ```bash
-# Full pipeline (pi-zero-2w): sync → build → verify → fetch
-bin/buildbox.sh
+# Build all boards sequentially, fetch all artifacts (overnight run)
+bin/buildbox.sh all
 
-# Full pipeline for a specific board
+# Full pipeline for one board: sync → build → verify → fetch
+bin/buildbox.sh                             # default: pi-zero-2w
 bin/buildbox.sh qemu-arm64
 
-# Or run steps individually
+# Run steps individually
 bin/buildbox.sh sync                        # push local repo to buildbox
-bin/buildbox.sh build                       # build pi-zero-2w (default)
-bin/buildbox.sh build qemu-arm64            # build QEMU image
+bin/buildbox.sh build [board]               # build (default: pi-zero-2w)
 bin/buildbox.sh verify [board]              # run verification checks
 bin/buildbox.sh fetch [board]               # download artifacts to local machine
 bin/buildbox.sh ssh                         # open an interactive shell
 ```
 
 Artifacts land in `artifacts/<board>/` on your local machine after `fetch`.
+
+Builds run sequentially when using `all` — parallel builds on the same VM exhaust disk during the kernel compile phase (~15 GB per board at peak). Sequential builds prune each output tree after completion, keeping disk usage flat regardless of how many boards are defined.
 
 ### Running a QEMU image locally
 
@@ -133,10 +135,10 @@ Expected service failures in QEMU (no hardware): `usb-gadget.service`, `wifi-set
 
 ```bash
 # Decompress the image (keeps the .gz)
-gunzip -k artifacts/offlinelab-sdcard-*.img.gz
+gunzip -k artifacts/pi-zero-2w/offlinelab-rpi-pi-zero-2w-arm64*.img.gz
 
 # Write to SD card (replace diskN with your device)
-sudo dd if=artifacts/offlinelab-sdcard-*.img of=/dev/diskN bs=4M status=progress
+sudo dd if=artifacts/pi-zero-2w/offlinelab-rpi-pi-zero-2w-arm64*.img of=/dev/diskN bs=4M status=progress
 ```
 
 On macOS, use `diskutil list` to identify the SD card device. Unmount it first with `diskutil unmountDisk /dev/diskN`.

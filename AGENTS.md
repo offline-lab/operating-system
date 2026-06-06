@@ -21,7 +21,7 @@ before making changes — conventions, tools, and constraints differ between the
 
 ## Builder
 
-The build system for Offline Lab OS. Produces images for Raspberry Pi Zero 2W.
+The build system for Offline Lab OS. Produces images for Raspberry Pi (Zero 2W, 3, 4) and QEMU arm64.
 
 ### Key commands
 
@@ -48,12 +48,19 @@ make offlinelab-framework-dirclean && make offlinelab-framework
 - No tmpfs for state — use `/data` bind mounts
 - Run `<pkg>-dirclean` after editing `br2-external/` or `framework/` source files (buildroot cache)
 - `framework/` is first-party source — edit it directly in this repo, then rebuild the package
+- **File edits via Edit/Write tools only** — never use `sed -i`, `python`, or `awk` to rewrite working-tree files from Bash; Edit/Write produce visible diffs, Bash rewrites are opaque
 
 ### Structure
 
 ```
 br2-external/
-├── boards/pi-zero-2w/       # board support (kernel config, uboot, post-build scripts)
+├── boards/common/           # shared board support (initramfs, fragments, splash)
+├── boards/rpi/              # RPi family (hook, uboot, hardware kernel config)
+│   ├── pi-zero-2w/          # Pi Zero 2W board (meta, firmware config, uboot fragment)
+│   ├── rpi3/                # Raspberry Pi 3 board (meta)
+│   └── rpi4/                # Raspberry Pi 4 board (meta)
+├── boards/qemu/             # QEMU family (hook, uboot)
+│   └── arm64/               # QEMU arm64 board (meta, hardware/uboot fragments)
 ├── configs/                 # buildroot defconfigs
 ├── package/                 # custom packages (offlinelab-base, -framework, -ssh, -wifi, etc.)
 ├── rootfs_overlay/          # static overlay files

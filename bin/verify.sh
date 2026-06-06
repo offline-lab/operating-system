@@ -102,7 +102,14 @@ if [[ -z "${ARTIFACTS}" ]]; then
     fi
 fi
 
-SDCARD="${ARTIFACTS}/sdcard.img"
+# Resolve the disk image: prefer offlinelab-*.img (buildbox), fall back to sdcard.img (Docker)
+SDCARD=""
+for _img in "${ARTIFACTS}"/offlinelab-*.img "${ARTIFACTS}/sdcard.img"; do
+    if [[ -f "${_img}" ]]; then
+        SDCARD="${_img}"
+        break
+    fi
+done
 ROOTFS="${ARTIFACTS}/rootfs.ext4"
 INITRAMFS="${ARTIFACTS}/initramfs.cpio.gz"
 KERNEL="${ARTIFACTS}/Image"
@@ -136,16 +143,14 @@ assert_file "${KERNEL_SQFS}" "kernel-a.img squashfs exists"
 assert_file "${UBOOT}" "u-boot.bin exists"
 assert_file "${BOOTSCR}" "boot.scr exists"
 
-if [[ -f "${SDCARD}" ]]; then
-    pass "sdcard.img exists"
+if [[ -n "${SDCARD}" ]]; then
+    pass "disk image exists: $(basename "${SDCARD}")"
 else
     # might be compressed only
-    if compgen -G "${ARTIFACTS}/offlinelab-sdcard-*.img.gz" >/dev/null 2>&1; then
-        pass "sdcard compressed image exists"
-        SDCARD=""
+    if compgen -G "${ARTIFACTS}/offlinelab-*.img.gz" >/dev/null 2>&1; then
+        pass "compressed image exists"
     else
-        fail "no sdcard.img or compressed image found"
-        SDCARD=""
+        fail "no disk image found (offlinelab-*.img or sdcard.img)"
     fi
 fi
 

@@ -14,17 +14,17 @@ The base OS (**Offline Lab OS**) is a minimal read-only Linux image built with B
 
 ## Build system
 
-Offline Lab OS is built with [Buildroot](https://buildroot.org/) using the Raspberry Pi foundation kernel and firmware. Builds run in Docker on macOS or on a native arm64 Debian VM (the "buildbox").
+Offline Lab OS is built with [Buildroot](https://buildroot.org/). Builds run in Docker on macOS or on a native arm64 Debian VM (the "buildbox"). Multiple boards are supported; each has its own defconfig under `br2-external/configs/`.
 
 The [builder repository](https://github.com/offline-lab/builder) contains the Buildroot configuration, external tree, and tooling for producing SD card images.
 
 ## Kernel
 
-The OS uses the Raspberry Pi foundation kernel (`raspberrypi/linux`, `rpi-6.12.y`) for the best Zero 2W hardware support: WiFi, Bluetooth, HDMI, and USB device tree overlays.
+**RPi boards** use the Raspberry Pi foundation kernel (`raspberrypi/linux`, `rpi-6.12.y`) for hardware support: WiFi, Bluetooth, HDMI, and USB device tree overlays. The kernel config is trimmed from `bcm2711_defconfig` — this reduced the module directory from ~100 MB to ~17 MB and cut build time significantly.
 
-The kernel config is a custom saved defconfig based on the running hardware configuration, trimmed down from the stock `bcm2711_defconfig` to remove drivers the Zero 2W doesn't need. This reduced the module directory from ~100MB to ~17MB and cut build time significantly.
+**QEMU** uses the mainline kernel (`arm64 defconfig`) with a small hardware fragment enabling virtio block, virtio net, and the PL011 UART.
 
-Key built-in options: overlayfs, initramfs, MMC, USB DWC2 gadget, zram.
+Key built-in options on all boards: overlayfs, initramfs, zram.
 
 ## Partitions
 

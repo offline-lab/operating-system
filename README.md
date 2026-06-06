@@ -53,9 +53,13 @@ br2-builder/
 │   ├── verify.sh                 # automated image verification
 │   └── clean.sh                  # buildroot distclean
 ├── br2-external/                 # buildroot external tree
-│   ├── boards/common/            # shared board support (initramfs, fragments)
-│   ├── boards/rpi/               # RPi family board support
-│   ├── boards/qemu-arm64/        # QEMU arm64 board support
+│   ├── boards/common/            # shared board support (initramfs, fragments, splash)
+│   ├── boards/rpi/               # RPi family (hook, uboot, hardware kernel config)
+│   │   ├── pi-zero-2w/           # Pi Zero 2W board (meta, firmware config, uboot fragment)
+│   │   ├── rpi3/                 # Raspberry Pi 3
+│   │   └── rpi4/                 # Raspberry Pi 4
+│   ├── boards/qemu/              # QEMU family (hook, uboot)
+│   │   └── arm64/                # QEMU arm64 board (meta, hardware/uboot fragments)
 │   ├── configs/                  # buildroot defconfigs (one per board)
 │   ├── package/offlinelab-*/     # OS packages
 │   ├── rootfs_overlay/           # static overlay files
@@ -102,10 +106,11 @@ For faster builds without Docker emulation, use a native arm64 Debian VM:
 # Create a new buildbox VM (Lima, cloud-init provisioned)
 bin/buildbox.sh create
 
-# Full pipeline for pi-zero-2w (default): sync, build, verify, fetch
-bin/buildbox.sh
+# Build all boards sequentially, fetch all artifacts (overnight run)
+bin/buildbox.sh all
 
-# Full pipeline for a specific board
+# Full pipeline for one board: sync, build, verify, fetch
+bin/buildbox.sh                          # default: pi-zero-2w
 bin/buildbox.sh qemu-arm64
 
 # Or run steps individually
@@ -121,6 +126,8 @@ Available boards:
 | Board | What it is |
 |---|---|
 | `pi-zero-2w` | Raspberry Pi Zero 2W SD card image |
+| `rpi3` | Raspberry Pi 3 SD card image |
+| `rpi4` | Raspberry Pi 4 SD card image |
 | `qemu-arm64` | QEMU arm64 virtual machine image |
 
 Set `BUILDBOX_HOST=<ip>` or add `buildbox` to `/etc/hosts`.
@@ -135,8 +142,8 @@ ssh admin@localhost -p 2222              # SSH once booted
 ### Write to SD card
 
 ```bash
-gunzip -k artifacts/pi-zero-2w/offlinelab-pi-zero-2w-*.img.gz
-sudo dd if=artifacts/pi-zero-2w/offlinelab-pi-zero-2w-*.img of=/dev/diskN bs=4M status=progress
+gunzip -k artifacts/pi-zero-2w/offlinelab-rpi-pi-zero-2w-arm64*.img.gz
+sudo dd if=artifacts/pi-zero-2w/offlinelab-rpi-pi-zero-2w-arm64*.img of=/dev/diskN bs=4M status=progress
 ```
 
 ## Config provisioning

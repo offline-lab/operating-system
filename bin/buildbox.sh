@@ -42,7 +42,7 @@ SSH_KEY="${BASEDIR}/.ssh/builder"
 
 VM_CPUS=8
 VM_MEMORY="24GiB"
-VM_DISK="60GiB"
+VM_DISK="80GiB"
 
 REMOTE_USER="builder"
 REMOTE_WORK="/home/builder/work"
@@ -378,6 +378,15 @@ function cmd_fetch() {
 }
 
 ################################################################################
+# Tail build log on buildbox
+################################################################################
+
+function cmd_tail() {
+    local board="${1:-pi-zero-2w}"
+    cmd_ssh "tail -f ~/build-${board}.log"
+}
+
+################################################################################
 # SSH into buildbox
 ################################################################################
 
@@ -440,6 +449,43 @@ function cmd_pipeline() {
     log "=== Pipeline complete: $((elapsed / 60))m $((elapsed % 60))s ==="
 }
 
+function cmd_all() {
+    local -a boards=()
+    local defconfig board
+
+    for defconfig in "${BASEDIR}/br2-external/configs/offlinelab_"*"_defconfig"; do
+        board="$(basename "${defconfig}")"
+        board="${board#offlinelab_}"
+        board="${board%_defconfig}"
+        board="${board//_/-}"
+        boards+=("${board}")
+    done
+
+    local start_time total_start
+    total_start="$(date +%s)"
+    local failed=()
+
+    log "=== Building all boards: ${boards[*]} ==="
+
+    for board in "${boards[@]}"; do
+        start_time="$(date +%s)"
+        log "=== Starting ${board} ==="
+        if cmd_build "${board}" && cmd_verify "${board}" && cmd_fetch "${board}"; then
+            log "=== ${board} done in $(( ($(date +%s) - start_time) / 60 ))m ==="
+        else
+            log_err "=== ${board} FAILED ==="
+            failed+=("${board}")
+        fi
+    done
+
+    local elapsed=$(( $(date +%s) - total_start ))
+    if [[ ${#failed[@]} -gt 0 ]]; then
+        log_err "=== All boards done in $((elapsed / 60))m — FAILED: ${failed[*]} ==="
+        return 1
+    fi
+    log "=== All boards done in $((elapsed / 60))m $((elapsed % 60))s ==="
+}
+
 ################################################################################
 # Usage
 ################################################################################
@@ -451,11 +497,13 @@ function cmd_usage() {
 
   Usage:
     bin/buildbox.sh [board]             Full pipeline: sync + build + verify + fetch
+    bin/buildbox.sh all                 Build all boards sequentially, fetch all artifacts
     bin/buildbox.sh create              Create and provision a new buildbox VM
     bin/buildbox.sh sync                Sync code to buildbox
     bin/buildbox.sh build [board]       Sync + build (default: pi-zero-2w)
     bin/buildbox.sh verify [board]      Run verification on remote artifacts
     bin/buildbox.sh fetch [board]       Download artifacts from buildbox
+    bin/buildbox.sh tail [board]        Tail the build log (default: pi-zero-2w)
     bin/buildbox.sh clean-artifacts     Remove all artifacts from buildbox
     bin/buildbox.sh ssh [cmd]           SSH into buildbox
     bin/buildbox.sh destroy             Delete the buildbox VM
@@ -488,11 +536,13 @@ if [[ ! -f "${SSH_KEY}" ]]; then
 fi
 
 case "${1:-}" in
+    all)            shift; cmd_all "${@}" ;;
     create)         shift; cmd_create "${@}" ;;
     sync)           shift; cmd_sync "${@}" ;;
     build)          shift; cmd_build "${@}" ;;
     verify)         shift; cmd_verify "${@}" ;;
     fetch)          shift; cmd_fetch "${@}" ;;
+    tail)           shift; cmd_tail "${@}" ;;
     ssh)            shift; cmd_ssh "${@}" ;;
     clean-artifacts) shift; cmd_clean_artifacts "${@}" ;;
     destroy)        shift; cmd_destroy "${@}" ;;

@@ -14,7 +14,7 @@ Walk through getting Offline Lab OS running on a Raspberry Pi Zero 2W — from b
 
 Build the OS image and configure WiFi and SSH credentials. See [Build the OS image](build-image.md) for full instructions covering both Docker and Buildbox paths.
 
-The output is a compressed image file: `artifacts/offlinelab-sdcard-<date>.img.gz`.
+The output is a compressed image file: `artifacts/pi-zero-2w/offlinelab-rpi-pi-zero-2w-arm64-<date>.img.gz`.
 
 ## Step 2 — Install Offline Lab OS on the SD card
 

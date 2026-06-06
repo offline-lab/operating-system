@@ -16,8 +16,7 @@ builder/
 │   ├── builder.sh              # Docker build environment wrapper
 │   ├── buildbox.sh             # Lima VM management and build pipeline
 │   ├── build.sh                # build script (runs inside Docker)
-│   ├── build-native.sh         # build script (runs on buildbox, Pi target)
-│   ├── build-native-qemu.sh    # build script (runs on buildbox, QEMU target)
+│   ├── build-image.sh          # per-board build script (runs on buildbox)
 │   ├── clean.sh                # buildroot distclean
 │   ├── verify.sh               # automated artifact inspection (200+ checks)
 │   ├── run-qemu                # run a built QEMU image locally
@@ -29,31 +28,36 @@ builder/
 │       └── cloud-init/         # cloud-init for the Lima buildbox VM
 ├── br2-external/
 │   ├── boards/
-│   │   ├── common/             # shared between all targets
+│   │   ├── common/             # shared across all boards
 │   │   │   ├── fragments/      # busybox.config, linux-kernel.config
 │   │   │   ├── genimage.cfg.in # partition layout template
-│   │   │   └── initramfs/      # initramfs init script
-│   │   ├── pi-zero-2w/         # Pi Zero 2W board files
-│   │   │   ├── fragments/      # uboot-fragment.config
-│   │   │   ├── cmdline.txt
-│   │   │   ├── config.txt      # RPi firmware config
-│   │   │   └── splash.png      # psplash boot image
-│   │   ├── rpi/                # shared RPi support
+│   │   │   ├── initramfs/      # initramfs init script
+│   │   │   └── splash.{png,svg} # psplash boot image
+│   │   ├── rpi/                # RPi family shared files
 │   │   │   ├── fragments/      # linux-hardware.config
-│   │   │   ├── pi-zero-2w/meta # board identity (image name, compatible string)
-│   │   │   ├── hook.sh         # post-image hook
-│   │   │   └── uboot/boot.cmd  # U-Boot boot script
-│   │   ├── qemu-arm64/         # QEMU arm64 target
-│   │   │   ├── fragments/      # linux-hardware.config, uboot-fragment.config
-│   │   │   ├── meta            # board identity
-│   │   │   ├── hook.sh         # post-image hook
-│   │   │   └── uboot/boot.cmd  # U-Boot boot script
+│   │   │   ├── hook.sh         # post-image hook (all RPi boards)
+│   │   │   ├── uboot/boot.cmd  # U-Boot A/B boot script
+│   │   │   ├── pi-zero-2w/     # Pi Zero 2W board
+│   │   │   │   ├── fragments/  # uboot-fragment.config
+│   │   │   │   ├── meta        # board identity (image name, compatible string)
+│   │   │   │   ├── cmdline.txt
+│   │   │   │   └── config.txt  # RPi firmware config
+│   │   │   ├── rpi3/           # Raspberry Pi 3
+│   │   │   └── rpi4/           # Raspberry Pi 4
+│   │   ├── qemu/               # QEMU family shared files
+│   │   │   ├── hook.sh         # post-image hook (all QEMU boards)
+│   │   │   ├── uboot/boot.cmd  # U-Boot A/B boot script
+│   │   │   └── arm64/          # QEMU arm64 board
+│   │   │       ├── fragments/  # linux-hardware.config, uboot-fragment.config
+│   │   │       └── meta        # board identity
 │   │   └── scripts/            # shared post-build/post-image scripts
 │   │       ├── post-build.sh
 │   │       ├── post-image-lib.sh
 │   │       └── post-image.sh
-│   ├── configs/
+│   ├── configs/                # one defconfig per board
 │   │   ├── offlinelab_pi_zero_2w_defconfig
+│   │   ├── offlinelab_rpi3_defconfig
+│   │   ├── offlinelab_rpi4_defconfig
 │   │   └── offlinelab_qemu_arm64_defconfig
 │   ├── package/
 │   │   └── offlinelab-*/       # OS packages

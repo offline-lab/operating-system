@@ -30,6 +30,11 @@ require_tools nproc ccache make date
 [[ "${#}" -eq 1 ]] || { log_err "Usage: build-image.sh <board>"; exit 1; }
 
 BOARD="${1}"
+LOG_FILE="${HOME}/build-${BOARD}.log"
+# tee exit status is irrelevant; script exit status comes from make
+# shellcheck disable=SC2312
+exec > >(tee "${LOG_FILE}") 2>&1
+
 NPROC="$(nproc)"
 export MAKEFLAGS="-j${NPROC}"
 
@@ -55,10 +60,11 @@ if ! ccache -s &>/dev/null; then
     ccache --max-size=15G
 fi
 
-# Find splash.svg — check board dir then family/<board>/ dir
+# Find splash.svg — check common dir, then board dir, then family/<board>/ dir
 SPLASH_SVG=""
 SPLASH_PNG=""
 for splash_dir in \
+    "${WORK}/br2-external/boards/common" \
     "${WORK}/br2-external/boards/${BOARD}" \
     "${WORK}/br2-external/boards/"*"/${BOARD}"; do
     if [[ -f "${splash_dir}/splash.svg" ]]; then
@@ -71,7 +77,6 @@ done
 if [[ -n "${SPLASH_SVG}" ]] && command -v rsvg-convert &>/dev/null; then
     splash_date="$(date +%Y%m%d)"
     "${WORK}/bin/gen-splash.sh" "${SPLASH_SVG}" "${SPLASH_PNG}" "${splash_date}"
-    make -C "${BUILDROOT}" O="${BUILDROOT_OUT}" BR2_EXTERNAL="${WORK}/br2-external" psplash-dirclean
 fi
 
 # Remove stale bundle so post-image.sh always rebuilds it with the current kernel
@@ -89,6 +94,11 @@ fi
 make -C "${BUILDROOT}" O="${BUILDROOT_OUT}" BR2_EXTERNAL="${WORK}/br2-external" \
     olddefconfig
 
+# Force psplash rebuild if splash was regenerated (must run after defconfig is loaded)
+if [[ -n "${SPLASH_SVG}" ]] && command -v rsvg-convert &>/dev/null; then
+    make -C "${BUILDROOT}" O="${BUILDROOT_OUT}" BR2_EXTERNAL="${WORK}/br2-external" psplash-dirclean
+fi
+
 make -C "${BUILDROOT}" O="${BUILDROOT_OUT}" BR2_EXTERNAL="${WORK}/br2-external" \
     BR2_CCACHE_DIR="${CCACHE_DIR}" \
     BR2_JLEVEL="${NPROC}" -j"${NPROC}"
@@ -96,10 +106,18 @@ make -C "${BUILDROOT}" O="${BUILDROOT_OUT}" BR2_EXTERNAL="${WORK}/br2-external" 
 log "Copying artifacts to ${ARTIFACTS}..."
 cp -rv "${BUILDROOT_OUT}/images/"* "${ARTIFACTS}/"
 
-if [[ -e "${BUILDROOT_OUT}/images/sdcard.img" ]] && command -v pigz &>/dev/null; then
-    timestamp="$(date +%Y-%m-%d-%H%M%S)"
-    pigz --force -9 "${BUILDROOT_OUT}/images/sdcard.img" --stdout \
-        >"${ARTIFACTS}/offlinelab-${BOARD}-${timestamp}.img.gz"
+if command -v pigz &>/dev/null; then
+    for img in "${BUILDROOT_OUT}/images/offlinelab-"*.img; do
+        [[ -f "${img}" ]] || continue
+        timestamp="$(date +%Y-%m-%d-%H%M%S)"
+        base="$(basename "${img}" .img)"
+        pigz --force -9 "${img}" --stdout >"${ARTIFACTS}/${base}-${timestamp}.img.gz"
+    done
 fi
+
+# Remove build tree to reclaim disk — images/ and staging/ are kept.
+# ccache preserves compile cache; next build only re-extracts and re-links.
+log "Pruning build tree to reclaim disk..."
+rm -rf "${BUILDROOT_OUT}/build" "${BUILDROOT_OUT}/target"
 
 log "${BOARD} build complete — artifacts at ${ARTIFACTS}"
