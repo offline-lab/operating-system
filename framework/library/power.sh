@@ -2,7 +2,7 @@
 # vi: ft=bash
 # shellcheck shell=bash disable=SC2312
 
-# Runtime power profile management for labctl.
+# Runtime power profile management for boxctl.
 # All functions require the framework to be sourced before this file.
 # Requires: config module, systemctl (for set_profile), root (for apply_profile)
 
@@ -62,7 +62,7 @@ function power::_set_usb_autosuspend() {
 }
 
 # Apply the named profile to the running kernel — requires root.
-# Called by power-profile.service on boot and by labctl power apply.
+# Called by power-profile.service on boot and by boxctl power apply.
 function power::apply_profile() {
     log::trace "${FUNCNAME[0]}: Applying profile: ${1:-}"
     [[ "${#}" -ne 1 ]] && return 2

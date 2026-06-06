@@ -17,7 +17,7 @@ Requires=provision-ssh.service
 
 [Service]
 Type=simple
-ExecStart=/usr/sbin/dropbear -F -E -s -g -p 22 -r /data/config/ssh/dropbear/dropbear_ed25519_host_key
+ExecStart=/usr/sbin/dropbear -F -E -s -g -p 22 -r /data/config/ssh/dropbear/dropbear_ed25519_host_key -b /etc/issue.net
 Restart=on-failure
 RestartSec=5
 

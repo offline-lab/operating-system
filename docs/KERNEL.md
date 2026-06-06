@@ -129,7 +129,7 @@ Candidates for power-saving:
 - Runtime PM for unused peripherals (HDMI, I2C buses, SPI)
 - Disable kernel features that consume power: `CONFIG_NO_HZ_FULL`, tickless idle
 
-Patch location: `br2-external/boards/pi-zero-2w/patches/linux/`
+Patch location: `br2-external/boards/rpi/pi-zero-2w/patches/linux/`
 
 ### Why not mainline kernel
 

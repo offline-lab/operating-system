@@ -1,0 +1,2 @@
+BOARD_COMPATIBLE="offlinelab-rpi4"
+BOARD_IMAGE_NAME="offlinelab-rpi4.img"

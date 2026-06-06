@@ -20,7 +20,7 @@ Requires=data.mount
 Type=oneshot
 Environment=PATH=/usr/lib/framework/bin:/usr/sbin:/usr/bin:/sbin:/bin
 RemainAfterExit=yes
-ExecStart=/usr/lib/framework/bin/labctl power apply
+ExecStart=/usr/lib/framework/bin/boxctl power apply
 
 [Install]
 WantedBy=multi-user.target

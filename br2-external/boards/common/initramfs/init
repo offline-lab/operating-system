@@ -1,0 +1,100 @@
+#!/bin/sh
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#      SPDX-License-Identifier: AGPL-3.0-only                                  #
+################################################################################
+
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs devtmpfs /dev
+
+echo "offlinelab: initramfs starting"
+
+# Parse slot from kernel cmdline (default: A)
+SLOT="a"
+for arg in $(cat /proc/cmdline); do
+    case "${arg}" in
+        rauc.slot=A) SLOT="a" ;;
+        rauc.slot=B) SLOT="b" ;;
+    esac
+done
+
+# Detect block device at runtime — wait up to 10s for MMC to initialize
+# Partition layout (MBR extended): p1=boot p3=overlay p4=data
+#   p5=kernel-a p6=rootfs-a p7=kernel-b p8=rootfs-b p9=bootstate
+i=0
+while [ $i -lt 10 ]; do
+    [ -b /dev/vda ]      && break
+    [ -b /dev/mmcblk0 ] && break
+    i=$((i + 1))
+    sleep 1
+done
+
+if [ -b /dev/vda ]; then
+    P="/dev/vda"
+elif [ -b /dev/mmcblk0 ]; then
+    P="/dev/mmcblk0p"
+else
+    echo "offlinelab: FATAL - no block device found"
+    cat /proc/partitions
+    exec sh
+fi
+
+case "${SLOT}" in
+    a) ROOTFS_DEV="${P}6" ;;
+    b) ROOTFS_DEV="${P}8" ;;
+esac
+OVERLAY_DEV="${P}3"
+DATA_DEV="${P}4"
+
+echo "offlinelab: slot=${SLOT} rootfs=${ROOTFS_DEV}"
+
+# Wait for rootfs device
+i=0
+while [ ! -b "${ROOTFS_DEV}" ] && [ "$i" -lt 50 ]; do
+    i=$((i + 1))
+    sleep 0.1
+done
+
+if [ ! -b "${ROOTFS_DEV}" ]; then
+    echo "offlinelab: FATAL - ${ROOTFS_DEV} not found"
+    cat /proc/partitions
+    exec sh
+fi
+
+# Mount rootfs read-only
+mount -t ext4 -o ro,noatime "${ROOTFS_DEV}" /mnt
+
+# Mount overlay partition, create per-slot dirs
+mount -t ext4 -o rw,noatime "${OVERLAY_DEV}" /overlay
+mkdir -p "/overlay/${SLOT}/upper" "/overlay/${SLOT}/work"
+
+# Mount overlayfs (rootfs + per-slot upper)
+mount -t overlay overlay \
+    -o "lowerdir=/mnt,upperdir=/overlay/${SLOT}/upper,workdir=/overlay/${SLOT}/work" \
+    /newroot
+
+# Keep overlay partition accessible after switch_root
+mkdir -p /newroot/mnt/overlay
+mount --move /overlay /newroot/mnt/overlay
+
+# Mount data partition
+mount -t ext4 -o rw,noatime "${DATA_DEV}" /data
+mkdir -p /newroot/data
+mount --bind /data /newroot/data
+
+# Move virtual filesystems
+mkdir -p /newroot/proc /newroot/sys /newroot/dev
+mount --move /proc /newroot/proc
+mount --move /sys /newroot/sys
+mount --move /dev /newroot/dev
+
+echo "offlinelab: switching to rootfs (slot ${SLOT})"
+exec switch_root /newroot /sbin/init

@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# vi: ft=bash
+set -euo pipefail
+
+# Dispatcher — no framework needed here, just exec.
+
+cmd="${1:-}"
+
+# No command: hand off to boxctl-help for interactive browsing
+[[ -z "${cmd}" ]] && exec boxctl-help
+
+shift
+
+exec_path="$(command -v "boxctl-${cmd}" 2>/dev/null || true)"
+
+if [[ -z "${exec_path}" ]]; then
+    printf 'boxctl: unknown command "%s"\n\n' "${cmd}" >&2
+    exec boxctl-help
+fi
+
+exec "${exec_path}" "${@}"

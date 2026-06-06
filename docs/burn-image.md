@@ -5,7 +5,7 @@ This page assumes you already have a built image in `artifacts/`. If you don't h
 ## Prerequisites
 
 - A micro SD card, at least 8 GB
-- The compressed image file: `artifacts/offlinelab-sdcard-<date>.img.gz`
+- The compressed image file: `artifacts/pi-zero-2w/offlinelab-rpi-pi-zero-2w-arm64-<date>.img.gz`
 - `dd` (built into macOS and Linux)
 - `gunzip` (built into macOS and Linux)
 
@@ -38,19 +38,19 @@ The SD card will appear as `/dev/sdX` or `/dev/mmcblkX`. Unmount any auto-mounte
 Decompress the image first (this keeps the `.gz` file):
 
 ```bash
-gunzip -k artifacts/offlinelab-sdcard-*.img.gz
+gunzip -k artifacts/pi-zero-2w/offlinelab-rpi-pi-zero-2w-arm64*.img.gz
 ```
 
 Then write it to the SD card. Replace `/dev/diskN` with the device from the previous step:
 
 ```bash
-sudo dd if=artifacts/offlinelab-sdcard-*.img of=/dev/diskN bs=4M status=progress
+sudo dd if=artifacts/pi-zero-2w/offlinelab-rpi-pi-zero-2w-arm64*.img of=/dev/diskN bs=4M status=progress
 ```
 
 On macOS, using the raw device (`/dev/rdiskN` instead of `/dev/diskN`) is faster:
 
 ```bash
-sudo dd if=artifacts/offlinelab-sdcard-*.img of=/dev/rdisk4 bs=4M status=progress
+sudo dd if=artifacts/pi-zero-2w/offlinelab-rpi-pi-zero-2w-arm64*.img of=/dev/rdisk4 bs=4M status=progress
 ```
 
 Wait for `dd` to finish and the prompt to return. On a Class 10 / UHS-I card, writing ~250MB takes around 30–60 seconds.

@@ -4,7 +4,7 @@
 
 Offline Lab is an open-source platform for running applications on low-power devices without internet. We build software for situations where connectivity is unreliable or unavailable — travel, remote areas, temporary setups — and existing tools stop working when the network drops.
 
-MoreOS currently targets the Raspberry Pi Zero 2W and QEMU, with support for additional hardware planned.
+Offline Lab OS currently targets the Raspberry Pi Zero 2W and QEMU, with support for additional hardware planned.
 
 ## Use cases
 
@@ -18,13 +18,13 @@ In all cases, the platform works fully offline. When internet is available, it s
 
 ## What it does
 
-MoreOS is a minimal, read-only [operating system](operating-system.md) built with Buildroot. It boots from an SD card and keeps user data on a separate writable partition. System updates use A/B root partitions: write the new image to the inactive slot, reboot, and the system switches over.
+Offline Lab OS is a minimal, read-only [operating system](operating-system.md) built with Buildroot. It boots from an SD card and keeps user data on a separate writable partition. System updates use A/B root partitions: write the new image to the inactive slot, reboot, and the system switches over.
 
 Applications ship as **portable services** — squashfs images containing everything they need, managed as systemd portable services. No package managers, no dependency resolution. Drop the image on the device and start it. See the [service model](components.md) for details.
 
 **Disco** handles service discovery and name resolution on the local network. Nodes find each other without manual configuration, whether connected over a travel router, WiFi mesh, or direct WiFi. See the [Discovery](discovery/) documentation for the protocol and CLI.
 
-The **framework** is a Bash utility library and [`labctl`](labctl.md) CLI installed on every device. It provides logging, configuration management, WiFi setup, health checks, update operations, and other on-device tooling.
+The **framework** is a Bash utility library and [`boxctl`](boxctl.md) CLI installed on every device. It provides logging, configuration management, WiFi setup, health checks, update operations, and other on-device tooling.
 
 See [Terminology](terminology.md) for definitions of terms used throughout the docs.
 
@@ -46,7 +46,7 @@ Nodes connect over a travel router or WiFi mesh. Each node also works standalone
 
 | Repository | Description |
 |---|---|
-| [builder](https://github.com/offline-lab/builder) | MoreOS image builder (Buildroot), framework, labctl, and on-device tooling |
+| [builder](https://github.com/offline-lab/builder) | Offline Lab OS image builder (Buildroot), framework, boxctl, and on-device tooling |
 | [disco](https://github.com/offline-lab/disco) | Service discovery and name resolution for offline networks |
 | packages | Portable systemd service packages (planned) |
 | sync | Data synchronization tools (planned) |

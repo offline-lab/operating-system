@@ -1,14 +1,14 @@
-# labctl — Command Reference
+# boxctl — Command Reference
 
-`labctl` is the device management CLI installed on the Offline Lab OS.
-Run `labctl help` or `labctl <command> --help` for interactive help.
+`boxctl` is the device management CLI installed on the Offline Lab OS.
+Run `boxctl help` or `boxctl <command> --help` for interactive help.
 
 ---
 
-## `labctl config`
+## `boxctl config`
 
 ```
-Usage: labctl config <subcommand> [args]
+Usage: boxctl config <subcommand> [args]
 
 Subcommands:
   get <key>           Read a config value
@@ -21,10 +21,10 @@ Keys (common):
   timezone            TZ name (e.g. Europe/Amsterdam)
 ```
 
-## `labctl diagnose`
+## `boxctl diagnose`
 
 ```
-Usage: labctl diagnose [--output <dir>]
+Usage: boxctl diagnose [--output <dir>]
 
 Collect diagnostics and write a tarball to /tmp (or <dir>).
 
@@ -41,10 +41,10 @@ Options:
   --output <dir>   Write tarball to this directory (default: /tmp)
 ```
 
-## `labctl logs`
+## `boxctl logs`
 
 ```
-Usage: labctl logs [options]
+Usage: boxctl logs [options]
 
 Options:
   -u, --unit <unit>     Filter by systemd unit
@@ -54,10 +54,10 @@ Options:
   --boot                Show current boot only
 ```
 
-## `labctl net`
+## `boxctl net`
 
 ```
-Usage: labctl net <subcommand> [args]
+Usage: boxctl net <subcommand> [args]
 
 Subcommands:
   status                Show current WiFi state and IP
@@ -65,10 +65,10 @@ Subcommands:
   connect <ssid> <psk>  Connect to a WiFi network
 ```
 
-## `labctl power`
+## `boxctl power`
 
 ```
-Usage: labctl power [<subcommand>]
+Usage: boxctl power [<subcommand>]
 
 Manage runtime power profile (cpufreq governor + USB autosuspend).
 
@@ -84,10 +84,10 @@ Profiles:
   saver         CPU governor: powersave,   USB autosuspend: 500ms
 ```
 
-## `labctl reboot`
+## `boxctl reboot`
 
 ```
-Usage: labctl reboot [<slot>]
+Usage: boxctl reboot [<slot>]
 
 Reboot the device, optionally into a specific RAUC slot.
 If no slot is given, performs a normal reboot.
@@ -96,22 +96,42 @@ Arguments:
   <slot>   RAUC slot name (e.g. rootfs.0, rootfs.1)
 ```
 
-## `labctl rollback`
+## `boxctl rollback`
 
 ```
-Usage: labctl rollback
+Usage: boxctl rollback
 
 Roll back to the previously installed RAUC slot.
 
 Finds the inactive rootfs slot, marks it as the boot target, and offers
 to reboot. The current slot is not modified — you can roll forward again
-by running: labctl update
+by running: boxctl update
 ```
 
-## `labctl service`
+## `boxctl screen`
 
 ```
-Usage: labctl service <subcommand> [service]
+Usage: boxctl screen <subcommand> [args]
+
+Manage HDMI display configuration. Settings are stored in /data/config and
+written to /boot/firmware/config.txt on apply. A reboot is required for
+changes to take effect.
+
+Subcommands:
+  status                     Show stored screen configuration
+  rotate <degrees>           Set display rotation: 0, 90, 180, 270
+  resolution <group> <mode>  Set HDMI resolution (hdmi_group and hdmi_mode)
+  apply                      Write stored settings to /boot/firmware/config.txt
+
+Common HDMI groups and modes:
+  Group 1 (CEA/TV):  mode 4 = 720p60,  mode 16 = 1080p60
+  Group 2 (DMT/PC):  mode 35 = 1024x768@60, mode 82 = 1920x1080@60
+```
+
+## `boxctl service`
+
+```
+Usage: boxctl service <subcommand> [service]
 
 Subcommands:
   list                List attached portable services and their state
@@ -121,19 +141,19 @@ Subcommands:
   disable <service>   Disable a portable service
 ```
 
-## `labctl status`
+## `boxctl status`
 
 ```
-Usage: labctl status
+Usage: boxctl status
 
 Show system health: RAUC slot info, AppArmor, dm-verity, failed units,
 disk and memory usage.
 ```
 
-## `labctl update`
+## `boxctl update`
 
 ```
-Usage: labctl update [<bundle>]
+Usage: boxctl update [<bundle>]
 
 Apply a RAUC bundle. If no path is given, searches /mnt for *.raucb files.
 Prompts for confirmation before installing.

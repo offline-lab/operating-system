@@ -42,7 +42,7 @@ nav = [
     ]},
     { "App format" = "app-format.md" },
     { "Terminology" = "terminology.md" },
-    { "labctl" = "labctl.md" },
+    { "boxctl" = "boxctl.md" },
   ]},
 
   { "Design & Roadmap" = [

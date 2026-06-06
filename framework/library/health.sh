@@ -2,7 +2,7 @@
 # vi: ft=bash
 # shellcheck shell=bash disable=SC2312
 
-# Device system status helpers for labctl.
+# Device system status helpers for boxctl.
 # All functions require the framework to be sourced before this file.
 # Requires: systemctl, df, free, cat (/sys/kernel/security/apparmor/profiles)
 

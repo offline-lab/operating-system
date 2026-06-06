@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# vi: ft=bash
+# shellcheck shell=bash disable=SC1091,SC2312
+set -euo pipefail
+
+source framework || exit 1
+import interact depends system
+
+function boxctl_service::usage() {
+    cat >&2 <<EOF
+
+Usage: boxctl service <subcommand> [service]
+
+Subcommands:
+  list                List attached portable services and their state
+  start <service>     Start a portable service
+  stop <service>      Stop a portable service
+  enable <service>    Enable a portable service (start on boot)
+  disable <service>   Disable a portable service
+
+EOF
+    exit 0
+}
+
+function boxctl_service::main() {
+    local subcmd="${1:-}"
+    (var::is_empty "${subcmd}" || var::matches "${subcmd}" '^(-h|--help)$') && boxctl_service::usage
+    shift
+
+    depends::check_list portablectl systemctl
+
+    case "${subcmd}" in
+
+        list)
+            priv::run portablectl list
+            ;;
+
+        start | stop | enable | disable)
+            [[ "${#}" -lt 1 ]] && exit::error "${FUNCNAME[0]}: ${subcmd} requires a service name"
+
+            local svc="${1}"
+            case "${subcmd}" in
+
+                start)
+                    priv::run systemctl start "${svc}"
+                    ;;
+                stop)
+                    priv::run systemctl stop "${svc}"
+                    ;;
+                enable)
+                    priv::run portablectl attach "${svc}"
+                    priv::run systemctl enable --now "${svc}"
+                    ;;
+                disable)
+                    priv::run systemctl disable --now "${svc}"
+                    priv::run portablectl detach "${svc}"
+                    ;;
+                *) ;;
+            esac
+
+            log::info "${FUNCNAME[0]}: done"
+            ;;
+        *)
+            exit::error "${FUNCNAME[0]}: unknown subcommand: ${subcmd}"
+            ;;
+    esac
+}
+
+boxctl_service::main "${@}"

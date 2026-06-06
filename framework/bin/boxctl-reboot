@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# vi: ft=bash
+# shellcheck shell=bash disable=SC1091,SC2312
+set -euo pipefail
+
+source framework || exit 1
+import interact rauc system
+
+function boxctl_reboot::usage() {
+    cat >&2 <<EOF
+
+Usage: boxctl reboot [<slot>]
+
+Reboot the device, optionally into a specific RAUC slot.
+If no slot is given, performs a normal reboot.
+
+Arguments:
+  <slot>   RAUC slot name (e.g. rootfs.0, rootfs.1)
+
+EOF
+    exit 0
+}
+
+function boxctl_reboot::main() {
+    [[ "${1:-}" =~ ^(-h|--help)$ ]] && boxctl_reboot::usage
+
+    local slot="${1:-}"
+
+    if var::has_value "${slot}"; then
+        local known
+        known="$(rauc::slots)"
+        if ! grep -qx "${slot}" <<<"${known}"; then
+            printf '%s\n' "${known}" >&2
+            exit::error "${FUNCNAME[0]}: unknown slot '${slot}'"
+        fi
+
+        interact::prompt_bool "Reboot into slot ${slot}?" || exit::warn "${FUNCNAME[0]}: Aborted."
+
+        log::info "${FUNCNAME[0]}: setting next boot to ${slot}"
+        rauc::mark_active "${slot}"
+    else
+        interact::prompt_bool "Reboot?" || exit::warn "${FUNCNAME[0]}: Aborted."
+    fi
+
+    log::info "${FUNCNAME[0]}: rebooting"
+    priv::run reboot
+}
+
+boxctl_reboot::main "${@}"

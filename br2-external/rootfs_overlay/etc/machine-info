@@ -1,0 +1,4 @@
+PRETTY_HOSTNAME=Offline Lab
+ICON_NAME=computer-embedded
+CHASSIS=embedded
+DEPLOYMENT=production

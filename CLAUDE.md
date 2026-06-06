@@ -13,7 +13,7 @@ See `AGENTS.md` for full agent instructions across all three areas.
 | Area | Path | What it is |
 |---|---|---|
 | Builder | `br2-external/`, `bin/`, `Dockerfile` | Buildroot external tree and build pipeline |
-| Framework | `framework/` | Bash utility library and `labctl` CLI |
+| Framework | `framework/` | Bash utility library and `boxctl` CLI |
 | Docs | `docs/`, `zensical.toml` | Zensical documentation site |
 
 ---
@@ -29,7 +29,7 @@ Use `/kanban` to manage tasks.
 **Key constraints:**
 - `framework/` is first-party source — edit it directly here, then rebuild the package
 - No binaries or third-party source committed — everything fetched at build time
-- No source copies from other repos — builder fetches via Buildroot SITE/git at build time; never paste source from framework, labctl, disco, or any other repo into `br2-external/`
+- No source copies from other repos — builder fetches via Buildroot SITE/git at build time; never paste source from framework, boxctl, disco, or any other repo into `br2-external/`
 - No tmpfs for state — use `/data` bind mounts
 - SSH to buildbox: `SSH_AUTH_SOCK=/dev/null ssh -i .ssh/builder builder@buildbox`
 - Never run `git commit`, `git push`, or `git amend` — user handles all git operations
@@ -98,10 +98,10 @@ All internal variables use `FRAMEWORK_` prefix. Never `TOOLSET_`.
 
 ```
 /usr/lib/framework/bin/framework   ← source this: source framework || exit 1
-/usr/lib/framework/bin/labctl      ← device management CLI
+/usr/lib/framework/bin/boxctl      ← device management CLI
 /usr/lib/framework/bin/chronic     ← bash port of moreutils chronic(1)
 /usr/lib/framework/library/*.sh    ← library modules
-/etc/labctl/su.conf                ← labctl-su allowlist
+/etc/boxctl/su.conf                ← boxctl-su allowlist
 /etc/profile.d/framework.sh       ← adds /usr/lib/framework/bin to PATH
 ```
 
@@ -128,7 +128,7 @@ Busybox compat: use `grep -E` not `-P`, `date -u` not `--universal`, `mktemp -t 
 - No `export -f` — scripts source the framework; exporting wastes memory
 - `#!/usr/bin/env bash` shebang only — ensures `bash -x` always works
 - `FRAMEWORK_` prefix everywhere — avoids collision with `~/.toolset`
-- Privilege via `priv::run` / `sudo labctl-su` — never embed `sudo` inline
+- Privilege via `priv::run` / `sudo boxctl-su` — never embed `sudo` inline
 
 ### Adding a new library module
 

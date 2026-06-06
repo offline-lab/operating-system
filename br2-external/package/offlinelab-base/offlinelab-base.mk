@@ -28,9 +28,9 @@ OFFLINELAB_BASE_DEPENDENCIES = \
 	systemd
 
 define OFFLINELAB_SPLASH_GENERATE
-	@BOARD_DIR="$(BR2_EXTERNAL_OFFLINELAB_PATH)/boards/pi-zero-2w"; \
-	SVG="$${BOARD_DIR}/splash.svg"; \
-	PNG="$${BOARD_DIR}/splash.png"; \
+	@COMMON_DIR="$(BR2_EXTERNAL_OFFLINELAB_PATH)/boards/common"; \
+	SVG="$${COMMON_DIR}/splash.svg"; \
+	PNG="$${COMMON_DIR}/splash.png"; \
 	if [ -f "$${SVG}" ] && command -v rsvg-convert >/dev/null 2>&1; then \
 		VERSION=$$(date +%Y%m%d); \
 		TMP=$$(mktemp); \

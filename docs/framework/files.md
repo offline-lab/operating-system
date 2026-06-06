@@ -16,3 +16,17 @@ Merge 2 list files into one
 **Arguments:** at least 2 argument(s)
 
 ---
+
+## Append unique lines from one file into another
+
+### `files::append_unique_lines`
+
+> Appending unique lines from <value> into <value>
+
+Append lines from src into dst, skipping blank lines, comments (#), and any
+line already present verbatim in dst.  Creates dst if it does not exist.
+Returns 1 if src is not a readable file, 2 on wrong arity.
+
+**Arguments:** exactly 2 argument(s)
+
+---

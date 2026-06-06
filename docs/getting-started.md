@@ -1,6 +1,6 @@
 # Getting Started
 
-Walk through getting MoreOS running on a Raspberry Pi Zero 2W — from building the OS to connecting over SSH.
+Walk through getting Offline Lab OS running on a Raspberry Pi Zero 2W — from building the OS to connecting over SSH.
 
 ## What you need
 
@@ -14,15 +14,15 @@ Walk through getting MoreOS running on a Raspberry Pi Zero 2W — from building 
 
 Build the OS image and configure WiFi and SSH credentials. See [Build the OS image](build-image.md) for full instructions covering both Docker and Buildbox paths.
 
-The output is a compressed image file: `artifacts/offlinelab-sdcard-<date>.img.gz`.
+The output is a compressed image file: `artifacts/pi-zero-2w/offlinelab-rpi-pi-zero-2w-arm64-<date>.img.gz`.
 
-## Step 2 — Install MoreOS on the SD card
+## Step 2 — Install Offline Lab OS on the SD card
 
-Write the image to your SD card. See [Install MoreOS](burn-image.md) for the full procedure with troubleshooting.
+Write the image to your SD card. See [Install Offline Lab OS](burn-image.md) for the full procedure with troubleshooting.
 
 ## Step 3 — Boot
 
-Insert the SD card into the Pi Zero 2W and connect power. The first boot takes slightly longer because the data partition is expanded to fill the card.
+Insert the SD card into the Pi Zero 2W and connect power. The first boot is slower because the data partition is resized and formatted to fill the card. On large cards (512 GB–1 TB) this can take several minutes on the Zero 2W's single-core IO — the device will eventually reach the login prompt, but be patient.
 
 ## Step 4 — Connect
 
@@ -30,9 +30,9 @@ Find the device's IP address from your router's DHCP lease table, or use the ser
 
     ssh app@<ip-address>
 
-Once connected, check the system status with [labctl](labctl.md):
+Once connected, check the system status with [boxctl](boxctl.md):
 
-    labctl status
+    boxctl status
 
 ## What's next
 

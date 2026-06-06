@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+# vi: ft=bash
+# shellcheck shell=bash disable=SC1091,SC2312
+set -euo pipefail
+
+source framework || exit 1
+import depends
+
+function boxctl_help::usage() {
+    cat >&2 <<EOF
+
+Usage: boxctl help [command]
+
+Browse available boxctl commands.
+
+With fzf:   Interactive list with live usage preview.
+Without:    Plain list with usage text.
+
+If a command name is given, show its usage directly:
+  boxctl help rollback
+
+EOF
+    exit 0
+}
+
+function boxctl_help::list_commands() {
+    local bin_dir
+    bin_dir="$(dirname "$(command -v boxctl 2>/dev/null || echo "/usr/lib/framework/bin/boxctl")")"
+
+    find "${bin_dir}" -maxdepth 1 -name 'boxctl-*' -type f |
+        sed 's|.*/boxctl-||' |
+        grep -vxE 'help|su' |
+        sort
+}
+
+function boxctl_help::show_one() {
+    local cmd="${1}"
+    local bin
+
+    bin="$(command -v "boxctl-${cmd}" 2>/dev/null || true)"
+    var::is_empty "${bin}" && exit::error "${FUNCNAME[0]}: unknown command: ${cmd}"
+
+    "boxctl-${cmd}" --help 2>&1 || true
+}
+
+function boxctl_help::plain() {
+    local commands
+    commands="$(boxctl_help::list_commands)"
+
+    printf '\nAvailable boxctl commands:\n\n'
+
+    while IFS= read -r cmd; do
+        printf '  boxctl %s\n' "${cmd}"
+    done <<<"${commands}"
+
+    printf '\nRun '\''boxctl <command> --help'\'' for usage details.\n\n'
+}
+
+function boxctl_help::fzf() {
+    local commands selected
+
+    commands="$(boxctl_help::list_commands)"
+
+    selected="$(
+        printf '%s\n' "${commands}" |
+            fzf \
+                --prompt='boxctl > ' \
+                --header='  ↑/↓ to browse   Enter to view full usage   Ctrl+C to exit' \
+                --preview='boxctl-{} --help 2>&1 || true' \
+                --preview-window='right:60%:wrap' \
+                --ansi \
+                --height='~80%' \
+                --border \
+                --no-info
+    )" || true
+
+    [[ -z "${selected}" ]] && return 0
+
+    printf '\n'
+    boxctl_help::show_one "${selected}"
+}
+
+function boxctl_help::main() {
+    [[ "${1:-}" =~ ^(-h|--help)$ ]] && boxctl_help::usage
+
+    if var::has_value "${1:-}"; then
+        boxctl_help::show_one "${1}"
+        return
+    fi
+
+    if depends::check::silent fzf; then
+        boxctl_help::fzf
+    else
+        boxctl_help::plain
+    fi
+}
+
+boxctl_help::main "${@}"

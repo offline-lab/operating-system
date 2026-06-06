@@ -4,7 +4,7 @@ config BR2_PACKAGE_FZF
 	help
 	  fzf is a general-purpose command-line fuzzy finder.
 
-	  Used by labctl (bin/tools) for interactive script browsing.
+	  Used by boxctl (bin/tools) for interactive script browsing.
 	  Installs a prebuilt static binary from the official GitHub release.
 
 	  https://github.com/junegunn/fzf

@@ -14,4 +14,4 @@ Defaults !fqdn
 Defaults !lecture
 
 admin ALL=(ALL) ALL
-admin ALL=(root) NOPASSWD: /usr/lib/framework/bin/labctl-su
+admin ALL=(root) NOPASSWD: /usr/lib/framework/bin/boxctl-su

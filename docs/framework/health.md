@@ -2,7 +2,7 @@
 
 **Source:** `framework/library/health.sh`
 
-Device system status helpers for labctl. All functions require the framework to be sourced before this file. Requires: systemctl, df, free, cat (/sys/kernel/security/apparmor/profiles)
+Device system status helpers for boxctl. All functions require the framework to be sourced before this file. Requires: systemctl, df, free, cat (/sys/kernel/security/apparmor/profiles)
 
 !!! note "Return codes"
     All functions return `0` on success, `1` on failure, `2` on wrong argument count.

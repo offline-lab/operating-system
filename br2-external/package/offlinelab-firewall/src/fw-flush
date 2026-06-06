@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+source /usr/lib/framework/bin/framework || exit 1
+import fw
+fw::flush

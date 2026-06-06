@@ -2,7 +2,7 @@
 # vi: ft=bash
 # shellcheck shell=bash disable=SC2312
 
-# /data/config read/write helpers for labctl.
+# /data/config read/write helpers for boxctl.
 # All functions require the framework to be sourced before this file.
 
 CONFIG_DIR="${CONFIG_DIR:-/data/config}"

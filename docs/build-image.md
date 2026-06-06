@@ -14,7 +14,7 @@ Both produce the same output: a compressed SD card image in `artifacts/`.
 - ~15 GB free disk for the build cache
 
 **Buildbox path:**
-- UTM (macOS virtualisation) or any arm64 Debian host
+- Lima (`limactl`) or any arm64 Debian host
 - SSH access to the VM (`buildbox` in `/etc/hosts` or `BUILDBOX_HOST` env var)
 - ~15 GB free disk on the VM
 
@@ -56,7 +56,7 @@ bin/builder.sh --build-docker
 bin/builder.sh --build
 ```
 
-The image file lands in `artifacts/offlinelab-sdcard-<date>.img.gz`.
+The image file lands in `artifacts/pi-zero-2w/offlinelab-rpi-pi-zero-2w-arm64<date>.img.gz`.
 
 To open a shell inside the build container for debugging:
 
@@ -84,30 +84,61 @@ This provisions the VM with the right dependencies via cloud-init. Set the VM's 
 echo "192.168.64.X  buildbox" | sudo tee -a /etc/hosts
 ```
 
+### Available boards
+
+Boards are defined by defconfigs in `br2-external/configs/`. Each gets its own build output directory (`~/buildroot-<board>/`) and artifact path.
+
+| Board | Defconfig | Artifact path | Image type |
+|---|---|---|---|
+| `pi-zero-2w` | `offlinelab_pi_zero_2w_defconfig` | `artifacts/pi-zero-2w/` | SD card image + RAUC bundle |
+| `rpi3` | `offlinelab_rpi3_defconfig` | `artifacts/rpi3/` | SD card image + RAUC bundle |
+| `rpi4` | `offlinelab_rpi4_defconfig` | `artifacts/rpi4/` | SD card image + RAUC bundle |
+| `qemu-arm64` | `offlinelab_qemu_arm64_defconfig` | `artifacts/qemu-arm64/` | QEMU disk image + U-Boot |
+
 ### Running a build
 
 ```bash
-# Full pipeline: sync code → build → verify → download artifacts
-bin/buildbox.sh
+# Build all boards sequentially, fetch all artifacts (overnight run)
+bin/buildbox.sh all
 
-# Or run steps individually:
-bin/buildbox.sh sync      # push local repo to buildbox
-bin/buildbox.sh build     # sync + build
-bin/buildbox.sh verify    # run verification checks on artifacts
-bin/buildbox.sh fetch     # download artifacts/ to local machine
-bin/buildbox.sh ssh       # open an interactive shell
+# Full pipeline for one board: sync → build → verify → fetch
+bin/buildbox.sh                             # default: pi-zero-2w
+bin/buildbox.sh qemu-arm64
+
+# Run steps individually
+bin/buildbox.sh sync                        # push local repo to buildbox
+bin/buildbox.sh build [board]               # build (default: pi-zero-2w)
+bin/buildbox.sh verify [board]              # run verification checks
+bin/buildbox.sh fetch [board]               # download artifacts to local machine
+bin/buildbox.sh ssh                         # open an interactive shell
 ```
 
-The image lands in `artifacts/` on your local machine after `fetch`.
+Artifacts land in `artifacts/<board>/` on your local machine after `fetch`.
+
+Builds run sequentially when using `all` — parallel builds on the same VM exhaust disk during the kernel compile phase (~15 GB per board at peak). Sequential builds prune each output tree after completion, keeping disk usage flat regardless of how many boards are defined.
+
+### Running a QEMU image locally
+
+After fetching the QEMU artifacts:
+
+```bash
+bin/run-qemu
+# or: bin/run-qemu artifacts/qemu-arm64/
+
+# SSH into the running VM (once booted):
+ssh admin@localhost -p 2222
+```
+
+Expected service failures in QEMU (no hardware): `usb-gadget.service`, `wifi-setup.service`, `psplash.service`. Everything else should start normally.
 
 ## Writing to SD card
 
 ```bash
 # Decompress the image (keeps the .gz)
-gunzip -k artifacts/offlinelab-sdcard-*.img.gz
+gunzip -k artifacts/pi-zero-2w/offlinelab-rpi-pi-zero-2w-arm64*.img.gz
 
 # Write to SD card (replace diskN with your device)
-sudo dd if=artifacts/offlinelab-sdcard-*.img of=/dev/diskN bs=4M status=progress
+sudo dd if=artifacts/pi-zero-2w/offlinelab-rpi-pi-zero-2w-arm64*.img of=/dev/diskN bs=4M status=progress
 ```
 
 On macOS, use `diskutil list` to identify the SD card device. Unmount it first with `diskutil unmountDisk /dev/diskN`.
@@ -117,7 +148,8 @@ On macOS, use `diskutil list` to identify the SD card device. Unmount it first w
 `bin/verify.sh` checks the artifacts without needing hardware:
 
 ```bash
-bin/verify.sh artifacts/
+bin/verify.sh artifacts/pi-zero-2w/
+bin/verify.sh artifacts/qemu-arm64/
 ```
 
 It inspects partition layout, boot contents, initramfs structure, rootfs, systemd units, kernel config, and module dependencies. It does not boot the image.

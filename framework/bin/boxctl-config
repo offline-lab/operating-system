@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# vi: ft=bash
+# shellcheck shell=bash disable=SC1091,SC2312
+set -euo pipefail
+
+source framework || exit 1
+import interact config system
+
+function boxctl_config::usage() {
+    cat >&2 <<EOF
+
+Usage: boxctl config <subcommand> [args]
+
+Subcommands:
+  get <key>           Read a config value
+  set <key> <value>   Write a config value
+  list                List all config keys
+  apply               Apply hostname and timezone from config
+
+Keys (common):
+  hostname            Device hostname
+  timezone            TZ name (e.g. Europe/Amsterdam)
+
+EOF
+    exit 0
+}
+
+function boxctl_config::main() {
+    local subcmd="${1:-}"
+    (var::is_empty "${subcmd}" || var::matches "${subcmd}" '^(-h|--help)$') && boxctl_config::usage
+    shift
+
+    case "${subcmd}" in
+        get)
+            [[ "${#}" -lt 1 ]] && exit::error "${FUNCNAME[0]}: get requires <key>"
+            config::read "${1}" || exit::error "${FUNCNAME[0]}: key not found: ${1}"
+            ;;
+        set)
+            [[ "${#}" -lt 2 ]] && exit::error "${FUNCNAME[0]}: set requires <key> and <value>"
+            config::write "${1}" "${2}"
+            log::info "${FUNCNAME[0]}: set ${1}=${2}"
+            ;;
+        list)
+            config::list
+            ;;
+        apply)
+            config::apply_hostname
+            config::apply_timezone
+            log::info "${FUNCNAME[0]}: config applied"
+            ;;
+        *)
+            exit::error "${FUNCNAME[0]}: unknown subcommand: ${subcmd}"
+            ;;
+    esac
+}
+
+boxctl_config::main "${@}"

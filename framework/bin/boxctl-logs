@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# vi: ft=bash
+# shellcheck shell=bash disable=SC1091,SC2312
+set -euo pipefail
+
+source framework || exit 1
+import depends
+
+function boxctl_logs::usage() {
+    cat >&2 <<EOF
+
+Usage: boxctl logs [options]
+
+Options:
+  -u, --unit <unit>     Filter by systemd unit
+  -p, --priority <p>    Min priority: emerg|alert|crit|err|warning|notice|info|debug
+  -n, --lines <n>       Number of lines (default: 50)
+  -f, --follow          Follow live output
+  --boot                Show current boot only
+
+EOF
+    exit 0
+}
+
+function boxctl_logs::main() {
+    [[ "${1:-}" =~ ^(-h|--help)$ ]] && boxctl_logs::usage
+
+    depends::check journalctl
+
+    local -a args=("--no-pager" "--output=short-iso")
+    local lines=50
+
+    while [[ "${#}" -gt 0 ]]; do
+        case "${1}" in
+            -u | --unit)
+                [[ "${#}" -lt 2 ]] && exit::error "${FUNCNAME[0]}: ${1} requires a value"
+                args+=("--unit=${2}")
+                shift 2
+                ;;
+            -p | --priority)
+                [[ "${#}" -lt 2 ]] && exit::error "${FUNCNAME[0]}: ${1} requires a value"
+                args+=("--priority=${2}")
+                shift 2
+                ;;
+            -n | --lines)
+                [[ "${#}" -lt 2 ]] && exit::error "${FUNCNAME[0]}: ${1} requires a value"
+                lines="${2}"
+                shift 2
+                ;;
+            -f | --follow)
+                args+=("--follow")
+                shift
+                ;;
+            --boot)
+                args+=("--boot")
+                shift
+                ;;
+            *)
+                exit::error "${FUNCNAME[0]}: unknown option: ${1}"
+                ;;
+        esac
+    done
+
+    args+=("--lines=${lines}")
+    journalctl "${args[@]}"
+}
+
+boxctl_logs::main "${@}"

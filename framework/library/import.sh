@@ -20,6 +20,7 @@ export -a FRAMEWORK_INIT_MODULES=(
     debug
     depends
     fs
+    fw
     interact
     net
     proc

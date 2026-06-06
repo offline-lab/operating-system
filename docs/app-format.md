@@ -5,7 +5,7 @@
 
 ## Overview
 
-A `.olab` package is a single-file archive containing everything needed to install and run a portable service on MoreOS. It bundles a squashfs filesystem image, a metadata manifest, a dm-verity root hash, and a signature.
+A `.olab` package is a single-file archive containing everything needed to install and run a portable service on Offline Lab OS. It bundles a squashfs filesystem image, a metadata manifest, a dm-verity root hash, and a signature.
 
 ## File structure
 
@@ -29,7 +29,7 @@ A `.olab` package is a single-file archive containing everything needed to insta
 | `tags` | list | Classification tags (e.g. `audio`, `network`, `webservice`) |
 | `exposed_ports` | list | TCP/UDP ports the service listens on |
 | `required_data_dirs` | list | Paths under `/data/apps/<name>/` the service expects |
-| `min_os_version` | string | Minimum MoreOS version required |
+| `min_os_version` | string | Minimum Offline Lab OS version required |
 | `file_listing` | list | List of files in the squashfs with sha256 hashes |
 
 ## Details to be finalised

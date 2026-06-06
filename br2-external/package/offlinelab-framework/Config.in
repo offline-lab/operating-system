@@ -16,5 +16,5 @@ config BR2_PACKAGE_OFFLINELAB_FRAMEWORK
 	help
 	  Bash utility library and system management CLI for Offline Lab OS.
 	  Fetched from github.com/offline-lab/offline-lab-framework at build time.
-	  Installs library modules to /usr/lib/framework/ and labctl + subcommands
+	  Installs library modules to /usr/lib/framework/ and boxctl + subcommands
 	  to /usr/lib/framework/bin/ (added to PATH via /etc/profile.d/framework.sh).

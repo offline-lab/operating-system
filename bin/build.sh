@@ -71,11 +71,12 @@ make -C /buildroot BR2_EXTERNAL=/work/br2-external BR2_JLEVEL="${NPROC}" -j"${NP
 
 timestamp="$(date +%Y-%m-%d-%H%M%S)"
 
-if [[ -e /buildroot/output/images/sdcard.img ]]; then
-    log "Compressing sdcard.img"
-    pigz --force -9 /buildroot/output/images/sdcard.img --stdout \
-        >"/artifacts/offlinelab-sdcard-${timestamp}.img.gz"
-fi
+for img in /buildroot/output/images/offlinelab-*.img; do
+    [[ -f "${img}" ]] || continue
+    log "Compressing $(basename "${img}")"
+    base="$(basename "${img}" .img)"
+    pigz --force -9 "${img}" --stdout >"/artifacts/${base}-${timestamp}.img.gz"
+done
 
 log "Copying artifacts"
 cp -rv /buildroot/output/images/* /artifacts/

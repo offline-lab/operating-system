@@ -12,7 +12,7 @@
 
 [Unit]
 Description=WiFi setup via wpa_supplicant
-After=provision-wifi.service
+After=provision-wifi.service expand-data.service
 BindsTo=sys-subsystem-net-devices-wlan0.device
 After=sys-subsystem-net-devices-wlan0.device
 ConditionPathExists=/data/config/wifi/wpa_supplicant.conf

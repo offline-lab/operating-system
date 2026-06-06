@@ -2,7 +2,7 @@
 # vi: ft=bash
 # shellcheck shell=bash disable=SC2312
 
-# RAUC slot and bundle operations for labctl.
+# RAUC slot and bundle operations for boxctl.
 # All functions require the framework to be sourced before this file.
 # Requires: rauc (privileged — called via priv::run), jq
 
