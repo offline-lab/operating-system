@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# vi: ft=bash
+# shellcheck shell=bash disable=SC1091,SC2312
+set -euo pipefail
+
+source framework || exit 1
+import confext
+
+function boxctl_confext::usage() {
+    cat >&2 <<EOF
+
+Usage: boxctl confext <command>
+
+Manage configuration extension images in /data/extensions/confext/.
+
+Commands:
+  list      List installed extensions and their merge status
+  merge     Merge all extensions into /etc/
+  unmerge   Remove merged extensions from /etc/
+  refresh   Unmerge then re-merge (picks up new or removed images)
+  status    Show current merge state
+
+Extensions are .raw squashfs images stored in /data/extensions/confext/.
+Drop files there and run 'boxctl confext refresh' to apply them.
+
+EOF
+    exit 0
+}
+
+function boxctl_confext::main() {
+    local cmd="${1:-}"
+    [[ "${cmd}" =~ ^(-h|--help)$ ]] && boxctl_confext::usage
+    [[ -z "${cmd}" ]] && boxctl_confext::usage
+
+    shift
+
+    case "${cmd}" in
+        list) confext::list ;;
+        merge) confext::merge ;;
+        unmerge) confext::unmerge ;;
+        refresh) confext::refresh ;;
+        status) confext::status ;;
+        *)
+            printf 'boxctl confext: unknown command "%s"\n\n' "${cmd}" >&2
+            boxctl_confext::usage
+            ;;
+    esac
+}
+
+boxctl_confext::main "${@}"

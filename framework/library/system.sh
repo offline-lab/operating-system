@@ -34,5 +34,43 @@ function system::sudo_keepalive() {
 }
 
 ################################################################################
+# machine-id persistence                                                       #
+################################################################################
+
+MACHINE_ID_DEST="${MACHINE_ID_DEST:-/data/config/system/machine-id}"
+MACHINE_ID_SRC="${MACHINE_ID_SRC:-/etc/machine-id}"
+
+#
+# Persist /etc/machine-id to /data so it survives overlay resets.
+# No-ops if already persisted, not yet initialized, or source is missing.
+#
+function machine_id::persist() {
+    log::trace "${FUNCNAME[0]}: persisting machine-id to ${MACHINE_ID_DEST}"
+
+    if [[ -f "${MACHINE_ID_DEST}" ]]; then
+        log::info "${FUNCNAME[0]}: already persisted, skipping"
+        return 0
+    fi
+
+    if [[ ! -f "${MACHINE_ID_SRC}" ]]; then
+        log::warn "${FUNCNAME[0]}: ${MACHINE_ID_SRC} not found, skipping"
+        return 0
+    fi
+
+    local id
+    id="$(cat "${MACHINE_ID_SRC}")"
+
+    if [[ "${id}" == "uninitialized" ]] || [[ -z "${id}" ]]; then
+        log::warn "${FUNCNAME[0]}: machine-id not yet initialized, skipping — will retry next boot"
+        return 0
+    fi
+
+    mkdir -p "$(dirname "${MACHINE_ID_DEST}")"
+    cp "${MACHINE_ID_SRC}" "${MACHINE_ID_DEST}"
+    chmod 444 "${MACHINE_ID_DEST}"
+    log::info "${FUNCNAME[0]}: machine-id persisted: ${id}"
+}
+
+################################################################################
 # EOF                                                                          #
 ################################################################################

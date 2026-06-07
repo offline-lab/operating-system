@@ -2,33 +2,19 @@
 # vi: ft=bash
 # shellcheck shell=bash disable=SC2312
 
-_FW_STATIC_V4="${_FW_STATIC_V4:-/etc/iptables/rules.v4}"
-_FW_STATIC_V6="${_FW_STATIC_V6:-/etc/iptables/rules.v6}"
+_FW_STATIC="${_FW_STATIC:-/etc/firewall/rules.fw}"
 _FW_APP_DIR="${_FW_APP_DIR:-/data/config/firewall/rules.d}"
 _FW_STATE="${_FW_STATE:-/run/firewall.state}"
 
 ################################################################################
-# fw::flush — open all policies and clear all rules                            #
+# fw::flush — clear all nftables rules                                         #
 ################################################################################
 
 function fw::flush() {
-    log::trace "${FUNCNAME[0]}: flush all rules and reset policies to ACCEPT"
-    depends::check::silent iptables || return 1
+    log::trace "${FUNCNAME[0]}: flush ruleset and clear state"
+    depends::check::silent nft || return 1
 
-    iptables -F
-    iptables -X
-    iptables -P INPUT ACCEPT
-    iptables -P FORWARD ACCEPT
-    iptables -P OUTPUT ACCEPT
-
-    if depends::check::silent ip6tables; then
-        ip6tables -F
-        ip6tables -X
-        ip6tables -P INPUT ACCEPT
-        ip6tables -P FORWARD ACCEPT
-        ip6tables -P OUTPUT ACCEPT
-    fi
-
+    nft flush ruleset
     rm -f "${_FW_STATE}"
 }
 
@@ -47,19 +33,15 @@ function fw::down() {
 ################################################################################
 
 function fw::_load_static() {
-    log::trace "${FUNCNAME[0]}: load static rules from ${_FW_STATIC_V4}"
-    depends::check::silent iptables-restore || return 1
+    log::trace "${FUNCNAME[0]}: load static rules from ${_FW_STATIC}"
+    depends::check::silent nft || return 1
 
-    if [[ ! -f "${_FW_STATIC_V4}" ]]; then
-        log::error "${FUNCNAME[0]}: ${_FW_STATIC_V4} not found"
+    if [[ ! -f "${_FW_STATIC}" ]]; then
+        log::error "${FUNCNAME[0]}: ${_FW_STATIC} not found"
         return 1
     fi
 
-    iptables-restore <"${_FW_STATIC_V4}" || return 1
-
-    if depends::check::silent ip6tables-restore && [[ -f "${_FW_STATIC_V6}" ]]; then
-        ip6tables-restore <"${_FW_STATIC_V6}" || return 1
-    fi
+    nft -f "${_FW_STATIC}" || return 1
 }
 
 ################################################################################
@@ -69,9 +51,10 @@ function fw::_load_static() {
 function fw::_restore_fragment() {
     [[ "${#}" -ne 1 ]] && return 2
     local fragment="${1}"
-    printf '*filter\n'
-    cat "${fragment}"
-    printf 'COMMIT\n'
+    shift
+    # Each fragment contains nft add-rule commands, one per line.
+    # nft -f interprets them non-destructively against the existing ruleset.
+    nft -f "${fragment}"
 }
 
 function fw::_load_apps() {
@@ -81,7 +64,7 @@ function fw::_load_apps() {
     local fragment
     for fragment in "${_FW_APP_DIR}"/*.rules; do
         [[ -f "${fragment}" ]] || continue
-        fw::_restore_fragment "${fragment}" | iptables-restore --noflush ||
+        fw::_restore_fragment "${fragment}" ||
             log::warn "${FUNCNAME[0]}: failed to load ${fragment}"
     done
 }
@@ -141,10 +124,10 @@ function fw::app_allow() {
     shift 3
 
     log::trace "${FUNCNAME[0]}: allow ${proto}/${port} for app ${app}"
-    depends::check::silent iptables || return 1
+    depends::check::silent nft || return 1
 
     local fragment="${_FW_APP_DIR}/${app}.rules"
-    local rule="-A INPUT -p ${proto} --dport ${port} -j ACCEPT"
+    local rule="add rule inet filter input ${proto} dport ${port} accept"
 
     mkdir -p "${_FW_APP_DIR}"
 
@@ -155,7 +138,7 @@ function fw::app_allow() {
     printf '%s\n' "${rule}" >>"${fragment}"
 
     if [[ -f "${_FW_STATE}" ]]; then
-        iptables -A INPUT -p "${proto}" --dport "${port}" -j ACCEPT || return 1
+        nft add rule inet filter input "${proto}" dport "${port}" accept || return 1
     fi
 }
 
@@ -180,8 +163,8 @@ function fw::app_remove() {
 
 function fw::list() {
     log::trace "${FUNCNAME[0]}: list current firewall rules"
-    depends::check::silent iptables || return 1
-    iptables -L -n -v --line-numbers
+    depends::check::silent nft || return 1
+    nft list ruleset
 }
 
 ################################################################################

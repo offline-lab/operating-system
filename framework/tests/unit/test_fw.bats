@@ -5,25 +5,19 @@ load "../../bin/framework"
 setup() {
     _stub_bin="$(mktemp -d)"
 
-    # Stub iptables commands — record last call for assertion, always succeed
-    printf '#!/bin/sh\necho "$@" >> "%s/iptables.log"\nexit 0\n' "${_stub_bin}" \
-        > "${_stub_bin}/iptables"
-    printf '#!/bin/sh\ncat > /dev/null\nexit 0\n' > "${_stub_bin}/iptables-restore"
-    printf '#!/bin/sh\necho "$@" >> "%s/ip6tables.log"\nexit 0\n' "${_stub_bin}" \
-        > "${_stub_bin}/ip6tables"
-    printf '#!/bin/sh\ncat > /dev/null\nexit 0\n' > "${_stub_bin}/ip6tables-restore"
-    chmod +x "${_stub_bin}/iptables" "${_stub_bin}/iptables-restore" \
-              "${_stub_bin}/ip6tables" "${_stub_bin}/ip6tables-restore"
+    # Stub nft — record calls for assertion, always succeed
+    printf '#!/bin/sh\necho "$@" >> "%s/nft.log"\nexit 0\n' "${_stub_bin}" \
+        > "${_stub_bin}/nft"
+    chmod +x "${_stub_bin}/nft"
 
     export PATH="${_stub_bin}:${PATH}"
 
     export _FW_APP_DIR="$(mktemp -d)"
     export _FW_STATE="${_stub_bin}/fw.state"
-    export _FW_STATIC_V4="${_stub_bin}/rules.v4"
-    export _FW_STATIC_V6="${_stub_bin}/rules.v6"
+    export _FW_STATIC="${_stub_bin}/rules.fw"
 
-    printf '*filter\n:INPUT DROP [0:0]\nCOMMIT\n' > "${_FW_STATIC_V4}"
-    printf '*filter\n:INPUT DROP [0:0]\nCOMMIT\n' > "${_FW_STATIC_V6}"
+    printf 'table inet filter { chain input { type filter hook input priority 0; policy drop; } }\n' \
+        > "${_FW_STATIC}"
 
     import fw
 }
@@ -112,7 +106,7 @@ teardown() {
 
 @test "fw::app_allow: creates fragment file with correct rule" {
     fw::app_allow myapp tcp 8080
-    grep -qxF -- "-A INPUT -p tcp --dport 8080 -j ACCEPT" "${_FW_APP_DIR}/myapp.rules"
+    grep -qxF -- "add rule inet filter input tcp dport 8080 accept" "${_FW_APP_DIR}/myapp.rules"
 }
 
 @test "fw::app_allow: deduplicates identical rule" {
@@ -126,20 +120,21 @@ teardown() {
 @test "fw::app_allow: allows multiple ports in same app fragment" {
     fw::app_allow myapp tcp 8080
     fw::app_allow myapp tcp 8443
-    grep -qxF -- "-A INPUT -p tcp --dport 8080 -j ACCEPT" "${_FW_APP_DIR}/myapp.rules"
-    grep -qxF -- "-A INPUT -p tcp --dport 8443 -j ACCEPT" "${_FW_APP_DIR}/myapp.rules"
+    grep -qxF -- "add rule inet filter input tcp dport 8080 accept" "${_FW_APP_DIR}/myapp.rules"
+    grep -qxF -- "add rule inet filter input tcp dport 8443 accept" "${_FW_APP_DIR}/myapp.rules"
 }
 
 @test "fw::app_allow: applies rule immediately when firewall is up" {
     touch "${_FW_STATE}"
     fw::app_allow myapp tcp 9000
-    grep -q "INPUT.*tcp.*9000\|INPUT -p tcp --dport 9000" "${_stub_bin}/iptables.log"
+    grep -q "add rule inet filter input tcp dport 9000 accept" "${_stub_bin}/nft.log"
 }
 
-@test "fw::app_allow: does not call iptables when firewall is down" {
-    rm -f "${_FW_STATE}" "${_stub_bin}/iptables.log"
+@test "fw::app_allow: does not call nft add rule when firewall is down" {
+    rm -f "${_FW_STATE}" "${_stub_bin}/nft.log"
     fw::app_allow myapp tcp 9001
-    [[ ! -f "${_stub_bin}/iptables.log" ]]
+    # nft may be called for depends check but not for add rule
+    ! grep -q "add rule" "${_stub_bin}/nft.log" 2>/dev/null
 }
 
 ##
