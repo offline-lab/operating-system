@@ -99,50 +99,19 @@ bin/run-tests ... -k test_firewall
 
 ## Framework
 
-Bash utility library (`framework/library/`) and device management CLI (`framework/bin/boxctl*`).
-Installed to `/usr/lib/framework/` on the target device.
+The framework lives in its own repo: [offline-lab/framework](https://github.com/offline-lab/framework).
+API reference: [framework.offline-lab.com](https://framework.offline-lab.com).
 
-See [docs/framework/index.md](docs/framework/index.md) for the full module reference.
-
-### Quick reference
-
-```bash
-source framework/bin/dev-setup   # set FRAMEWORK_LIB_PATH for local dev
-bin/test-framework --lint        # lint + full test suite (run before claiming done)
-bin/test-framework --filter var  # run a single module's tests
-shellcheck -s bash framework/library/*.sh framework/bin/boxctl*
-```
-
-### Function conventions — non-negotiable
-
-```bash
-function namespace::function_name() {
-    log::trace "${FUNCNAME[0]}: One-line description"
-    [[ "${#}" -ne 1 ]] && return 2
-    local value="${1}"
-    shift
-    # implementation
-}
-```
-
-Rules: `namespace::name` — lowercase, underscores, `::` separator. First line is always `log::trace`. Return 0/1/2. Validate arg count before touching `$1`. Shift after capturing locals. No `export -f`.
-
-### Adding a new library module
-
-1. Create `framework/library/<name>.sh` with the standard header (see CLAUDE.md for Bash instructions)
-2. Add to `FRAMEWORK_INIT_MODULES` in `framework/library/import.sh`
-3. Add tests at `framework/tests/unit/test_<name>.bats`
-4. Run `bin/test-framework --lint`
+Clone it into `framework/` for local dev. The Buildroot package in
+`br2-external/package/offlinelab-framework/` fetches it at build time.
 
 ---
 
 ## Docs
 
 ```bash
-bin/generate-framework-docs   # regenerate framework API reference (docs/framework/)
 uv run bin/docs.py            # build site to docs/public/
 uv run bin/docs.py serve      # serve locally on :8000
 ```
 
-Generated framework docs live in `docs/framework/` — do not edit them manually.
 Nav defined in `zensical.toml`.

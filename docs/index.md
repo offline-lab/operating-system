@@ -25,7 +25,7 @@ Step-by-step guides for working with the platform:
 
 ### Look things up
 
-Reference material for the platform and framework:
+Reference material for the platform and companion projects:
 
 - [Configuration](configuration.md): WiFi, SSH, and runtime config
 - [Boot](boot.md): boot chain, partition layout, A/B mechanics
@@ -33,7 +33,8 @@ Reference material for the platform and framework:
 - [Service model](components.md): portable service model
 - [App filesystem](app-filesystem.md): required files inside a portable service image
 - [Disco](discovery/): service discovery and name resolution
-- [Framework](framework/index.md): bash library and boxctl CLI reference
+- [framework.offline-lab.com](https://framework.offline-lab.com): bash library and boxctl CLI reference
+- [bootconf.offline-lab.com](https://bootconf.offline-lab.com): boot-time configuration reference
 
 ### Contribute
 

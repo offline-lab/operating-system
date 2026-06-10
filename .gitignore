@@ -43,6 +43,9 @@ docs/public/docs/
 docs/public/images/
 docs/site/
 
+# Framework lives in its own repo — clone it here for local dev, never commit it
+framework/
+
 __pycache__/
 .venv/
 .env

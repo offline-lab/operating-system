@@ -245,7 +245,6 @@ GitHub Pages on every push to `main`.
 ```bash
 uv run bin/docs.py          # build site to docs/public/
 uv run bin/docs.py serve    # serve locally on :8000
-bin/generate-framework-docs # regenerate framework API reference (docs/framework/)
 ```
 
 - [docs/KERNEL.md](docs/KERNEL.md) — kernel strategy and trimming plan

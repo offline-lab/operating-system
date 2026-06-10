@@ -4,7 +4,7 @@
 `/boot/firmware/bootconf.yaml` at every boot and applies the configuration it
 describes before other services start.
 
-Source: [github.com/offline-lab/bootconf](https://github.com/offline-lab/bootconf)
+Source: [github.com/offline-lab/bootconf](https://github.com/offline-lab/bootconf) · Docs: [bootconf.offline-lab.com](https://bootconf.offline-lab.com)
 
 ## How it works
 
