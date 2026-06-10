@@ -35,10 +35,6 @@
 # Scripts
 # <name>                                <type> <mode> <uid> <gid> <major> <minor> <start> <inc> <count>
 /usr/local/bin/init-expand-data              f      0755   0     0     -       -       -       -     -
-/usr/local/bin/init-fake-hwclock             f      0755   0     0     -       -       -       -     -
 /usr/local/bin/init-usb-gadget               f      0755   0     0     -       -       -       -     -
 /usr/local/bin/init-wifi-setup               f      0755   0     0     -       -       -       -     -
-/usr/local/bin/init-provision-wifi           f      0755   0     0     -       -       -       -     -
-/usr/local/bin/init-provision-ssh            f      0755   0     0     -       -       -       -     -
-/usr/local/bin/init-provision-disco          f      0755   0     0     -       -       -       -     -
 /usr/local/bin/init-zram-swap                f      0755   0     0     -       -       -       -     -

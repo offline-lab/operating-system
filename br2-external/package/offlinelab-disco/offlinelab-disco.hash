@@ -1,0 +1,16 @@
+# Hashes for offlinelab-disco.
+# Source: https://github.com/offline-lab/disco/releases
+#
+# The tarball name is: disco-<version without leading 'v'>.tar.gz
+# GitHub generates these from the tag; they are stable once the tag is pushed.
+#
+# How to update:
+#   wget https://github.com/offline-lab/disco/archive/refs/tags/<VERSION>.tar.gz
+#   sha256sum <VERSION>.tar.gz
+#   sha256sum LICENSE  (from inside the extracted tarball)
+#
+# Add one sha256 line per version you build. The version in BR2_PACKAGE_OFFLINELAB_DISCO_VERSION
+# must match an entry here or the build will be rejected.
+#
+# sha256  <hash>  disco-0.20260605.1.tar.gz
+# sha256  <hash>  LICENSE

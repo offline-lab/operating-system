@@ -15,126 +15,24 @@
 set -euo pipefail
 
 source framework || exit 1
-
-zram_swap_calc() {
-    var::matches "${1}" '^[[:digit:]]+$' && { n="${1}" && shift; } || n=0
-    LC_NUMERIC=C awk "BEGIN{printf \"%.${n}f\", ${*}}"
-}
-
-zram_swap_init() {
-    if [[ -n "${zram_fixedsize}" ]]; then
-        if ! var::matches "${zram_fixedsize}" '^[[:digit:]]+(\.[[:digit:]]+)?(G|M)$'; then
-            exit::error "${FUNCNAME[0]}: invalid size '${zram_fixedsize}'"
-        fi
-        mem="${zram_fixedsize}"
-    else
-        totalmem="$(awk '/MemTotal/{print $2}' /proc/meminfo)"
-        mem="$(zram_swap_calc "${totalmem} * ${comp_factor} * ${zram_fraction} * 1024")"
-    fi
-
-    device=''
-    for i in $(seq 3); do
-        sleep "$(zram_swap_calc 2 "0.1 * ${i}" || true)"
-        device="$(zramctl -f -s "${mem}" -a "${zram_algorithm}")" || true
-        fs::is_blockdev "${device}" && break
-    done
-
-    if fs::is_blockdev "${device}"; then
-        trap 'zram_swap_remove_zdev ${device}' EXIT
-        mkswap "${device}"
-        swapon -d -p 15 "${device}"
-        trap - EXIT
-        return 0
-    else
-        log::error "${FUNCNAME[0]}: failed to initialize zram device"
-        return 1
-    fi
-}
-
-zram_swap_end() {
-    ret=0
-    for dev in $(awk '/zram/ {print $1}' /proc/swaps || true); do
-        swapoff "${dev}"
-        if ! zram_swap_remove_zdev "${dev}"; then
-            log::error "${FUNCNAME[0]}: failed to remove zram device ${dev}"
-            ret=1
-        fi
-    done
-    return "${ret}"
-}
-
-zram_swap_remove_zdev() {
-    if ! fs::is_blockdev "${1}"; then
-        log::error "${FUNCNAME[0]}: no zram device '${1}' to remove"
-        return 1
-    fi
-    for i in $(seq 3); do
-        sleep "$(zram_swap_calc 2 "0.1 * ${i}" || true)"
-        zramctl -r "${1}" || true
-        fs::is_blockdev "${1}" || break
-    done
-    if fs::is_blockdev "${1}"; then
-        log::error "${FUNCNAME[0]}: couldn't remove zram device '${1}' after 3 attempts"
-        return 1
-    fi
-    return 0
-}
+import zram
 
 function zram_swap::main() {
     log::trace "${FUNCNAME[0]}: managing zram swap"
 
     depends::is_root || exit::error "${FUNCNAME[0]}: must be run as root"
 
-    [[ "${#}" -gt 0 ]] && [[ "${1}" == "-x" ]] && shift && set -x
-
-    zram_fraction="1/2"
-    zram_algorithm="lz4"
-    comp_factor=''
-    zram_fixedsize=''
-    zram_swap_debug=''
-
+    # Load site config if present (overrides ZRAM_* env vars)
     if [[ -f /etc/default/zram-swap ]]; then
         # shellcheck source=/dev/null
         source /etc/default/zram-swap
     fi
 
-    if [[ -n "${zram_swap_debug}" ]]; then
-        set -x
-    fi
-
-    if [[ -z "${comp_factor}" ]]; then
-        case "${zram_algorithm}" in
-            lzo* | zstd) comp_factor="3" ;;
-            lz4) comp_factor="2.5" ;;
-            *) comp_factor="2" ;;
-        esac
-    fi
-
-    if ! modprobe zram; then
-        log::error "${FUNCNAME[0]}: failed to load zram module"
-        return 1
-    fi
-
-    [[ "${#}" -eq 0 ]] && set -- ""
-
-    case "${1}" in
-        init | start)
-            if grep -q zram /proc/swaps; then
-                log::error "${FUNCNAME[0]}: zram swap already in use"
-                return 1
-            fi
-            zram_swap_init
-            ;;
-        end | stop)
-            if ! grep -q zram /proc/swaps; then
-                log::error "${FUNCNAME[0]}: no zram swaps to cleanup"
-                return 1
-            fi
-            zram_swap_end
-            ;;
-        *)
-            exit::error "${FUNCNAME[0]}: Usage: $(basename "${0}") (start|stop)"
-            ;;
+    local cmd="${1:-}"
+    case "${cmd}" in
+        init | start) zram::start ;;
+        end | stop) zram::stop ;;
+        *) exit::error "${FUNCNAME[0]}: usage: $(basename "${0}") (start|stop)" ;;
     esac
 }
 

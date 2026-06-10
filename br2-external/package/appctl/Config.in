@@ -1,0 +1,37 @@
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#      SPDX-License-Identifier: AGPL-3.0-only                                  #
+################################################################################
+
+config BR2_PACKAGE_APPCTL
+	bool "appctl"
+	depends on BR2_INIT_SYSTEMD
+	help
+	  On-device package manager for Offline Lab OS.
+	  Installs, updates, and manages portable service packages.
+
+	  Fetches the appctl binary from appctl.git releases at build time.
+	  Not yet included in any defconfig — enable when appctl.git has a
+	  stable release and the hash file is updated.
+
+	  https://github.com/offline-lab/appctl
+
+if BR2_PACKAGE_APPCTL
+
+config BR2_PACKAGE_APPCTL_VERSION
+	string "appctl version (git tag or commit)"
+	default "v0.1.0"
+	help
+	  Git ref to build. Use a tag (e.g. "v0.1.0") for reproducible builds.
+	  Update appctl.hash with the tarball sha256 when changing this.
+
+	  To update: change version, run appctl-dirclean, then rebuild.
+
+endif

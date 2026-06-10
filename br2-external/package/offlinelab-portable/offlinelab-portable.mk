@@ -16,11 +16,12 @@
 #
 ################################################################################
 
-OFFLINELAB_PORTABLE_VERSION = 1.0
-OFFLINELAB_PORTABLE_SITE = $(BR2_EXTERNAL_OFFLINELAB_PATH)/package/offlinelab-portable/src
+OFFLINELAB_PORTABLE_VERSION     = 1.0
+OFFLINELAB_PORTABLE_SITE        = $(BR2_EXTERNAL_OFFLINELAB_PATH)/package/offlinelab-portable/src
 OFFLINELAB_PORTABLE_SITE_METHOD = local
+OFFLINELAB_PORTABLE_LICENSE     = AGPL-3.0-only
 
-OFFLINELAB_PORTABLE_DEPENDENCIES = systemd host-squashfs
+OFFLINELAB_PORTABLE_DEPENDENCIES = systemd
 
 define OFFLINELAB_PORTABLE_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0644 $(@D)/systemd/modules-load.d/99-offlinelab-portable.conf \
@@ -33,9 +34,11 @@ define OFFLINELAB_PORTABLE_INSTALL_TARGET_CMDS
 	ln -sfn /data/extensions $(TARGET_DIR)/var/lib/extensions
 	ln -sfn /data/confexts $(TARGET_DIR)/var/lib/confexts
 
-	mkdir -p $(BINARIES_DIR)/portable
-	$(HOST_DIR)/bin/mksquashfs $(@D)/hello-world $(BINARIES_DIR)/portable/hello-portable.raw \
-		-noappend -quiet
+	$(INSTALL) -D -m 0644 $(@D)/systemd/service/restore-apps.service \
+		$(TARGET_DIR)/etc/systemd/system/restore-apps.service
+	mkdir -p $(TARGET_DIR)/etc/systemd/system/multi-user.target.wants
+	ln -sf /etc/systemd/system/restore-apps.service \
+		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/restore-apps.service
 endef
 
 $(eval $(generic-package))

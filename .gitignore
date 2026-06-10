@@ -13,6 +13,7 @@
 # Build configuration (user-specific credentials)
 .config
 .config.*
+!.config.example
 .env
 
 # SSH keys

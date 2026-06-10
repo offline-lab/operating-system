@@ -1,0 +1,60 @@
+#
+# Bootconf configuration — rename this file to bootconf.yaml to activate.
+# Runs every boot. Each section is independently enabled/disabled.
+# See: https://github.com/offline-lab/bootconf
+#
+
+bootconf:
+  enabled: true
+  # Status files are written here after each run
+  directory: /data/bootconf
+
+wifi:
+  # Set enabled: true and fill in ssid/password_hash/country to configure WiFi.
+  # password_hash is the PSK hash from wpa_passphrase, not the plaintext password.
+  enabled: false
+  directory: /data/config/wifi
+  ssid: "@@WIFI_SSID@@"
+  password_hash: "@@WIFI_PASSWORD_HASH@@"
+  country: @@WIFI_COUNTRY@@
+
+ssh:
+  enabled: true
+  directory: /data/config/ssh
+  keytype: ed25519
+  generate_host_keys: true
+  daemon: dropbear
+
+system:
+  enabled: true
+  timezone: Europe/Amsterdam
+  hostname: offline-lab
+
+services:
+  enabled: true
+  directory: /data/config/services
+  services:
+    - name: disco
+      # Set enabled: true to start the disco service discovery daemon.
+      enabled: false
+      sentinel: true
+      default_config:
+        copy: true
+        source: /etc/disco/config.yaml
+        destination: /data/config/disco/config.yaml
+
+sudo:
+  enabled: true
+  directory: /data/config/sudo
+
+users:
+  # Add users here to create them via systemd-sysusers on each boot.
+  enabled: false
+  directory: /data/config/users
+  users: []
+
+files:
+  # Copy files from the filesystem into place on /data.
+  # Existing files are never overwritten — they get a .new suffix instead.
+  enabled: false
+  files: []

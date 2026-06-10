@@ -22,3 +22,18 @@ config BR2_PACKAGE_OFFLINELAB_UPDATE
 	  RAUC A/B update integration for Offline Lab OS.
 	  Installs system.conf, keyring, fw_env.config,
 	  and mark-good service.
+
+if BR2_PACKAGE_OFFLINELAB_UPDATE
+
+config BR2_PACKAGE_OFFLINELAB_UPDATE_KEYRING
+	string "Path to RAUC CA certificate (keyring.pem)"
+	default "$(BR2_EXTERNAL_OFFLINELAB_PATH)/../.rauc/ca.cert.pem"
+	help
+	  Absolute or BR2_EXTERNAL_OFFLINELAB_PATH-relative path to the RAUC
+	  signing CA certificate installed as /etc/rauc/keyring.pem.
+
+	  Default expects the certificate at .rauc/ca.cert.pem one level above
+	  the br2-external directory. Override this if your key material lives
+	  elsewhere (CI secret mount, separate repo, etc.).
+
+endif

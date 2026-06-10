@@ -1,0 +1,29 @@
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#      SPDX-License-Identifier: AGPL-3.0-only                                  #
+################################################################################
+
+[Unit]
+Description=Restore attached portable service apps
+Documentation=https://github.com/offline-lab/appctl
+After=local-fs.target
+Before=multi-user.target
+# No-op when appctl is not installed
+ConditionPathExists=/usr/bin/appctl
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/appctl rehydrate
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

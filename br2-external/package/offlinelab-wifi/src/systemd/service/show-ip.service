@@ -1,0 +1,28 @@
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#      SPDX-License-Identifier: AGPL-3.0-only                                  #
+################################################################################
+
+[Unit]
+Description=Display WiFi IP on splash screen
+After=network-online.target
+Wants=network-online.target
+Before=psplash-quit.service
+# Abandon after 30s so psplash-quit and getty are not blocked on slow/failed DHCP
+JobRunningTimeoutSec=30
+ConditionPathExists=/data/config/services/wifi
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/init-show-ip
+
+[Install]
+WantedBy=multi-user.target

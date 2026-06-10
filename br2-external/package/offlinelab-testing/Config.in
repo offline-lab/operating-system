@@ -1,0 +1,41 @@
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ `/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#      SPDX-License-Identifier: AGPL-3.0-only                                  #
+################################################################################
+
+config BR2_PACKAGE_OFFLINELAB_TESTING
+	bool "offlinelab-testing (dev/test users and credentials)"
+	depends on BR2_INIT_SYSTEMD
+	depends on BR2_PACKAGE_OFFLINELAB_BASE
+	default n
+	help
+	  Installs development and test user credentials into the image:
+
+	    admin (uid 1000)    — SSH key, sudo, home dir, admin-bin PATH
+	    testuser (uid 1001) — SSH key, passwordless sudo, home dir
+
+	  Both users share the same authorized SSH key. testuser is
+	  intended for the operating-system-infra-test suite.
+
+	  Do NOT enable on production builds.
+
+if BR2_PACKAGE_OFFLINELAB_TESTING
+
+config BR2_PACKAGE_OFFLINELAB_TESTING_ADMIN_KEY
+	string "SSH authorized public key for admin user"
+	default ""
+	help
+	  Installed to /home/admin/.ssh/authorized_keys at build time.
+	  Set this in .config (gitignored) — do not commit personal keys.
+
+	  testuser's authorized_keys is populated from .ssh/builder.pub
+	  automatically (the same key the infra test suite uses to connect).
+
+endif

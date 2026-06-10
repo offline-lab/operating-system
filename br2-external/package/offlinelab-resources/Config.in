@@ -1,0 +1,8 @@
+config BR2_PACKAGE_OFFLINELAB_RESOURCES
+	bool "offlinelab-resources"
+	select BR2_PACKAGE_JQ
+	help
+	  Measures OS resource baseline at boot and writes
+	  /data/config/resources.json for appctl install-time checks.
+	  Measures total RAM, CPU cores, /data storage, and baseline
+	  memory and CPU usage sampled over 5 seconds.

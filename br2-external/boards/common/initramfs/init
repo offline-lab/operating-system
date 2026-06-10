@@ -72,9 +72,28 @@ fi
 # Mount rootfs read-only
 mount -t ext4 -o ro,noatime "${ROOTFS_DEV}" /mnt
 
-# Mount overlay partition, create per-slot dirs
+# Mount data partition early — needed to restore persistent files before overlayfs setup
+mount -t ext4 -o rw,noatime "${DATA_DEV}" /data
+
+# Ensure sysext/confext storage dirs exist — systemd-sysext.service runs Before=sysinit.target,
+# which is before tmpfiles, so these must exist before switch_root.
+mkdir -p /data/extensions/sysext /data/extensions/confext
+
+# Mount overlay partition
 mount -t ext4 -o rw,noatime "${OVERLAY_DEV}" /overlay
+
+# Clear the slot upper on every boot for a clean /etc state.
+# Only explicitly persisted files (restored below) survive across reboots.
+rm -rf "/overlay/${SLOT}/upper"
 mkdir -p "/overlay/${SLOT}/upper" "/overlay/${SLOT}/work"
+
+# Restore machine-id from /data so it is stable across slot switches
+if [ -f "/data/config/system/machine-id" ]; then
+    mkdir -p "/overlay/${SLOT}/upper/etc"
+    cp "/data/config/system/machine-id" "/overlay/${SLOT}/upper/etc/machine-id"
+    chmod 444 "/overlay/${SLOT}/upper/etc/machine-id"
+    echo "offlinelab: restored machine-id from /data"
+fi
 
 # Mount overlayfs (rootfs + per-slot upper)
 mount -t overlay overlay \
@@ -85,8 +104,7 @@ mount -t overlay overlay \
 mkdir -p /newroot/mnt/overlay
 mount --move /overlay /newroot/mnt/overlay
 
-# Mount data partition
-mount -t ext4 -o rw,noatime "${DATA_DEV}" /data
+# Make data accessible from newroot (already mounted at /data above)
 mkdir -p /newroot/data
 mount --bind /data /newroot/data
 

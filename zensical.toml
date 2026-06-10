@@ -33,6 +33,7 @@ nav = [
     { "Boot" = "boot.md" },
     { "Configuration" = "configuration.md" },
     { "Boot partition config" = "bootfs-config.md" },
+    { "Boot configuration (bootconf)" = "bootconf.md" },
     { "Packages" = "packages.md" },
     { "Service model" = "components.md" },
     { "Discovery" = [
@@ -45,9 +46,17 @@ nav = [
     { "boxctl" = "boxctl.md" },
   ]},
 
-  { "Design & Roadmap" = [
-    { "Offline design" = "offline.md" },
-    { "Roadmap" = "roadmap.md" },
+  { "Specifications" = [
+    { "Package format" = "specs/package-format.md" },
+    { "Repository" = "specs/repository.md" },
+    { "Build" = "specs/build.md" },
+    { "Lifecycle hooks" = "specs/lifecycle.md" },
+    { "Security model" = "specs/security-model.md" },
+    { "User allocation" = "specs/user-allocation.md" },
+    { "Resource tracking" = "specs/resource-tracking.md" },
+    { "System extensions" = "specs/sysext.md" },
+    { "Reboot proofing" = "specs/reboot-proofing.md" },
+    { "Schemas" = "schemas.md" },
   ]},
 
   { "Framework" = [
@@ -73,6 +82,12 @@ nav = [
       { "Prettytable" = "framework/prettytable.md" },
       { "System" = "framework/system.md" },
       { "Config" = "framework/config.md" },
+      { "Clock" = "framework/clock.md" },
+      { "Resources" = "framework/resources.md" },
+      { "zram" = "framework/zram.md" },
+      { "Firewall" = "framework/fw.md" },
+      { "Sysext" = "framework/sysext.md" },
+      { "Confext" = "framework/confext.md" },
       { "Health" = "framework/health.md" },
       { "Power" = "framework/power.md" },
       { "RAUC" = "framework/rauc.md" },
@@ -88,6 +103,7 @@ nav = [
   { "Contributing" = [
     { "How to contribute" = "contributing.md" },
     { "Development guide" = "development.md" },
+    { "Style guide" = "styleguide.md" },
     { "Build the OS image" = "build-image.md" },
   ]},
 

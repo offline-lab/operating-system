@@ -16,9 +16,10 @@
 #
 ################################################################################
 
-OFFLINELAB_BASE_VERSION = 1.0
-OFFLINELAB_BASE_SITE = $(BR2_EXTERNAL_OFFLINELAB_PATH)/package/offlinelab-base/src
+OFFLINELAB_BASE_VERSION     = 1.0
+OFFLINELAB_BASE_SITE        = $(BR2_EXTERNAL_OFFLINELAB_PATH)/package/offlinelab-base/src
 OFFLINELAB_BASE_SITE_METHOD = local
+OFFLINELAB_BASE_LICENSE     = AGPL-3.0-only
 
 OFFLINELAB_BASE_DEPENDENCIES = \
 	bash \
@@ -51,25 +52,47 @@ define OFFLINELAB_BASE_INSTALL_TARGET_CMDS
 	mkdir -p $(TARGET_DIR)/etc/systemd/system/getty.target.wants
 	mkdir -p $(TARGET_DIR)/etc/systemd/network
 
+	# Mount point directories for sysext/confext bind-mounts
+	mkdir -p $(TARGET_DIR)/var/lib/extensions
+	mkdir -p $(TARGET_DIR)/etc/extensions
+
 	$(INSTALL) -D -m 0644 $(@D)/systemd/mount/boot-firmware.mount \
 		$(TARGET_DIR)/etc/systemd/system/boot-firmware.mount
 	ln -sf /etc/systemd/system/boot-firmware.mount \
 		$(TARGET_DIR)/etc/systemd/system/local-fs.target.wants/boot-firmware.mount
+
+	$(INSTALL) -D -m 0644 $(@D)/systemd/mount/var-lib-extensions.mount \
+		$(TARGET_DIR)/etc/systemd/system/var-lib-extensions.mount
+	ln -sf /etc/systemd/system/var-lib-extensions.mount \
+		$(TARGET_DIR)/etc/systemd/system/sysinit.target.wants/var-lib-extensions.mount
+
+	$(INSTALL) -D -m 0644 $(@D)/systemd/mount/etc-extensions.mount \
+		$(TARGET_DIR)/etc/systemd/system/etc-extensions.mount
+	ln -sf /etc/systemd/system/etc-extensions.mount \
+		$(TARGET_DIR)/etc/systemd/system/sysinit.target.wants/etc-extensions.mount
+
+	ln -sf /lib/systemd/system/systemd-sysext.service \
+		$(TARGET_DIR)/etc/systemd/system/sysinit.target.wants/systemd-sysext.service
+	ln -sf /lib/systemd/system/systemd-confext.service \
+		$(TARGET_DIR)/etc/systemd/system/sysinit.target.wants/systemd-confext.service
 
 	$(INSTALL) -D -m 0644 $(@D)/systemd/service/expand-data.service \
 		$(TARGET_DIR)/etc/systemd/system/expand-data.service
 	ln -sf /etc/systemd/system/expand-data.service \
 		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/expand-data.service
 
-	$(INSTALL) -D -m 0644 $(@D)/systemd/service/fake-hwclock.service \
-		$(TARGET_DIR)/etc/systemd/system/fake-hwclock.service
-	ln -sf /etc/systemd/system/fake-hwclock.service \
-		$(TARGET_DIR)/etc/systemd/system/sysinit.target.wants/fake-hwclock.service
-
 	$(INSTALL) -D -m 0755 $(@D)/init-expand-data \
 		$(TARGET_DIR)/usr/local/bin/init-expand-data
-	$(INSTALL) -D -m 0755 $(@D)/init-fake-hwclock \
-		$(TARGET_DIR)/usr/local/bin/init-fake-hwclock
+
+	# boxctl-startup is replaced by bootconf — keep the service file for reference
+	# but do not enable it (no symlink in multi-user.target.wants)
+	$(INSTALL) -D -m 0644 $(@D)/systemd/service/boxctl-startup.service \
+		$(TARGET_DIR)/etc/systemd/system/boxctl-startup.service
+
+	$(INSTALL) -D -m 0644 $(@D)/systemd/service/boxctl-shutdown.service \
+		$(TARGET_DIR)/etc/systemd/system/boxctl-shutdown.service
+	ln -sf /etc/systemd/system/boxctl-shutdown.service \
+		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/boxctl-shutdown.service
 
 	$(INSTALL) -D -m 0644 $(@D)/systemd/service/power-profile.service \
 		$(TARGET_DIR)/etc/systemd/system/power-profile.service
@@ -94,21 +117,21 @@ define OFFLINELAB_BASE_INSTALL_TARGET_CMDS
 	printf 'wlan0:   \\4{wlan0}\n'                   >> $(@D)/issue
 	printf 'usb0:    \\4{usb0}\n'                    >> $(@D)/issue
 	echo ""                                          >> $(@D)/issue
-	$(INSTALL) -D -m 644 $(@D)/issue $(TARGET_DIR)/etc/issue
-	$(INSTALL) -D -m 644 $(@D)/issue $(TARGET_DIR)/etc/issue.net
+	$(INSTALL) -D -m 0644 $(@D)/issue $(TARGET_DIR)/etc/issue
+	$(INSTALL) -D -m 0644 $(@D)/issue $(TARGET_DIR)/etc/issue.net
 
-	$(INSTALL) -D -m 0440 $(@D)/sudoers/admin \
-		$(TARGET_DIR)/etc/sudoers.d/admin
+	# Sudo: system-wide defaults, sudo group rule, and include for bootconf-managed rules
+	$(INSTALL) -D -m 0440 $(@D)/sudoers/defaults.conf \
+		$(TARGET_DIR)/etc/sudoers.d/defaults.conf
+	$(INSTALL) -D -m 0440 $(@D)/sudoers/sudo-group.conf \
+		$(TARGET_DIR)/etc/sudoers.d/sudo-group.conf
+	$(INSTALL) -D -m 0440 $(@D)/sudoers/include.conf \
+		$(TARGET_DIR)/etc/sudoers.d/include.conf
 
-	# Admin home directory structure under /data (created at runtime by tmpfiles)
+	# Tmpfiles: create /data subdirs used by bootconf at runtime
 	$(INSTALL) -d $(TARGET_DIR)/etc/tmpfiles.d
-	$(INSTALL) -m 0644 $(@D)/systemd/tmpfiles.d/offlinelab-admin.conf \
-		$(TARGET_DIR)/etc/tmpfiles.d/offlinelab-admin.conf
-
-	# Add /data/home/admin/bin to PATH for the admin user
-	$(INSTALL) -d $(TARGET_DIR)/etc/profile.d
-	printf 'export PATH="/data/home/admin/bin:$${PATH}"\n' \
-		> $(TARGET_DIR)/etc/profile.d/admin-bin.sh
+	$(INSTALL) -m 0644 $(@D)/systemd/tmpfiles.d/offlinelab-base.conf \
+		$(TARGET_DIR)/etc/tmpfiles.d/offlinelab-base.conf
 endef
 
 $(eval $(generic-package))

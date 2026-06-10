@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# vi: ft=bash
+# shellcheck shell=bash disable=SC1091,SC2312
+set -euo pipefail
+
+source framework || exit 1
+import clock
+
+function boxctl_shutdown::persist_machine_id() {
+    log::trace "${FUNCNAME[0]}: persisting machine-id"
+    machine_id::persist
+}
+
+function boxctl_shutdown::main() {
+    log::trace "${FUNCNAME[0]}: running shutdown tasks"
+    clock::save
+    boxctl_shutdown::persist_machine_id
+}
+
+boxctl_shutdown::main "${@}"

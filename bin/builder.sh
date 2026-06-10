@@ -178,6 +178,10 @@ function build::run() {
         run_arguments+=(--volume "${builder_basedir}/.config:/work/.config")
     fi
 
+    if [[ -f "${builder_basedir}/.ssh/builder.pub" ]]; then
+        run_arguments+=(--volume "${builder_basedir}/.ssh/builder.pub:/work/.ssh/builder.pub:ro")
+    fi
+
     if [[ -f "${builder_basedir}/.env" ]]; then
         run_arguments+=(--volume "${builder_basedir}/.env:/work/.env:ro")
     fi

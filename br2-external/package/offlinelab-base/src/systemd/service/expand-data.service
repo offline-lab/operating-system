@@ -12,7 +12,8 @@
 
 [Unit]
 Description=Expand data partition to fill SD card
-After=local-fs.target
+After=bootconf.service
+Wants=bootconf.service
 ConditionPathExists=/data
 
 [Service]

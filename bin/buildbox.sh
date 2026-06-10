@@ -286,6 +286,11 @@ function cmd_sync() {
         bb_scp "${BASEDIR}/.config" "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_WORK}/.config"
     fi
 
+    if [[ -f "${BASEDIR}/.ssh/builder.pub" ]]; then
+        bb_ssh "mkdir -p ${REMOTE_WORK}/.ssh"
+        bb_scp "${BASEDIR}/.ssh/builder.pub" "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_WORK}/.ssh/builder.pub"
+    fi
+
     if [[ -d "${BASEDIR}/.rauc" ]]; then
         bb_rsync \
             "${BASEDIR}/.rauc/" \
@@ -365,6 +370,7 @@ function cmd_fetch() {
         --include='*.bin' \
         --include='*.dtb' \
         --include='*.raucb' \
+        --include='*.cdx.json' \
         --include='Image' \
         --include='initramfs.cpio.gz' \
         --include='boot.scr' \

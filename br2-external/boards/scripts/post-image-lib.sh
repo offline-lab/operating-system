@@ -54,16 +54,17 @@ function create_data() {
     local tmpdir="$(mktemp -d)"
     trap 'rm -rf "${tmpdir}"' RETURN
 
-    mkdir -p "${tmpdir}/home/admin/.ssh"
-    mkdir -p "${tmpdir}/apps" "${tmpdir}/extensions" "${tmpdir}/confexts" "${tmpdir}/config"
-
-    if [[ -f "${BINARIES_DIR}/portable/hello-portable.raw" ]]; then
-        cp "${BINARIES_DIR}/portable/hello-portable.raw" "${tmpdir}/apps/"
-    fi
-
-    chown -R 1000:1000 "${tmpdir}/home/admin"
-    chmod 750 "${tmpdir}/home/admin"
-    chmod 700 "${tmpdir}/home/admin/.ssh"
+    mkdir -p "${tmpdir}/apps"
+    mkdir -p "${tmpdir}/extensions/sysext"
+    mkdir -p "${tmpdir}/extensions/confext"
+    mkdir -p "${tmpdir}/bootconf"
+    mkdir -p "${tmpdir}/config/sudo"
+    mkdir -p "${tmpdir}/config/users"
+    mkdir -p "${tmpdir}/config/services"
+    mkdir -p "${tmpdir}/config/ssh"
+    mkdir -p "${tmpdir}/config/wifi"
+    mkdir -p "${tmpdir}/config/disco"
+    chmod 750 "${tmpdir}/config/sudo"
 
     mkfs.ext4 -F -d "${tmpdir}" -L "data" "${BINARIES_DIR}/data.ext4" 64M
 }

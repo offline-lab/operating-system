@@ -1,3 +1,9 @@
 # Hashes for fzf 0.61.1 prebuilt binaries.
 # Source: https://github.com/junegunn/fzf/releases/tag/v0.61.1
+#
+# How to update missing arches:
+#   wget https://github.com/junegunn/fzf/releases/download/v0.61.1/fzf-0.61.1-linux_<arch>.tar.gz
+#   sha256sum fzf-0.61.1-linux_<arch>.tar.gz
 sha256  25f6295f718b572ac2ff7de1ffa9e39e619f4f9587386d85bf5b647f0b98fd6b  fzf-0.61.1-linux_arm64.tar.gz
+# sha256  <hash>  fzf-0.61.1-linux_armv7.tar.gz
+# sha256  <hash>  fzf-0.61.1-linux_amd64.tar.gz

@@ -42,8 +42,7 @@ fail=0
 if [[ "${run_lint}" -eq 1 ]]; then
     printf '==> shellcheck\n'
     shellcheck -s bash "${LIBRARY_PATH}"/*.sh "${FRAMEWORK_DIR}"/bin/boxctl* \
-        "${FRAMEWORK_DIR}/bin/chronic" "${FRAMEWORK_DIR}/bin/framework" \
-        "${FRAMEWORK_DIR}/bin/dev-setup" || fail=1
+        "${FRAMEWORK_DIR}/bin/chronic" "${FRAMEWORK_DIR}/bin/framework" || fail=1
 
     printf '==> shfmt\n'
     shfmt -d -i 4 -ci "${LIBRARY_PATH}"/*.sh "${FRAMEWORK_DIR}"/bin/boxctl* \

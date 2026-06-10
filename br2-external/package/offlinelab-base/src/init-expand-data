@@ -30,17 +30,6 @@ function expand_data::main() {
         return 0
     fi
 
-    # Ensure data directories exist — idempotent, runs every boot
-    mkdir -p /data/home/admin/.ssh /data/apps /data/extensions /data/confexts /data/config
-
-    if ! fs::is_file /data/home/admin/.bashrc; then
-        printf '[ -f /etc/bash.bashrc ] && . /etc/bash.bashrc\n' > /data/home/admin/.bashrc
-    fi
-
-    chown -R 1000:1000 /data/home/admin
-    chmod 750 /data/home/admin
-    chmod 700 /data/home/admin/.ssh
-
     local current_end disk_end margin
     current_end="$(sfdisk -l "${DISK}" 2>/dev/null | awk -v p="${PART}" '$1 == p {print $3}')"
     disk_end="$(sfdisk -l "${DISK}" 2>/dev/null | awk '/^Disk.*sectors/ {print $7}')"

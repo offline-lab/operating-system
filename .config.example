@@ -1,0 +1,24 @@
+#
+# Offline Lab OS build-time overrides
+#
+# Copy this file to .config and fill in your values.
+# Applied on top of the board defconfig by build-image.sh (merge_config.sh).
+# Synced to buildbox by buildbox.sh; mounted into Docker by builder.sh.
+# .config is gitignored — never commit credentials.
+#
+
+# SSH authorized key for admin user (offlinelab-testing package)
+# Get your public key: cat ~/.ssh/id_ecdsa.pub
+# testuser's key is read automatically from .ssh/builder.pub at build time.
+BR2_PACKAGE_OFFLINELAB_TESTING_ADMIN_KEY="<your public key here>"
+
+# SSH authorized keys for the app user (offlinelab-ssh package)
+BR2_PACKAGE_OFFLINELAB_SSH_CREATE_AUTHORIZED_KEYS=y
+BR2_PACKAGE_OFFLINELAB_SSH_CREATE_AUTHORIZED_KEYS_CONTENT="<your public key here>"
+
+# WiFi credentials baked into the image (offlinelab-wifi package)
+# Remove this block if you don't need WiFi baked in at build time.
+BR2_PACKAGE_OFFLINELAB_WIFI_WPA_CREATE=y
+BR2_PACKAGE_OFFLINELAB_WIFI_WPA_SSID="<your ssid>"
+BR2_PACKAGE_OFFLINELAB_WIFI_WPA_PASSWORD="<your wifi password>"
+BR2_PACKAGE_OFFLINELAB_WIFI_WPA_COUNTRY="NL"

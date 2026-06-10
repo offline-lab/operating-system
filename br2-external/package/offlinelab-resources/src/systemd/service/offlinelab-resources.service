@@ -1,0 +1,12 @@
+[Unit]
+Description=Offline Lab Resource Baseline Measurement
+After=multi-user.target
+ConditionPathIsMountPoint=/data
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/init-resources
+
+[Install]
+WantedBy=multi-user.target

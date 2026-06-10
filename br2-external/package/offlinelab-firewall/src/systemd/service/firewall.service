@@ -7,7 +7,7 @@ Wants=network-pre.target
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/usr/local/bin/fw-init
+ExecStart=/usr/local/bin/firewall-init
 
 [Install]
 WantedBy=multi-user.target

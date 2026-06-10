@@ -12,10 +12,11 @@
 
 [Unit]
 Description=WiFi setup via wpa_supplicant
-After=provision-wifi.service expand-data.service
+After=bootconf.service sys-subsystem-net-devices-wlan0.device
+Wants=bootconf.service
 BindsTo=sys-subsystem-net-devices-wlan0.device
 After=sys-subsystem-net-devices-wlan0.device
-ConditionPathExists=/data/config/wifi/wpa_supplicant.conf
+ConditionPathExists=/data/config/services/wifi
 
 [Service]
 Type=notify

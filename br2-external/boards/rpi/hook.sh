@@ -41,8 +41,8 @@ function gen_config() {
         files+=("${file}")
     done
 
-    if [[ -d "${BINARIES_DIR}/config" ]] && [[ -n "$(ls -A "${BINARIES_DIR}/config" 2>/dev/null)" ]]; then
-        files+=("config")
+    if [[ -f "${BINARIES_DIR}/bootconf.yaml.example" ]]; then
+        files+=("bootconf.yaml.example")
     fi
 
     local boot_files

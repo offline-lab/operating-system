@@ -1,0 +1,67 @@
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#      SPDX-License-Identifier: AGPL-3.0-only                                  #
+################################################################################
+
+config BR2_PACKAGE_OFFLINELAB_BOOTCONF
+	bool "offlinelab-bootconf"
+	depends on BR2_INIT_SYSTEMD
+	select BR2_PACKAGE_SUDO
+	help
+	  Boot-time configuration tool. Reads /boot/firmware/bootconf.yaml
+	  every boot and configures the system before other services start:
+	  SSH host keys, WiFi config, sudoers, sysusers, user home dirs.
+
+	  Replaces boxctl-startup and build-time provisioning options.
+
+	  https://github.com/offline-lab/bootconf
+
+if BR2_PACKAGE_OFFLINELAB_BOOTCONF
+
+config BR2_PACKAGE_OFFLINELAB_BOOTCONF_VERSION
+	string "bootconf version (git tag or commit)"
+	default "v1.0.0"
+	help
+	  Git ref to build. Use a tag (e.g. "v1.0.0") for reproducible builds.
+
+	  To update: change version, run offlinelab-bootconf-dirclean, rebuild.
+
+config BR2_PACKAGE_OFFLINELAB_BOOTCONF_WIFI_CREATE
+	bool "Bake WiFi credentials into bootconf.yaml.example"
+	default n
+	help
+	  Dev/lab convenience: write SSID and password_hash into the example
+	  config placed on /boot/firmware at build time.
+
+	  Never enable on production builds.
+
+if BR2_PACKAGE_OFFLINELAB_BOOTCONF_WIFI_CREATE
+
+config BR2_PACKAGE_OFFLINELAB_BOOTCONF_WIFI_SSID
+	string "WiFi SSID"
+	default ""
+	help
+	  Written into bootconf.yaml.example on /boot/firmware.
+
+config BR2_PACKAGE_OFFLINELAB_BOOTCONF_WIFI_PASSWORD_HASH
+	string "WiFi password hash (from wpa_passphrase)"
+	default ""
+	help
+	  The PSK hash from wpa_passphrase output, not the plaintext password.
+	  Written into bootconf.yaml.example on /boot/firmware.
+
+config BR2_PACKAGE_OFFLINELAB_BOOTCONF_WIFI_COUNTRY
+	string "WiFi regulatory country code"
+	default "NL"
+	help
+	  ISO 3166-1 alpha-2 country code (e.g. NL, US, GB, DE).
+
+endif
+endif

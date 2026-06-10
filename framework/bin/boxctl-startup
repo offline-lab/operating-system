@@ -1,0 +1,141 @@
+#!/usr/bin/env bash
+# vi: ft=bash
+# shellcheck shell=bash disable=SC1091,SC2312
+set -euo pipefail
+
+source framework || exit 1
+import clock
+import files
+
+readonly BOOT_CONFIG_DIR="/boot/firmware/config"
+readonly DATA_CONFIG_DIR="/data/config"
+readonly PROVISION_CONF="${BOOT_CONFIG_DIR}/provision.conf"
+
+# Generic file copy driven by provision.conf.
+# Format: two whitespace-separated columns — src and dst are paths relative to
+# BOOT_CONFIG_DIR and DATA_CONFIG_DIR respectively. Copies only if dst is absent.
+function boxctl_startup::copy_files() {
+    log::trace "${FUNCNAME[0]}: applying ${PROVISION_CONF}"
+
+    [[ -f "${PROVISION_CONF}" ]] || return 0
+
+    local src dst src_path dst_path
+    while IFS=$'\t ' read -r src dst; do
+        src_path="${BOOT_CONFIG_DIR}/${src}"
+        dst_path="${DATA_CONFIG_DIR}/${dst}"
+
+        if [[ ! -f "${src_path}" ]]; then
+            log::warn "${FUNCNAME[0]}: src not found: ${src_path}"
+            continue
+        fi
+        if [[ -f "${dst_path}" ]]; then
+            log::info "${FUNCNAME[0]}: ${dst} already exists, skipping"
+            continue
+        fi
+
+        fs::ensure_dir "${dst_path}"
+        cp "${src_path}" "${dst_path}"
+        log::info "${FUNCNAME[0]}: copied ${src} -> ${dst_path}"
+    done < <(grep -vE '^[[:space:]]*(#|$)' "${PROVISION_CONF}")
+}
+
+function boxctl_startup::wifi() {
+    log::trace "${FUNCNAME[0]}: provisioning WiFi config"
+
+    local data_conf="${DATA_CONFIG_DIR}/wifi/wpa_supplicant.conf"
+    fs::ensure_dir "${data_conf}"
+
+    if fs::is_file "${data_conf}"; then
+        log::info "${FUNCNAME[0]}: config already exists"
+        return 0
+    fi
+
+    local -a credential_files
+    mapfile -t credential_files < <(
+        find "${BOOT_CONFIG_DIR}" -maxdepth 1 -name 'wpa_supplicant-*.conf' | sort
+    )
+
+    if [[ "${#credential_files[@]}" -eq 0 ]]; then
+        local legacy="${BOOT_CONFIG_DIR}/wpa_supplicant.conf"
+        if ! fs::is_file "${legacy}"; then
+            log::info "${FUNCNAME[0]}: no WiFi config found, skipping"
+            return 0
+        fi
+        cp "${legacy}" "${data_conf}"
+        chmod 600 "${data_conf}"
+        log::info "${FUNCNAME[0]}: provisioned from ${legacy}"
+        return 0
+    fi
+
+    local f
+    {
+        awk '/^network=\{/{exit} {print}' "${credential_files[0]}"
+        for f in "${credential_files[@]}"; do
+            awk '/^network=\{/,/^\}$/' "${f}"
+        done
+    } >"${data_conf}"
+
+    chmod 600 "${data_conf}"
+    log::info "${FUNCNAME[0]}: provisioned from ${#credential_files[@]} credential file(s)"
+}
+
+function boxctl_startup::ssh() {
+    log::trace "${FUNCNAME[0]}: provisioning SSH"
+
+    depends::check::silent dropbearkey || return 0
+
+    local key_dir="${DATA_CONFIG_DIR}/ssh/dropbear"
+    local host_key="${key_dir}/dropbear_ed25519_host_key"
+    local auth_keys="/data/home/admin/.ssh/authorized_keys"
+    local boot_auth_keys="${BOOT_CONFIG_DIR}/authorized_keys"
+
+    mkdir -p "${key_dir}"
+
+    if ! fs::is_file "${host_key}"; then
+        dropbearkey -t ed25519 -f "${host_key}"
+        log::info "${FUNCNAME[0]}: generated ed25519 host key"
+    fi
+
+    if fs::is_file "${boot_auth_keys}"; then
+        fs::ensure_dir "${auth_keys}"
+        files::append_unique_lines "${boot_auth_keys}" "${auth_keys}"
+        chown 1000:1000 "${auth_keys}"
+        chmod 600 "${auth_keys}"
+        log::info "${FUNCNAME[0]}: authorized_keys provisioned"
+    fi
+}
+
+function boxctl_startup::disco() {
+    log::trace "${FUNCNAME[0]}: provisioning disco config"
+
+    local data_conf="${DATA_CONFIG_DIR}/disco/config.yaml"
+    local boot_conf="${BOOT_CONFIG_DIR}/disco.yaml"
+    local default_conf="/etc/disco/config.yaml"
+
+    fs::ensure_dir "${data_conf}"
+    fs::is_file "${data_conf}" && return 0
+
+    if fs::is_file "${boot_conf}"; then
+        cp "${boot_conf}" "${data_conf}"
+        chmod 644 "${data_conf}"
+        log::info "${FUNCNAME[0]}: provisioned from ${boot_conf}"
+    elif fs::is_file "${default_conf}"; then
+        cp "${default_conf}" "${data_conf}"
+        chmod 644 "${data_conf}"
+        log::info "${FUNCNAME[0]}: provisioned from defaults"
+    fi
+}
+
+function boxctl_startup::main() {
+    log::trace "${FUNCNAME[0]}: starting system startup tasks"
+
+    clock::load
+    boxctl_startup::copy_files
+    boxctl_startup::wifi
+    boxctl_startup::ssh
+    boxctl_startup::disco
+
+    log::info "${FUNCNAME[0]}: startup complete"
+}
+
+boxctl_startup::main "${@}"

@@ -1,0 +1,16 @@
+# Hashes for offlinelab-bootconf.
+# Source: https://github.com/offline-lab/bootconf/releases
+#
+# The tarball name is: bootconf-<version without leading 'v'>.tar.gz
+# GitHub generates these from the tag; they are stable once the tag is pushed.
+#
+# How to update:
+#   wget https://github.com/offline-lab/bootconf/archive/refs/tags/<VERSION>.tar.gz
+#   sha256sum <VERSION>.tar.gz
+#   sha256sum LICENSE  (from inside the extracted tarball)
+#
+# Add one sha256 line per version you build. The version in BR2_PACKAGE_OFFLINELAB_BOOTCONF_VERSION
+# must match an entry here or the build will be rejected.
+#
+# sha256  <hash>  bootconf-1.0.0.tar.gz
+# sha256  <hash>  LICENSE

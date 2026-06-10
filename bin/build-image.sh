@@ -103,6 +103,14 @@ make -C "${BUILDROOT}" O="${BUILDROOT_OUT}" BR2_EXTERNAL="${WORK}/br2-external" 
     BR2_CCACHE_DIR="${CCACHE_DIR}" \
     BR2_JLEVEL="${NPROC}" -j"${NPROC}"
 
+log "Generating SBOM..."
+make -C "${BUILDROOT}" O="${BUILDROOT_OUT}" BR2_EXTERNAL="${WORK}/br2-external" show-info \
+    | python3 "${BUILDROOT}/utils/generate-cyclonedx" \
+        --project-name "offlinelab-${BOARD}" \
+        --project-version "$(date +%Y%m%d)" \
+        --out-file "${BUILDROOT_OUT}/images/sbom-${BOARD}.cdx.json" \
+    2>/dev/null || log "WARNING: SBOM generation failed (non-fatal)"
+
 log "Copying artifacts to ${ARTIFACTS}..."
 cp -rv "${BUILDROOT_OUT}/images/"* "${ARTIFACTS}/"
 
