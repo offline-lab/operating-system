@@ -41,19 +41,19 @@ files, but cannot forge valid signatures without the build key.
 Two independent signing keys are used for app packages. They have different trust
 levels, live on different machines, and must never be mixed up.
 
-### Build key — package integrity (high trust)
+### Build key: package integrity (high trust)
 
 Lives on the **build machine only**. Never copied to the repo server. Never committed
 to version control.
 
-- `<repo>.key` — private build key. Signs `.roothash.p7s` for every package.
-- `<repo>.crt` — public certificate. Published in the repo's `keys/` directory.
+- `<repo>.key`: private build key. Signs `.roothash.p7s` for every package.
+- `<repo>.crt`: public certificate. Published in the repo's `keys/` directory.
   Imported by `appctl repo add`. Safe to share publicly.
 
 Loss of this key means the repo can no longer publish signed packages. A compromised
-build key means an attacker can forge package signatures — treat it like a CA key.
+build key means an attacker can forge package signatures; treat it like a CA key.
 
-### Index key — catalog integrity (lower trust)
+### Index key: catalog integrity (lower trust)
 
 Lives on the **repo host**. Signs `index.json.p7s` for each arch index after a
 publish. Can be stored on the repo server because its blast radius is limited: a
@@ -62,8 +62,8 @@ versions, hide packages) but **cannot forge package content**. appctl always ver
 the build-key signature on the package itself at install time regardless of what the
 index says.
 
-- `<repo>-index.key` — private index key. Stays on the repo host.
-- `<repo>-index.crt` — public certificate. Also published in `keys/`. appctl uses it
+- `<repo>-index.key`: private index key. Stays on the repo host.
+- `<repo>-index.crt`: public certificate. Also published in `keys/`. appctl uses it
   to verify the index; it does not use it to verify packages.
 
 These are separate certs with separate `key_id` values. appctl knows which is which
@@ -74,11 +74,11 @@ package entry (which always points to the build key cert).
 
 RAUC uses a separate PKI for signing update bundles (`.raucb` files):
 
-- `.rauc/ca.cert.pem` — CA certificate baked into the OS image at build time.
+- `.rauc/ca.cert.pem`: CA certificate baked into the OS image at build time.
   Devices use this to verify update bundles.
-- `.rauc/ca.key.pem` — CA private key. Stays on the signing machine, never in the
+- `.rauc/ca.key.pem`: CA private key. Stays on the signing machine, never in the
   image, never committed.
-- `.rauc/cert.pem` / `.rauc/key.pem` — signing cert/key used by `rauc bundle`.
+- `.rauc/cert.pem` / `.rauc/key.pem`: signing cert/key used by `rauc bundle`.
 
 These are distinct from app package signing keys. The RAUC PKI covers OS update
 integrity; app signing covers individual package integrity. Both use PKCS7 but
@@ -190,7 +190,7 @@ redirect downloads to a different server.
 
 **No redirect following across origins:** if a repo server responds with an HTTP
 redirect to a different origin or base URL, appctl rejects it. Redirects within the
-same origin are permitted (e.g. HTTP → HTTPS on the same host).
+same origin are permitted (e.g. HTTP to HTTPS on the same host).
 
 **Single source of truth:** the `base_url` set at `appctl repo add` time is the
 authoritative origin for that repo. Index and packages must come from that origin.
@@ -203,7 +203,7 @@ Each repo entry in `packages.db` carries a `status` field:
 
 | Status | Behaviour |
 |---|---|
-| `active` | Normal operation — refresh, install, update allowed |
+| `active` | Normal operation; refresh, install, update allowed |
 | `paused` | No automatic refresh or updates; manual install still works |
 | `blocked` | All operations rejected; installed packages from this repo still run |
 
@@ -239,11 +239,11 @@ must rotate the repo cert and update affected packages.
 
 When a repo operator needs to rotate their signing key, two approaches are available.
 
-### Option A — Gradual rotation (recommended for large or offline-first repos)
+### Option A: Gradual rotation (recommended for large or offline-first repos)
 
 1. Generate a new keypair: `buildctl key generate`
 2. New packages published from this point are signed with the new key. Old packages
-   keep their existing signatures — no re-download required.
+   keep their existing signatures; no re-download required.
 3. Publish the new cert in the repo. Devices fetch it during the next `appctl repo refresh`.
 4. `appctl repo add-key <name> <cert>` stores the new cert alongside the old one on device.
 5. appctl verifies each package against the cert matching its `signing_key_id` field.
@@ -253,10 +253,10 @@ When a repo operator needs to rotate their signing key, two approaches are avail
    `appctl repo remove-key <name> <key-id>`. Any package still signed with the old key
    must be updated before the old cert is removed.
 
-This approach is safe for air-gapped and offline devices — they transition at their own
+This approach is safe for air-gapped and offline devices; they transition at their own
 pace without forced re-downloads.
 
-### Option B — Clean cut-over (for small repos or post-compromise)
+### Option B: Clean cut-over (for small repos or post-compromise)
 
 1. Generate a new keypair.
 2. Re-sign all packages: `buildctl rebuild --all` (see buildctl docs).
@@ -284,5 +284,5 @@ verification. If no matching cert is found, install and reattach fail.
 
 **Kernel keyring enforcement:** kernel-level p7s verification at every mount would
 prevent even root from attaching unsigned images. Requires a CA baked into the kernel
-and all repo keys cross-signed by it — incompatible with the open multi-publisher
+and all repo keys cross-signed by it, which is incompatible with the open multi-publisher
 model. Only relevant on x86 hardware with full Secure Boot. Not planned.

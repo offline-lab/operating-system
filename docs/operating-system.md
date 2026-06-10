@@ -20,7 +20,7 @@ The [builder repository](https://github.com/offline-lab/builder) contains the Bu
 
 ## Kernel
 
-**RPi boards** use the Raspberry Pi foundation kernel (`raspberrypi/linux`, `rpi-6.12.y`) for hardware support: WiFi, Bluetooth, HDMI, and USB device tree overlays. The kernel config is trimmed from `bcm2711_defconfig` — this reduced the module directory from ~100 MB to ~17 MB and cut build time significantly.
+**RPi boards** use the Raspberry Pi foundation kernel (`raspberrypi/linux`, `rpi-6.12.y`) for hardware support: WiFi, Bluetooth, HDMI, and USB device tree overlays. The kernel config is trimmed from `bcm2711_defconfig`, reducing the module directory from ~100 MB to ~17 MB and cutting build time significantly.
 
 **QEMU** uses the mainline kernel (`arm64 defconfig`) with a small hardware fragment enabling virtio block, virtio net, and the PL011 UART.
 
@@ -62,7 +62,7 @@ From systemd's perspective the root appears writable, but all writes land on the
 
 The overlay partition is separate from `/data` to keep user data isolated from OS state, and to allow each A/B slot to have its own overlay. A kernel or rootfs update doesn't carry stale overlay state from the previous slot.
 
-tmpfs is not used as the overlay upper — that would consume RAM on a 512MB device.
+tmpfs is not used as the overlay upper; on a 512MB device that would consume RAM better spent on services.
 
 ## A/B updates
 

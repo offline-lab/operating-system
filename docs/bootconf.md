@@ -87,15 +87,15 @@ files:
 
 Writes a `wpa_supplicant.conf` to `/data/config/wifi/` if one does not already exist.
 
-- `ssid` — network SSID
-- `password_hash` — PSK hash from `wpa_passphrase <ssid> <password>`, **not** the plaintext password
-- `country` — ISO 3166-1 alpha-2 country code (e.g. `NL`, `US`, `GB`)
+- `ssid`: network SSID
+- `password_hash`: PSK hash from `wpa_passphrase <ssid> <password>`, **not** the plaintext password
+- `country`: ISO 3166-1 alpha-2 country code (e.g. `NL`, `US`, `GB`)
 
 ### ssh
 
 Generates a dropbear host key if absent and writes it to `/data/config/ssh/hostkey`.
 
-SSH authorized keys are not managed by this section — place them via the `files` section or write them directly to `/data/home/admin/.ssh/authorized_keys`.
+SSH authorized keys are not managed by this section. Place them via the `files` section or write them directly to `/data/home/admin/.ssh/authorized_keys`.
 
 ### system
 
@@ -103,7 +103,7 @@ Sets the hostname and timezone. Applied once and tracked via a status file.
 
 ### services
 
-Copies default config files for named services into `/data/config/<name>/` if they do not already exist. The `sentinel: true` flag means the service is only configured, not started — bootconf leaves service enablement to systemd.
+Copies default config files for named services into `/data/config/<name>/` if they do not already exist. The `sentinel: true` flag means the service is only configured, not started. Bootconf leaves service enablement to systemd.
 
 ### sudo
 
@@ -128,7 +128,7 @@ BR2_PACKAGE_OFFLINELAB_BOOTCONF_WIFI_PASSWORD_HASH="<hash>"
 BR2_PACKAGE_OFFLINELAB_BOOTCONF_WIFI_COUNTRY="NL"
 ```
 
-This writes the values into the example file placed on the boot partition. Copy it to `bootconf.yaml` to activate. Do not use this on production images — the hash is visible to anyone who can read the boot partition.
+This writes the values into the example file placed on the boot partition. Copy it to `bootconf.yaml` to activate. Do not use this on production images; the hash is visible to anyone who can read the boot partition.
 
 ## Systemd units
 

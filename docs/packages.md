@@ -41,8 +41,8 @@ The `.mk` file installs everything from `src/` into the target rootfs and enable
 
 First-boot configuration is handled by `offlinelab-bootconf`. At every boot, `bootconf.service` reads `/boot/firmware/bootconf.yaml` and applies the configuration it describes:
 
-- SSH authorized keys → `/data/home/admin/.ssh/authorized_keys`
-- WiFi credentials → `/data/config/wifi/wpa_supplicant.conf`
+- SSH authorized keys: `/data/home/admin/.ssh/authorized_keys`
+- WiFi credentials: `/data/config/wifi/wpa_supplicant.conf`
 - Sudo rules, sysusers entries, home directory setup
 
 Bootconf is idempotent: if a target file already exists on `/data`, it is left unchanged. To re-provision a setting, delete the live copy from `/data` and reboot.
@@ -52,29 +52,29 @@ To configure a new device, copy `bootconf.yaml.example` from the boot partition 
 ## offlinelab-base
 
 **Systemd units:**
-- `boot-firmware.mount` — mounts `/boot/firmware` read-only after `dev-mmcblk0p1.device` appears
-- `expand-data.service` — first-boot data partition resize and format; creates `/data` directory structure
-- `var-lib-extensions.mount`, `etc-extensions.mount` — bind-mount `/data/extensions/sysext/` and `/data/extensions/confext/` at sysinit
-- `systemd-sysext.service`, `systemd-confext.service` — enabled at sysinit.target
-- `power-profile.service` — applies CPU governor and power settings at boot
-- `boxctl-shutdown.service` — runs boxctl shutdown hook on shutdown
+- `boot-firmware.mount`: mounts `/boot/firmware` read-only after `dev-mmcblk0p1.device` appears
+- `expand-data.service`: first-boot data partition resize and format; creates `/data` directory structure
+- `var-lib-extensions.mount`, `etc-extensions.mount`: bind-mount `/data/extensions/sysext/` and `/data/extensions/confext/` at sysinit
+- `systemd-sysext.service`, `systemd-confext.service`: enabled at sysinit.target
+- `power-profile.service`: applies CPU governor and power settings at boot
+- `boxctl-shutdown.service`: runs boxctl shutdown hook on shutdown
 
 **Other:**
-- `serial-getty@ttyS0.service` — enabled for GPIO UART console (115200 baud)
-- `getty@tty1.service` — enabled for HDMI+keyboard console
-- `/etc/issue` — shows IP addresses for wlan0 and usb0 at the login prompt
+- `serial-getty@ttyS0.service`: enabled for GPIO UART console (115200 baud)
+- `getty@tty1.service`: enabled for HDMI+keyboard console
+- `/etc/issue`: shows IP addresses for wlan0 and usb0 at the login prompt
 
 ## offlinelab-bootconf
 
 Boot-time configuration tool that reads `/boot/firmware/bootconf.yaml` and applies SSH keys, WiFi credentials, sudoers rules, and sysusers entries before `multi-user.target`.
 
 **Systemd units:**
-- `bootconf.service` — reads and applies `bootconf.yaml` at boot
-- `bootconf-sysusers.service` — creates users/groups declared in the config
+- `bootconf.service`: reads and applies `bootconf.yaml` at boot
+- `bootconf-sysusers.service`: creates users/groups declared in the config
 
 **Build options:**
-- `BR2_PACKAGE_OFFLINELAB_BOOTCONF_VERSION` — git tag to build (e.g. `v1.0.0`)
-- `BR2_PACKAGE_OFFLINELAB_BOOTCONF_WIFI_CREATE=y` — bake WiFi credentials into `bootconf.yaml.example` on the boot partition at build time (dev/lab convenience only)
+- `BR2_PACKAGE_OFFLINELAB_BOOTCONF_VERSION`: git tag to build (e.g. `v1.0.0`)
+- `BR2_PACKAGE_OFFLINELAB_BOOTCONF_WIFI_CREATE=y`: bake WiFi credentials into `bootconf.yaml.example` on the boot partition at build time (dev/lab convenience only)
 
 Source: `github.com/offline-lab/bootconf`
 
@@ -83,11 +83,11 @@ Source: `github.com/offline-lab/bootconf`
 nftables-based firewall. Static rules covering SSH, ICMP, and established connections are loaded from the read-only rootfs at `/etc/firewall/rules.fw`. Per-app dynamic rules are persisted as fragments under `/data/config/firewall/rules.d/<app>.rules` and replayed on boot.
 
 **Systemd units:**
-- `firewall.service` — loads rules at boot via `firewall-init`
+- `firewall.service`: loads rules at boot via `firewall-init`
 
 **Other:**
-- `firewall-init` — load rules from rootfs and apply fragments from `/data`
-- `firewall-restore` — re-apply rules without reboot (called by fw.sh on rule changes)
+- `firewall-init`: load rules from rootfs and apply fragments from `/data`
+- `firewall-restore`: re-apply rules without reboot (called by fw.sh on rule changes)
 
 Runtime management via the `fw.sh` framework module and `boxctl firewall`.
 
@@ -96,22 +96,22 @@ Runtime management via the `fw.sh` framework module and `boxctl firewall`.
 Samples RAM, CPU, and storage over ~5 seconds at boot and writes a resource baseline to `/data/config/resources.json`. The `resources.sh` framework module reads this file for resource-aware operations at runtime.
 
 **Systemd units:**
-- `offlinelab-resources.service` — runs after `sysinit.target`, before `multi-user.target`
+- `offlinelab-resources.service`: runs after `sysinit.target`, before `multi-user.target`
 
 ## offlinelab-usb-gadget
 
 Configures the Pi's USB OTG port as a composite gadget providing two functions simultaneously:
 
-- **ACM serial** (`ttyGS0`) — `serial-getty@ttyGS0` provides a login shell
-- **ECM ethernet** (`usb0`) — `usb0.network` assigns `10.55.0.1/24` with DHCPServer
+- **ACM serial** (`ttyGS0`): `serial-getty@ttyGS0` provides a login shell
+- **ECM ethernet** (`usb0`): `usb0.network` assigns `10.55.0.1/24` with DHCPServer
 
 The gadget setup script detects whether a USB keyboard or other USB host device is already connected. If so, it stays in USB host mode and skips gadget setup. USB host (keyboard) and gadget mode are mutually exclusive on the Zero 2W OTG port.
 
 ## offlinelab-wifi
 
 **Systemd units:**
-- `wifi-setup.service` — starts wpa_supplicant after wlan0 appears (`BindsTo=sys-subsystem-net-devices-wlan0.device`)
-- `show-ip.service` — updates `/etc/issue` with the current IP addresses after network is up
+- `wifi-setup.service`: starts wpa_supplicant after wlan0 appears (`BindsTo=sys-subsystem-net-devices-wlan0.device`)
+- `show-ip.service`: updates `/etc/issue` with the current IP addresses after network is up
 
 **Notes:**
 - WiFi credentials are provisioned by `offlinelab-bootconf` via `bootconf.yaml`.
@@ -122,7 +122,7 @@ The gadget setup script detects whether a USB keyboard or other USB host device 
 ## offlinelab-ssh
 
 **Systemd units:**
-- `dropbear.service` — starts dropbear SSH server
+- `dropbear.service`: starts dropbear SSH server
 
 **Notes:**
 - Password authentication is disabled. Key-only access only.
@@ -141,13 +141,13 @@ Configures a zram block device as compressed swap:
 ## offlinelab-disco
 
 Provides:
-- `disco-daemon` — UDP broadcast discovery and hostname resolution
-- `libnss_disco.so.2` — glibc NSS module for native hostname resolution
+- `disco-daemon`: UDP broadcast discovery and hostname resolution
+- `libnss_disco.so.2`: glibc NSS module for native hostname resolution
 - `disco` CLI
-- `disco-gps-broadcaster` — time synchronization from GPS sources (not enabled by default)
+- `disco-gps-broadcaster`: time synchronization from GPS sources (not enabled by default)
 
 **Systemd units:**
-- `disco-daemon.service` — enabled at multi-user.target
+- `disco-daemon.service`: enabled at multi-user.target
 
 See [Disco](disco.md) for the full protocol and design.
 
@@ -158,4 +158,4 @@ See [Disco](disco.md) for the full protocol and design.
 3. Add the package to the defconfig (`BR2_PACKAGE_OFFLINELAB_<NAME>=y`).
 4. Place source files in `src/` and install them from the `.mk` file.
 
-After editing source files under `src/`, run `make offlinelab-<name>-dirclean` before rebuilding — Buildroot won't re-run install steps otherwise.
+After editing source files under `src/`, run `make offlinelab-<name>-dirclean` before rebuilding. Buildroot won't re-run install steps otherwise.

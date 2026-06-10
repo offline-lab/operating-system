@@ -1,10 +1,7 @@
 # App Filesystem Layout
 
-This page describes the required file tree inside a portable service squashfs image,
-and the packaging constraints that apply to all apps on this platform.
-
 For the full package format spec (naming, metadata schema, signing), see
-`docs/specs/package-format.md`.
+[Package Format Spec](specs/package-format.md).
 
 ---
 
@@ -36,7 +33,7 @@ is set in the package metadata.
 
 The squashfs is read-only (dm-verity enforced at runtime). The service process can
 read and execute root-owned files via world permissions (`755` for binaries, `644`
-for static files) — the same way any process reads `/usr/bin/*` on a normal system.
+for static files), the same way any process reads `/usr/bin/*` on a normal system.
 
 The service user is allocated at install time and is not known at build time. There is
 no mechanism to embed the runtime uid in the image, and no reason to: write access
@@ -64,6 +61,7 @@ Do not create ad-hoc directories in `/run/` via `ExecStartPre=` or similar.
 
 ### 2. No `User=` or `Group=` in unit files
 
+
 Unit files inside the squashfs must not include `User=` or `Group=` directives.
 appctl generates these in a drop-in at install time based on the allocated uid.
 Including them in the unit file is misleading (they are overridden at install) and
@@ -72,7 +70,7 @@ buildctl will warn.
 **Why:** the runtime username (`app<uid>`) is not known until appctl allocates a uid
 at install time. It cannot be embedded in the image at build time.
 
-### 2. No internal privilege dropping
+### 3. No internal privilege dropping
 
 Services must not call `setuid()`, `setgid()`, or `initgroups()` to switch to a named
 user defined in the image's own `/etc/passwd` after startup. The service must run as
@@ -93,14 +91,14 @@ tell the daemon not to switch users. Common approaches:
   of the unit file
 
 Note: buildctl uses Docker as its build backend to produce squashfs images. These
-config changes are applied during that build step — but they are requirements on the
+config changes are applied during that build step, but they are requirements on the
 squashfs content, not on Docker itself. buildctl should warn on common daemons known to
 drop privileges if the mitigation is not detected in the resulting image.
 
-### 3. No writable paths inside the squashfs
+### 4. No writable paths inside the squashfs
 
 All paths that the service writes to at runtime must be declared as volumes in
-`package.yaml`. Do not attempt to write to paths inside the squashfs root — dm-verity
+`package.yaml`. Writing to paths inside the squashfs root is not possible; dm-verity
 will block the write and the service will fail.
 
 ---
@@ -109,7 +107,7 @@ will block the write and the service will fail.
 
 Only two sources may be mounted into a service namespace:
 
-1. Paths already inside the squashfs (read-only, dm-verity protected — nothing to declare)
+1. Paths already inside the squashfs (read-only, dm-verity protected)
 2. Paths managed by appctl: the app's own data dirs and its runtime dir
 
 No other system paths are permitted. appctl controls the left side of every `BindPaths=`
@@ -128,7 +126,7 @@ volumes:
 ```
 
 Two keys: `config` and `data`. No freeform keys accepted.
-System path: `/data/apps/<hash>/<name>/{config,data}/` — persistent across reboots.
+System path: `/data/apps/<hash>/<name>/{config,data}/` (persistent across reboots).
 
 Apps must not write logs to files. Log output goes to stderr/stdout, captured by the
 systemd journal. This reduces SD card write wear and provides a unified log interface
@@ -150,7 +148,7 @@ owned by the service user, and automatically bind-mounts it into the service nam
 No manual `BindPaths=` needed. The directory is removed when the service stops.
 
 The socket or PID file at `/run/mosquitto/mosquitto.sock` is accessible from the
-system at that same path — no hash prefix, no namespace entry required.
+system at that same path, with no hash prefix or namespace entry required.
 
 `RuntimeDirectory=<name>` belongs in the squashfs unit file, not in appctl's drop-in:
 the app name is known at build time and this is a legitimate service definition concern.
@@ -163,14 +161,14 @@ let a malicious package mount `/data/config/keys/` (signing keys), another app's
 dir, or the appctl database. Restricting to the app's own subdirs eliminates this
 attack surface entirely.
 
-**Common cases that might seem to need system mounts — and why they don't:**
+**Common cases that might seem to need system mounts (and why they don't):**
 
 | Case | Solution |
 |---|---|
 | SSL CA certificates | Bake a cert bundle into the squashfs; refresh at image update |
 | Timezone | Bake `/etc/localtime` into squashfs, or use UTC |
 | Large user-provided content (e.g. media files) | User places files in the app's `data/` dir |
-| Cross-app Unix socket | appctl manages `/run/apps/<hash>/<name>/` — not a package concern |
+| Cross-app Unix socket | Managed by appctl at `/run/apps/<hash>/<name>/`; not a package concern |
 | Device access | Declared via `devices` metadata field, handled separately |
 
 **Default config seeding:** if a declared volume target path contains files inside
@@ -233,7 +231,7 @@ BindPaths=/data/apps/a0d7b954/mosquitto/config:/etc/mosquitto
 BindPaths=/data/apps/a0d7b954/mosquitto/data:/var/lib/mosquitto
 ```
 
-The `RuntimeDirectory=mosquitto` in the unit file is handled by systemd — it creates
+The `RuntimeDirectory=mosquitto` in the unit file is handled by systemd: it creates
 `/run/mosquitto/` on the system and bind-mounts it into the service namespace automatically.
 After attach, the Unix socket is reachable system-wide at `/run/mosquitto/mosquitto.sock`.
 
@@ -242,19 +240,16 @@ After attach, the Unix socket is reachable system-wide at `/run/mosquitto/mosqui
 ## One service per image
 
 Each squashfs image should contain exactly one primary service. This is not technically
-enforced — portablectl will attach all units found in the image — but multiple services
+enforced; portablectl will attach all units found in the image. Multiple services
 in a single image are strongly discouraged.
 
 **Why:**
 
-- **Lifecycle coupling.** appctl installs, updates, and removes an image as a unit. Two
-  services in the same image cannot be updated, rolled back, or removed independently.
-- **Resource accounting.** appctl tracks resource usage per image. Bundled services
-  produce misleading estimates and cannot be individually constrained.
-- **User isolation.** Each image runs as a single `app<uid>`. Multiple services sharing
-  one uid share a filesystem identity with no separation between them.
-This mirrors the Docker convention: one process per container, compose for multi-service
-stacks.
+- **Lifecycle coupling.** appctl installs, updates, and removes an image as a unit. Two services in the same image cannot be updated, rolled back, or removed independently.
+- **Resource accounting.** appctl tracks resource usage per image. Bundled services produce misleading estimates and cannot be individually constrained.
+- **User isolation.** Each image runs as a single `app<uid>`. Multiple services sharing one uid share a filesystem identity with no separation between them.
+
+This mirrors the Docker convention: one process per container, compose for multi-service stacks.
 
 **For multi-service applications:** use `appctl compose` (see T53). Compose lets you
 declare multiple apps as a group with ordered install and coordinated lifecycle, while
@@ -268,5 +263,5 @@ together via their declared ports and Unix sockets.
 ## References
 
 - [systemd portable services](https://systemd.io/PORTABLE_SERVICES/)
-- [systemd.exec(5) — RootImage=](https://www.freedesktop.org/software/systemd/man/systemd.exec.html#RootImage=)
-- [systemd.exec(5) — BindPaths=](https://www.freedesktop.org/software/systemd/man/systemd.exec.html#BindPaths=)
+- [systemd.exec(5): RootImage=](https://www.freedesktop.org/software/systemd/man/systemd.exec.html#RootImage=)
+- [systemd.exec(5): BindPaths=](https://www.freedesktop.org/software/systemd/man/systemd.exec.html#BindPaths=)

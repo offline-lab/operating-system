@@ -25,8 +25,8 @@ packages. It runs on a developer workstation or CI machine, not on an Offline La
 ## Build backends
 
 A **build backend** is responsible for exactly one thing: producing a filesystem that
-becomes the squashfs image. Everything after that — squashfs conversion, dm-verity
-generation, signing, metadata generation, packaging — is backend-agnostic and handled
+becomes the squashfs image. Everything after that (squashfs conversion, dm-verity
+generation, signing, metadata generation, packaging) is backend-agnostic and handled
 by buildctl regardless of which backend was used.
 
 The backend contract:
@@ -35,7 +35,7 @@ The backend contract:
 
 This separation means the packaging pipeline (verity, signing, metadata) only needs to
 be implemented once. Adding a new backend means implementing the filesystem production
-step — nothing else changes.
+step. Nothing else changes.
 
 ### Supported backends
 
@@ -68,7 +68,7 @@ backend_arguments:
     VERSION: "2.0.18"
 ```
 
-`backend_arguments` is a freeform map — buildctl validates the key names it knows about
+`backend_arguments` is a freeform map; buildctl validates the key names it knows about
 for the selected backend and ignores unknown keys with a warning. Per-backend argument
 definitions are documented alongside each backend.
 
@@ -108,7 +108,7 @@ myapp/
   .buildignore         ← optional: files to exclude from the squashfs
 ```
 
-The Dockerfile is the maintainer's responsibility — buildctl does not generate it.
+The Dockerfile is the maintainer's responsibility. buildctl does not generate it.
 
 **Cross-compilation:** the Docker backend uses `docker buildx` with QEMU emulation.
 On macOS and x86 Linux machines, building for `arm64` requires:
@@ -120,7 +120,7 @@ docker run --privileged --rm tonistiigi/binfmt --install arm64
 
 After setup, `buildctl build --arch arm64` transparently builds for arm64 via buildx.
 No separate toolchain or native arm64 machine is needed for standard Dockerfiles.
-For Dockerfiles that invoke native compilers, emulation is slow — a native arm64
+For Dockerfiles that invoke native compilers, emulation is slow; a native arm64
 build machine is faster for those cases.
 
 ### mkosi backend (planned)
@@ -147,8 +147,8 @@ of which backend was used:
 buildctl build <dir>
 ```
 
-1. **Read** `package.yaml` — validate all required fields
-2. **Invoke backend** — produce a root filesystem tree for the target arch
+1. **Read** `package.yaml`: validate all required fields
+2. **Invoke backend**: produce a root filesystem tree for the target arch
 3. **Convert** to squashfs: `mksquashfs <rootfs> <name>.squashfs -noappend -comp zstd`
 4. **Embed** `package.yaml` into the squashfs at `/usr/share/<name>/package.yaml`
 5. **Generate** verity companion files:
@@ -179,7 +179,7 @@ Output directory: `./dist/` by default, configurable with `--out`.
 
 ## Signing keys
 
-### Build key (high trust — build machine only)
+### Build key (high trust, build machine only)
 
 The build key signs `.roothash.p7s` for every package. It never leaves the build machine.
 
@@ -197,7 +197,7 @@ published to repo). The `.key` file must never be:
 
 Treat it like a CA private key.
 
-### Index key (lower trust — repo host)
+### Index key (lower trust, repo host)
 
 The index key signs `index.json.p7s` for each arch index after each publish. It lives on
 the repo host and is used automatically by the index update step of `buildctl publish`.
@@ -212,7 +212,7 @@ Produces `<repo-name>-index.key` and `<repo-name>-index.crt`. The `--index` flag
 this cert as an index-signing key. Store the `.key` on the repo host, publish the
 `.crt` alongside the build cert in `keys/`.
 
-A compromised index key cannot forge package signatures — appctl always verifies the
+A compromised index key cannot forge package signatures; appctl always verifies the
 build-key signature on the package itself at install time. The blast radius of an index
 key compromise is limited to catalog manipulation (advertise stale versions, hide
 packages); it does not allow injecting malicious package content.
@@ -223,7 +223,7 @@ packages); it does not allow injecting malicious package content.
 
 Publishing has two distinct steps, on two different machines.
 
-### Step 1 — Push package files (build machine → repo host)
+### Step 1: Push package files (build machine to repo host)
 
 ```
 buildctl publish --repo <host>:<path> <dist-dir>/<package-files>
@@ -238,7 +238,7 @@ rsync -az dist/ <user>@<host>:<repo-root>/packages/<arch>/<name>/<version>/
 
 No index writing happens in this step. No index key is needed on the build machine.
 
-### Step 2 — Update the index (repo host, via SSH)
+### Step 2: Update the index (repo host, via SSH)
 
 ```
 buildctl index update --repo <host>:<path> --package <name> --arch <arch>
@@ -273,7 +273,7 @@ Runs both steps in sequence. Equivalent to calling the two commands above.
 
 `buildctl index update` downloads the current index, patches one entry, and re-signs.
 It does not require all packages to be present locally. This is the normal publish
-workflow — full regeneration from scratch is only needed when bootstrapping a new repo
+workflow. Full regeneration from scratch is only needed when bootstrapping a new repo
 or after an option B key rotation.
 
 ---
@@ -337,14 +337,14 @@ is used. Explicit `package.yaml` fields always win.
 | `org.opencontainers.image.licenses` | `license` |
 | `org.opencontainers.image.vendor` | `publisher` |
 
-These labels are standard practice in Dockerfile authoring — buildctl will use them
+These labels are standard practice in Dockerfile authoring; buildctl will use them
 if present. They are not required.
 
 ---
 
 ## Key rotation
 
-See [Security Model — Key Rotation](security-model.md#key-rotation) for the full design.
+See [Security Model: Key Rotation](security-model.md#key-rotation) for the full design.
 
 For builds: `buildctl build --key <new-key>` uses the specified build key. New packages
 are signed with the new key; old packages keep their existing signatures. Both certs
@@ -367,5 +367,5 @@ apt install buildctl
 ```
 
 The Debian package is built from `buildctl.git` and published to the Offline Lab
-package server. It is not an app package — it is a host-side development tool and does
+package server. It is not an app package; it is a host-side development tool and does
 not use the squashfs / portablectl app format.

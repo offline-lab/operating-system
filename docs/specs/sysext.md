@@ -41,9 +41,9 @@ Use a confext when you need to ship a read-only `/etc` overlay without a full OT
 - Read-only drop-ins for system daemons that don't support `conf.d/` directories
 
 For most configuration on Offline Lab devices, prefer `/data/config/` managed by
-`config.sh` — confext is for the cases where a read-only `/etc` overlay is specifically
-what you need, or where you want to distribute configuration the same way you distribute
-sysext images (signed, versioned, drop-in).
+`config.sh`. Use confext when a read-only `/etc` overlay is specifically what you need,
+or when you want to distribute configuration the same way as sysext images (signed,
+versioned, drop-in).
 
 ---
 
@@ -52,12 +52,12 @@ sysext images (signed, versioned, drop-in).
 Both sysext and confext are squashfs images. The only structural difference is the path
 of the metadata file inside the image.
 
-**sysext** — metadata at:
+**sysext**: metadata at:
 ```
 /usr/lib/extension-release.d/extension-release.<name>
 ```
 
-**confext** — metadata at:
+**confext**: metadata at:
 ```
 /etc/extension-release.d/extension-release.<name>
 ```
@@ -107,7 +107,7 @@ Both `systemd-sysext.service` and `systemd-confext.service` are enabled at boot 
 merge all discovered extensions before `multi-user.target`. No manual action is needed
 for extensions already present in `/data/extensions/` before reboot.
 
-Extensions are **admin-managed** — drop files into the appropriate directory and
+Extensions are **admin-managed**: drop files into the appropriate directory and
 refresh. There is no package manager step.
 
 ---
@@ -164,14 +164,14 @@ boxctl sysext status     # show merged state
 
 `boxctl confext` follows the same command structure. Both use the corresponding
 framework modules (`sysext.sh`, `confext.sh`) internally. Neither is exposed via
-`appctl` — extensions are a host configuration concern, not an app packaging concern.
+`appctl`; extensions are a host configuration concern, not an app packaging concern.
 
 ---
 
 ## What extensions do not provide
 
-- **No lifecycle hooks** — the extension is present or it is not.
-- **No port rules or device grants** — extensions only extend the filesystem.
-- **No per-app isolation** — content merged by sysext is visible to all processes on
+- **No lifecycle hooks**: the extension is present or it is not.
+- **No port rules or device grants**: extensions only extend the filesystem.
+- **No per-app isolation**: content merged by sysext is visible to all processes on
   the system. Do not ship secrets or security-sensitive material in a sysext.
-- **No appctl support** — managed manually or via boxctl only.
+- **No appctl support**: managed manually or via boxctl only.

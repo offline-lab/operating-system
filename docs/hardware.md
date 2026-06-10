@@ -32,7 +32,7 @@ Logical (inside p2):
   p9  bootstate   raw     8MB    U-Boot environment: BOOT_ORDER, boot counters
 ```
 
-The `data` partition (`p4`) is last on the card and expands to fill the remaining space on first boot. The `overlay` partition (`p3`) holds the overlayfs upper/work directories for both A/B slots — it is separate from `/data` so that OS overlay state is isolated from user data.
+The `data` partition (`p4`) is last on the card and expands to fill the remaining space on first boot. The `overlay` partition (`p3`) holds the overlayfs upper/work directories for both A/B slots. It is kept separate from `/data` so that OS overlay state is isolated from user data.
 
 See [Boot](boot.md) for the full boot chain and A/B slot logic.
 

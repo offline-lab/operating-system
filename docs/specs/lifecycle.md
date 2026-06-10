@@ -2,7 +2,7 @@
 
 Apps can declare systemd units that appctl starts at defined points in the install,
 update, and remove flow. Hooks are the correct place for one-time operations that
-cannot be expressed as regular service dependencies — database init, config migration,
+cannot be expressed as regular service dependencies: database init, config migration,
 pre-removal export.
 
 For recurring setup on every start (first-run guards, dependency checks), the preferred
@@ -52,7 +52,7 @@ appctl invokes hooks via `systemctl start <unit>`. The unit file lives inside th
 squashfs; portablectl has already attached it to the system before any hook runs.
 
 Hooks run as the app's allocated user (`app<uid>`) with the app's data volumes
-bind-mounted — the same context as the main service, except they are started directly
+bind-mounted, with the same context as the main service, except they are started directly
 by appctl rather than being part of the service's normal lifecycle.
 
 appctl provides environment variables to each hook via a transient drop-in written
@@ -187,9 +187,9 @@ ExecStartPost=/usr/bin/touch /var/lib/mosquitto/.migrated-2.0.18
 ```
 
 The `ConditionPathExists` guard prevents re-running on every start. Unit files inside
-the squashfs only see namespace paths (e.g. `/var/lib/mosquitto`) — system paths
+the squashfs only see namespace paths (e.g. `/var/lib/mosquitto`). System paths
 containing the repo hash are invisible to the service and must not appear in unit files
-or scripts. This pattern requires no appctl involvement — systemd handles ordering and
+or scripts. This pattern requires no appctl involvement; systemd handles ordering and
 execution.
 
 `User=` and `Group=` are not declared in the unit file; appctl provides them via

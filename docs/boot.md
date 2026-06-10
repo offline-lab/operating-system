@@ -1,7 +1,5 @@
 # Boot
 
-This page describes how the system boots, how the A/B slot mechanism works, and what happens on first boot.
-
 ## Boot chain
 
 ```
@@ -63,7 +61,7 @@ The initramfs is a small static busybox environment. The `init` script:
 3. Reads `rauc.slot` from `/proc/cmdline` to determine which slot to boot.
 4. Mounts the selected rootfs read-only.
 5. Mounts the overlay partition (`/dev/mmcblk0p3`).
-6. Creates per-slot upper/work directories on the overlay partition if they don't exist (`/overlay/a/upper`, `/overlay/a/work`).
+6. Wipes and recreates the per-slot upper/work directories (`/overlay/a/upper`, `/overlay/a/work`) for a clean `/etc` on every boot.
 7. Sets up overlayfs with lower=rootfs, upper and work from the overlay partition.
 8. Mounts the data partition (`/dev/mmcblk0p4`) at `/data` inside the new root.
 9. Runs `switch_root` to hand off to systemd.
@@ -94,7 +92,7 @@ When the data partition has no filesystem (fresh SD card write), the initramfs d
 
 After `expand-data.sh` completes, boot continues normally.
 
-**First boot duration scales with card size.** `resize2fs` must initialise the entire partition. On an 8 GB card this takes a few seconds; on large cards (512 GB–1 TB) it can take several minutes on the Zero 2W. The device will reach the login prompt once it finishes — no intervention needed, just wait.
+**First boot duration scales with card size.** `resize2fs` must initialise the entire partition. On an 8 GB card this takes a few seconds; on large cards (512 GB–1 TB) it can take several minutes on the Zero 2W. The device will reach the login prompt once it finishes; no intervention needed.
 
 Boot-time provisioning (WiFi credentials, SSH keys) is applied by `bootconf` on every boot. See [Boot configuration](bootconf.md) and [Configuration](configuration.md).
 
@@ -120,7 +118,7 @@ The boot partition is mounted read-only at `/boot/firmware` by `boot-firmware.mo
 
 ## Trade-offs
 
-**Shared bootloader.** U-Boot lives on the boot partition and is shared between slots. A bad U-Boot update affects both slots. This is a known limitation — per-slot bootloaders would require a more complex partition layout.
+**Shared bootloader.** U-Boot lives on the boot partition and is shared between slots. A bad U-Boot update affects both slots. This is a known limitation; per-slot bootloaders would require a more complex partition layout.
 
 **Kernel per slot.** Each slot has its own kernel squashfs, so a kernel update is contained to the inactive slot and follows the same A/B rollback path as a rootfs update.
 

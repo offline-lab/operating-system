@@ -22,7 +22,7 @@ Then rebuild. Without this, your changes won't appear in the image. This is the 
 
 ### Framework development
 
-The framework (`framework/`) is first-party source — edit it directly in this repo, then rebuild:
+The framework (`framework/`) is first-party source. Edit it directly in this repo, then rebuild:
 
 ```bash
 make offlinelab-framework-dirclean && make offlinelab-framework
@@ -86,9 +86,9 @@ Add new checks to `bin/verify.sh` when adding new packages or changing the image
 ## Adding a package
 
 1. Create `br2-external/package/offlinelab-<name>/`:
-   - `Config.in` — Buildroot Kconfig options
-   - `offlinelab-<name>.mk` — install rules
-   - `src/` — source files (scripts, systemd units, config)
+   - `Config.in`: Buildroot Kconfig options
+   - `offlinelab-<name>.mk`: install rules
+   - `src/`: source files (scripts, systemd units, config)
 
 2. Register in `br2-external/Config.in`:
    ```
@@ -102,4 +102,4 @@ Add new checks to `bin/verify.sh` when adding new packages or changing the image
 
 4. Add verification checks to `bin/verify.sh`.
 
-Follow the pattern of an existing package. Keep each package focused on one concern. Use the provisioning pattern for any config that users might need to change (boot partition → `/data`).
+Follow the pattern of an existing package. Keep each package focused on one concern. Use the provisioning pattern for any config that users might need to change (boot partition to `/data`).

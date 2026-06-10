@@ -2,9 +2,9 @@
 
 There are three ways to configure the OS:
 
-1. **Build time** — options in `.config` baked into the image
-2. **Boot partition** — `bootconf.yaml` placed on the FAT32 boot partition, applied at every boot by `bootconf`
-3. **Runtime** — editing files directly on `/data` (requires SSH or console access)
+1. **Build time**: options in `.config` baked into the image
+2. **Boot partition**: `bootconf.yaml` placed on the FAT32 boot partition, applied at every boot by `bootconf`
+3. **Runtime**: editing files directly on `/data` (requires SSH or console access)
 
 ## Build-time configuration
 
@@ -17,7 +17,7 @@ BR2_PACKAGE_OFFLINELAB_ADMIN=y
 BR2_PACKAGE_OFFLINELAB_ADMIN_AUTHORIZED_KEY="ssh-ed25519 AAAA... you@host"
 ```
 
-Bakes an `admin` user (uid 1000) with your SSH key into the read-only rootfs. Convenient for development — do not use in production images.
+Bakes an `admin` user (uid 1000) with your SSH key into the read-only rootfs. Convenient for development; do not use in production images.
 
 ### Baking WiFi credentials into the boot partition example config
 
@@ -28,7 +28,7 @@ BR2_PACKAGE_OFFLINELAB_BOOTCONF_WIFI_PASSWORD_HASH="<hash from wpa_passphrase>"
 BR2_PACKAGE_OFFLINELAB_BOOTCONF_WIFI_COUNTRY="NL"
 ```
 
-Writes WiFi credentials into `bootconf.yaml.example` on the boot partition at build time. This is a dev/lab convenience: copy `bootconf.yaml.example` → `bootconf.yaml` before first boot. Use the hash from `wpa_passphrase <ssid> <password>`, not the plaintext password.
+Writes WiFi credentials into `bootconf.yaml.example` on the boot partition at build time. This is a dev/lab convenience: copy `bootconf.yaml.example` to `bootconf.yaml` before first boot. Use the hash from `wpa_passphrase <ssid> <password>`, not the plaintext password.
 
 **Security note:** Build-time credentials are baked into every image flashed from that build. For per-card configuration, use `bootconf.yaml` on the boot partition instead.
 
@@ -36,7 +36,7 @@ Writes WiFi credentials into `bootconf.yaml.example` on the boot partition at bu
 
 Place a `bootconf.yaml` file on the FAT32 boot partition. `bootconf.service` reads it at every boot and applies the configuration before other services start.
 
-The boot partition contains `bootconf.yaml.example` — copy it to `bootconf.yaml` and fill in your settings. The file format covers:
+The boot partition contains `bootconf.yaml.example`. Copy it to `bootconf.yaml` and fill in your settings. The file format covers:
 - SSH authorized keys
 - WiFi SSID and PSK hash
 - Sudoers rules
@@ -69,7 +69,7 @@ wpa_cli -i wlan0 reconfigure
 sudo nano /data/home/admin/.ssh/authorized_keys
 ```
 
-Changes take effect immediately — dropbear re-reads the file on each connection.
+Changes take effect immediately; dropbear re-reads the file on each connection.
 
 ## /data layout
 

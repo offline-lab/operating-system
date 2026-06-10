@@ -30,7 +30,7 @@ overwritten. See [Boot configuration (bootconf)](bootconf.md) for the full YAML 
 
 To activate configuration on a new card:
 1. Mount the boot partition (FAT32, readable from any OS).
-2. Copy `bootconf.yaml.example` → `bootconf.yaml`.
+2. Copy `bootconf.yaml.example` to `bootconf.yaml`.
 3. Edit the file with your credentials (WiFi PSK hash, SSH keys, etc.).
 4. Eject and boot.
 
@@ -47,10 +47,6 @@ BR2_PACKAGE_OFFLINELAB_BOOTCONF_WIFI_SSID="your-ssid"
 # PSK hash from: wpa_passphrase <ssid> <password>
 BR2_PACKAGE_OFFLINELAB_BOOTCONF_WIFI_PASSWORD_HASH="abc123..."
 BR2_PACKAGE_OFFLINELAB_BOOTCONF_WIFI_COUNTRY="NL"
-
-# Bake an admin SSH key into the rootfs (dev builds only)
-BR2_PACKAGE_OFFLINELAB_ADMIN=y
-BR2_PACKAGE_OFFLINELAB_ADMIN_AUTHORIZED_KEY="ssh-ed25519 AAAA... you@host"
 ```
 
 ### Method 2: manual SD card write
@@ -71,7 +67,7 @@ any special tools.
 ## Security notes
 
 - The boot partition is mounted read-only at runtime (`ro,noatime`).
-- `bootconf.yaml` is world-readable on the FAT32 partition — store only the WiFi PSK
+- `bootconf.yaml` is world-readable on the FAT32 partition. Store only the WiFi PSK
   hash (from `wpa_passphrase`), never the plaintext password.
 - SSH authorized keys in `bootconf.yaml` are written to `/data/home/admin/.ssh/` with
   mode `600`, owned by `admin` (uid 1000).

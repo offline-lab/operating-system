@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Offline Lab is an open-source platform for running applications on low-power devices without internet. We build software for situations where connectivity is unreliable or unavailable — travel, remote areas, temporary setups — and existing tools stop working when the network drops.
+Offline Lab is an open-source platform for running applications on low-power devices without internet. We build software for situations where connectivity is unreliable or unavailable: travel, remote areas, temporary setups where existing tools stop working when the network drops.
 
 Offline Lab OS currently targets the Raspberry Pi Zero 2W and QEMU, with support for additional hardware planned.
 
@@ -10,7 +10,7 @@ Offline Lab OS currently targets the Raspberry Pi Zero 2W and QEMU, with support
 
 Offline Lab serves people who need computing tools but can't depend on internet access:
 
-- **Travelers** on long trips, cruises, or remote itineraries who want their own services — file sharing, media, communication — without roaming or satellite costs.
+- **Travelers** on long trips, cruises, or remote itineraries who want file sharing, media, and communication without roaming or satellite costs.
 - **Off-grid communities** in rural or remote areas where internet is slow, expensive, or absent. A few Raspberry Pis provide local services for the whole community.
 - **Small groups** that want to share services over a local network without routing anything through the cloud. A travel router and a couple of nodes are enough to get started.
 
@@ -20,11 +20,9 @@ In all cases, the platform works fully offline. When internet is available, it s
 
 Offline Lab OS is a minimal, read-only [operating system](operating-system.md) built with Buildroot. It boots from an SD card and keeps user data on a separate writable partition. System updates use A/B root partitions: write the new image to the inactive slot, reboot, and the system switches over.
 
-Applications ship as **portable services** — squashfs images containing everything they need, managed as systemd portable services. No package managers, no dependency resolution. Drop the image on the device and start it. See the [service model](components.md) for details.
+Applications ship as **portable services**: squashfs images containing everything they need, managed as systemd portable services. No package managers, no dependency resolution. Drop the image on the device and start it. See the [service model](components.md) for details.
 
 See [Terminology](terminology.md) for definitions of terms used throughout the docs.
-
-Nodes connect over a travel router or WiFi mesh. Each node also works standalone, powered by a USB power bank.
 
 ## Design principles
 
@@ -53,4 +51,4 @@ Offline Lab is released under [AGPL v3](https://www.gnu.org/licenses/agpl-3.0.en
 
 ## Who builds this
 
-Offline Lab is an open-source community project. Contributions are welcome — see the [contributing guide](contributing.md) to get started.
+Offline Lab is an open-source community project. See the [contributing guide](contributing.md) to get started.

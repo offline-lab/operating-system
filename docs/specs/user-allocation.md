@@ -16,7 +16,7 @@ Three distinct identifiers per app, each serving a different purpose:
 | Display name | `<repo-alias>/<name>` | `offline-lab/mosquitto` | Human-readable, `appctl list` output |
 
 **Repo hash** is derived from the canonical repo URL at `appctl repo add` time:
-`sha1("https://packages.offline-lab.com".lower())[:8]` → `a0d7b954`. It is
+`sha1("https://packages.offline-lab.com".lower())[:8]` yields `a0d7b954`. It is
 immutable and cannot be manipulated: `/a/b/repo` and `/ab/repo` hash to different
 8-char prefixes. Same approach as Home Assistant Supervisor.
 
@@ -25,7 +25,7 @@ always alphanumeric, always ≤ 9 chars. Works on busybox and all Linux systems.
 The GECOS field carries the human-readable identity (`offline-lab/mosquitto`).
 
 **Display name** uses the user-set repo alias (set at `appctl repo add --name <alias>`)
-for readability. The alias is display-only — the repo hash is the canonical identifier.
+for readability. The alias is display-only; the repo hash is the canonical identifier.
 
 ---
 
@@ -54,12 +54,12 @@ Two apps named `mosquitto` from different repos are fully isolated:
 ## File permissions inside the squashfs
 
 The squashfs is read-only (dm-verity enforced). Ownership inside it only affects
-whether the service process can read or execute files — not write them.
+whether the service process can read or execute files, not write them.
 
 **Decision: all files inside the squashfs are owned by root (uid 0).**
 
-- Binaries: `root:root 755` — world-executable
-- Static files and config templates: `root:root 644` — world-readable
+- Binaries: `root:root 755` (world-executable)
+- Static files and config templates: `root:root 644` (world-readable)
 - No files inside the squashfs need to be owned by the service user
 
 The service user (`app6000`) can read and execute these files via world permissions,
@@ -93,7 +93,7 @@ with no practical benefit for a read-only filesystem.
 
 Package authors declare only the namespace target paths for each data category.
 Exactly two fixed keys: `config` and `data`. No freeform paths. appctl controls
-the system path entirely — a package cannot reference arbitrary system locations.
+the system path entirely. A package cannot reference arbitrary system locations.
 
 `package.yaml`:
 ```yaml
@@ -102,7 +102,7 @@ volumes:
   data:   /var/lib/mosquitto # system: .../data/   → /var/lib/mosquitto in namespace
 ```
 
-The paths on the right are conventional Linux paths — exactly what the upstream daemon
+The paths on the right are conventional Linux paths, exactly what the upstream daemon
 expects. The package author knows these at build time and writes config files referencing
 them normally. The system paths (containing the repo hash) are entirely managed by appctl
 and invisible to the package author.
@@ -121,13 +121,13 @@ BindPaths=/data/apps/a0d7b954/mosquitto/data:/var/lib/mosquitto
 the squashfs (e.g., `/etc/mosquitto/mosquitto.conf`), appctl copies its contents to
 the writable system directory before the bind mount takes effect. This seeds the writable
 config from the image's defaults. Subsequent installs (updates) do not overwrite
-the user's live config — that is the `post_update` lifecycle hook's responsibility.
+the user's live config. That is the `post_update` lifecycle hook's responsibility.
 
 ---
 
 ## Database schema
 
-appctl never deletes app rows — they are marked `removed` to preserve uid assignments
+appctl never deletes app rows; they are marked `removed` to preserve uid assignments
 permanently and enable reinstall to reuse the original uid.
 
 ```sql
@@ -201,13 +201,13 @@ error: offline-lab/mosquitto is already installed (use --force to reinstall)
 
 ## Uninstall and cleanup
 
-**`appctl remove <app>`** — detaches service, removes sysusers snippet, marks row
+**`appctl remove <app>`**: detaches service, removes sysusers snippet, marks row
 `removed`. Data in `/data/apps/<hash>/<name>/` is kept intact. Uid reserved.
 
-**`appctl remove --purge <app>`** — same, plus deletes `/data/apps/<hash>/<name>/`.
+**`appctl remove --purge <app>`**: same, plus deletes `/data/apps/<hash>/<name>/`.
 Row stays in DB as `removed`; uid is permanently retired from the high-water mark.
 
-**`appctl cleanup`** — dry-run by default. Removes `removed`-status rows from DB
+**`appctl cleanup`**: dry-run by default. Removes `removed`-status rows from DB
 and any orphaned directories on disk. Requires `--yes`. Refuses if a lock file is
 present. Uid slots for cleaned-up rows remain retired.
 

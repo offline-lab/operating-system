@@ -35,7 +35,7 @@ resources:
 `storage_mb` is the same across load levels (storage is not load-dependent).
 `low` = idle/minimal activity. `moderate` = typical use. `heavy` = peak load.
 
-buildctl does not validate these values — they are declared by the package author
+buildctl does not validate these values; they are declared by the package author
 and used by appctl as a signal, not a hard contract.
 
 ---
@@ -69,7 +69,7 @@ Schema:
 | `measured_at` | ISO 8601 timestamp of the measurement |
 
 The baseline is re-measured on every boot. It reflects the current OS state including
-all already-installed apps that auto-start — not just the bare OS.
+all already-installed apps that auto-start, not just the bare OS.
 
 ---
 
@@ -85,10 +85,10 @@ available_storage = total_storage_mb - used_storage_mb  (df on /data)
 
 | Condition | Behaviour |
 |---|---|
-| `available_memory < moderate.memory_mb` | Error — refuse install |
-| `available_memory < moderate.memory_mb * 1.5` | Warn — proceed |
-| `available_storage < moderate.storage_mb` | Error — refuse install |
-| No `resources.json` exists | Warn and proceed — baseline not yet measured |
+| `available_memory < moderate.memory_mb` | Error; refuse install |
+| `available_memory < moderate.memory_mb * 1.5` | Warn; proceed |
+| `available_storage < moderate.storage_mb` | Error; refuse install |
+| No `resources.json` exists | Warn and proceed (baseline not yet measured) |
 | Package has no `resources` field | Proceed without check |
 
 `--ignore-resources` bypasses all checks. Intended for testing and edge cases.
@@ -112,7 +112,7 @@ resources::cpu_cores            # number of online CPUs
 ## Buildroot implications
 
 - `offlinelab-resources` package ships the measurement service and script
-- Runs as: `offlinelab-resources.service` — `After=local-fs.target`, `Before=multi-user.target`
-- Writes to `/data/config/resources.json` — requires `/data` to be mounted
+- Runs as: `offlinelab-resources.service` (`After=local-fs.target`, `Before=multi-user.target`)
+- Writes to `/data/config/resources.json` (requires `/data` to be mounted)
 - `resources.sh` added to `FRAMEWORK_INIT_MODULES` in `framework/library/import.sh`
 - `jq` required for JSON read/write (`BR2_PACKAGE_JQ=y`, already required)
