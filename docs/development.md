@@ -22,20 +22,15 @@ Then rebuild. Without this, your changes won't appear in the image. This is the 
 
 ### Framework development
 
-The framework (`framework/`) is first-party source. Edit it directly in this repo, then rebuild:
+The framework lives in its own repository at [github.com/offline-lab/framework](https://github.com/offline-lab/framework). Edit it there. The builder's `.mk` file points at the sibling `../framework` directory via `SITE_METHOD = local` for local development.
+
+After editing framework source, rebuild:
 
 ```bash
 make offlinelab-framework-dirclean && make offlinelab-framework
 ```
 
-For framework development without full OS rebuilds, use the framework's dev setup:
-
-```bash
-source framework/bin/dev-setup
-bin/test-framework --lint
-```
-
-See `framework/.claude/CLAUDE.md` for the full framework development guide including function conventions, variable namespace, and module structure.
+See [framework.offline-lab.com](https://framework.offline-lab.com) for the full library and boxctl CLI reference.
 
 ## Critical gotchas
 

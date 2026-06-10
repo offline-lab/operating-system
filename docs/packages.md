@@ -76,7 +76,7 @@ Boot-time configuration tool that reads `/boot/firmware/bootconf.yaml` and appli
 - `BR2_PACKAGE_OFFLINELAB_BOOTCONF_VERSION`: git tag to build (e.g. `v1.0.0`)
 - `BR2_PACKAGE_OFFLINELAB_BOOTCONF_WIFI_CREATE=y`: bake WiFi credentials into `bootconf.yaml.example` on the boot partition at build time (dev/lab convenience only)
 
-Source: `github.com/offline-lab/bootconf`
+Source: [github.com/offline-lab/bootconf](https://github.com/offline-lab/bootconf) · Docs: [bootconf.offline-lab.com](https://bootconf.offline-lab.com)
 
 ## offlinelab-firewall
 
