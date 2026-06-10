@@ -3,55 +3,50 @@
 There are three ways to configure the OS:
 
 1. **Build time** — options in `.config` baked into the image
-2. **Pre-first-boot** — files placed on the boot partition before the first boot
+2. **Boot partition** — `bootconf.yaml` placed on the FAT32 boot partition, applied at every boot by `bootconf`
 3. **Runtime** — editing files directly on `/data` (requires SSH or console access)
 
 ## Build-time configuration
 
 Copy `config.example` to `.config` in the repo root. Options in `.config` override the Buildroot defconfig at build time.
 
-### WiFi
+### Development admin user
 
 ```ini
-BR2_PACKAGE_OFFLINELAB_WIFI_WPA_CREATE=y
-BR2_PACKAGE_OFFLINELAB_WIFI_WPA_SSID="your-network"
-BR2_PACKAGE_OFFLINELAB_WIFI_WPA_PASSWORD="your-password"
-BR2_PACKAGE_OFFLINELAB_WIFI_WPA_COUNTRY="NL"
+BR2_PACKAGE_OFFLINELAB_ADMIN=y
+BR2_PACKAGE_OFFLINELAB_ADMIN_AUTHORIZED_KEY="ssh-ed25519 AAAA... you@host"
 ```
 
-Generates a `wpa_supplicant.conf` and embeds it in the boot partition image. Country code defaults to `"00"` (worldwide) if not set.
+Bakes an `admin` user (uid 1000) with your SSH key into the read-only rootfs. Convenient for development — do not use in production images.
 
-### SSH authorized keys
+### Baking WiFi credentials into the boot partition example config
 
 ```ini
-BR2_PACKAGE_OFFLINELAB_SSH_CREATE_AUTHORIZED_KEYS=y
-BR2_PACKAGE_OFFLINELAB_SSH_CREATE_AUTHORIZED_KEYS_CONTENT="ssh-ed25519 AAAA... you@host"
+BR2_PACKAGE_OFFLINELAB_BOOTCONF_WIFI_CREATE=y
+BR2_PACKAGE_OFFLINELAB_BOOTCONF_WIFI_SSID="your-network"
+BR2_PACKAGE_OFFLINELAB_BOOTCONF_WIFI_PASSWORD_HASH="<hash from wpa_passphrase>"
+BR2_PACKAGE_OFFLINELAB_BOOTCONF_WIFI_COUNTRY="NL"
 ```
 
-Embeds the key in the boot partition image. Multiple keys: separate them with `\n` in the value.
+Writes WiFi credentials into `bootconf.yaml.example` on the boot partition at build time. This is a dev/lab convenience: copy `bootconf.yaml.example` → `bootconf.yaml` before first boot. Use the hash from `wpa_passphrase <ssid> <password>`, not the plaintext password.
 
-**Security note:** Build-time credentials are baked into the image. Every SD card flashed from that image will have the same credentials. Use build-time options for development images; use boot-partition provisioning for individual cards.
+**Security note:** Build-time credentials are baked into every image flashed from that build. For per-card configuration, use `bootconf.yaml` on the boot partition instead.
 
-## Boot-partition provisioning
+## Boot-partition provisioning (bootconf)
 
-Place config files in the `config/` subdirectory of the boot partition (FAT32, accessible from any OS):
+Place a `bootconf.yaml` file on the FAT32 boot partition. `bootconf.service` reads it at every boot and applies the configuration before other services start.
 
-```
-/boot/firmware/config/
-├── wpa_supplicant.conf     # WiFi credentials
-└── authorized_keys         # SSH public keys for the app user
-```
+The boot partition contains `bootconf.yaml.example` — copy it to `bootconf.yaml` and fill in your settings. The file format covers:
+- SSH authorized keys
+- WiFi SSID and PSK hash
+- Sudoers rules
+- sysusers entries (custom users/groups)
 
-On first boot, provisioning services copy these files to `/data`:
+Bootconf is idempotent: it tracks what it has already applied and skips re-applying unchanged entries. To force re-provisioning, delete the relevant file from `/data` and reboot.
 
-| Source | Destination | Service |
-|---|---|---|
-| `config/wpa_supplicant.conf` | `/data/config/wifi/wpa_supplicant.conf` | `provision-wifi` |
-| `config/authorized_keys` | `/data/home/app/.ssh/authorized_keys` | `provision-ssh` |
+The boot partition is FAT32 and can be written from any OS before the card is inserted.
 
-Provisioning is **idempotent**: if the destination already exists, the service exits without overwriting it. To re-provision, delete the file from `/data` and reboot.
-
-See [Boot partition configuration](bootfs-config.md) for the full reference: boot partition layout, config file formats, provisioning details, and the manual SD card method.
+See [Boot partition configuration](bootfs-config.md) for the boot partition layout and full `bootconf.yaml` reference.
 
 ## Runtime configuration
 
@@ -71,7 +66,7 @@ wpa_cli -i wlan0 reconfigure
 
 ```bash
 # Edit or replace authorized keys
-sudo nano /data/home/app/.ssh/authorized_keys
+sudo nano /data/home/admin/.ssh/authorized_keys
 ```
 
 Changes take effect immediately — dropbear re-reads the file on each connection.
@@ -85,13 +80,20 @@ Changes take effect immediately — dropbear re-reads the file on each connectio
 │   │   └── wpa_supplicant.conf     # live WiFi credentials
 │   ├── ssh/
 │   │   └── dropbear/               # dropbear host keys (persist across reboots)
-│   └── fake-hwclock.data           # last-known time (updated on shutdown)
+│   ├── firewall/
+│   │   └── rules.d/                # per-app nftables rule fragments
+│   ├── system/
+│   │   └── machine-id              # stable machine-id across A/B slot switches
+│   └── resources.json              # resource baseline (written at boot)
 ├── home/
-│   └── app/
+│   └── admin/
 │       ├── .bashrc
 │       └── .ssh/
 │           └── authorized_keys     # live SSH public keys
-└── portable/                       # systemd portable service images
+├── apps/                           # systemd portable service images (.raw)
+└── extensions/
+    ├── sysext/                     # sysext images (bind-mounted to /var/lib/extensions)
+    └── confext/                    # confext images (bind-mounted to /etc/extensions)
 ```
 
 The overlay partition (separate from `/data`) holds the overlayfs upper/work directories and is managed automatically. User data should not be placed there.

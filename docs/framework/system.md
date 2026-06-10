@@ -23,3 +23,14 @@ Keep sudo credentials alive in the background.
 Call once at the start of a long-running privileged script.
 
 ---
+
+## machine-id persistence
+
+### `machine_id::persist`
+
+> Persisting machine-id to <value>
+
+Persist /etc/machine-id to /data so it survives overlay resets.
+No-ops if already persisted, not yet initialized, or source is missing.
+
+---

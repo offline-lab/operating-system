@@ -2,26 +2,39 @@
 
 ## Supported devices
 
-The primary deployment target is the **Raspberry Pi Zero 2W** on **arm64**. A **QEMU arm64** target is also supported for development and testing without hardware.
+| Board | Arch | Status |
+|---|---|---|
+| Raspberry Pi Zero 2W | arm64 | Primary target |
+| Raspberry Pi 3 | arm64 | Supported |
+| Raspberry Pi 4 | arm64 | Supported |
+| QEMU arm64 | arm64 | Development / CI |
 
-The Zero 2W is small, low-power, and capable enough for a small group of users. The goal is a setup that fits in a bag with a stack of powerbanks.
+The Zero 2W is the primary deployment target: small, low-power, and capable enough for a small group of users. The goal is a setup that fits in a bag with a stack of powerbanks.
 
 ## Storage
 
 Each device boots from a micro SD card. Minimum card size is **8 GB**.
 
-The card is partitioned as follows:
+The card uses an MBR partition table with primary and logical partitions:
 
-| Partition | Type | Purpose |
-|---|---|---|
-| `/boot/firmware` | FAT32 | Shared boot partition: kernel, firmware, config |
-| Root A | ext4, read-only | Primary root filesystem |
-| Root B | ext4, read-only | Secondary root filesystem for A/B updates |
-| `/data` | ext4, read-write | User data, service state, writable paths |
+```
+Primary:
+  p1  boot        FAT32   32MB    firmware, U-Boot, initramfs, boot.scr, config files
+  p2  (extended)                  container for logical partitions p5–p9
+  p3  overlay     ext4    96MB    per-slot overlayfs upper/work directories
+  p4  data        ext4   64MB+   persistent user data (expanded on first boot)
 
-The `/data` partition is last on the card and expands to fill the remaining space on first boot.
+Logical (inside p2):
+  p5  kernel-a    sqfs   24MB    kernel Image, DTBs (slot A)
+  p6  rootfs-a    ext4  512MB    root filesystem (slot A, read-only)
+  p7  kernel-b    sqfs   24MB    kernel Image, DTBs (slot B)
+  p8  rootfs-b    ext4  512MB    root filesystem (slot B, read-only)
+  p9  bootstate   raw     8MB    U-Boot environment: BOOT_ORDER, boot counters
+```
 
-See [Boot](boot.md) for the full partition layout and boot chain.
+The `data` partition (`p4`) is last on the card and expands to fill the remaining space on first boot. The `overlay` partition (`p3`) holds the overlayfs upper/work directories for both A/B slots — it is separate from `/data` so that OS overlay state is isolated from user data.
+
+See [Boot](boot.md) for the full boot chain and A/B slot logic.
 
 ## Power
 
@@ -42,12 +55,12 @@ The recommended setup is a low-power travel router providing WiFi between nodes 
 
 ### WiFi
 
-Devices connect to the travel router or any configured network. Credentials are loaded from the `/boot/firmware` partition, so WiFi can be configured by mounting the SD card on any computer. DHCP is used for IP assignment.
+Devices connect to the travel router or any configured network. WiFi credentials are provisioned by `bootconf` from `/boot/firmware/bootconf.yaml` on the boot partition. DHCP is used for IP assignment. See [Boot configuration](bootconf.md) for details.
+
+### USB
+
+The Zero 2W's USB OTG port supports USB networking (gadget mode). This lets a phone or laptop connect directly to the device's services over USB. A `usb0` interface appears on the host with a static link-local address.
 
 ### Mesh
 
 Batman-adv mesh networking between nodes is a future goal. This could replace the travel router and reduce power consumption by removing a separate device.
-
-### USB
-
-The Zero 2W's USB OTG port supports serial console access and USB networking (gadget mode). Serial is useful for debugging and configuration. USB networking lets a phone or laptop connect directly to the device's services. How to select or combine these modes is under development.

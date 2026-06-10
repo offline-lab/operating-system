@@ -89,22 +89,21 @@ When the data partition has no filesystem (fresh SD card write), the initramfs d
 
 1. Resizes the data partition to fill the remaining SD card space using `parted` and `resize2fs`.
 2. Formats and mounts the partition.
-3. Creates the `/data` directory structure: `config/`, `home/app/`, `portable/`.
-4. Creates the app user's `.bashrc`.
+3. Creates the `/data` directory structure: `config/`, `home/admin/`, `apps/`, `extensions/`.
+4. Creates the admin user's `.bashrc`.
 
 After `expand-data.sh` completes, boot continues normally.
 
 **First boot duration scales with card size.** `resize2fs` must initialise the entire partition. On an 8 GB card this takes a few seconds; on large cards (512 GB–1 TB) it can take several minutes on the Zero 2W. The device will reach the login prompt once it finishes — no intervention needed, just wait.
 
-First-boot provisioning (WiFi credentials, SSH keys) runs as separate systemd services after the data partition is available. See [Configuration](configuration.md).
+Boot-time provisioning (WiFi credentials, SSH keys) is applied by `bootconf` on every boot. See [Boot configuration](bootconf.md) and [Configuration](configuration.md).
 
 ## Boot partition contents
 
 ```
 /boot/firmware/
-├── config/                     # user-supplied config (provisioned on first boot)
-│   ├── authorized_keys         # optional — SSH public keys
-│   └── wpa_supplicant.conf     # optional — WiFi credentials
+├── bootconf.yaml               # active device configuration (applied on every boot)
+├── bootconf.yaml.example       # template written at build time
 ├── overlays/                   # RPi device tree overlays
 ├── bcm2710-rpi-zero-2-w.dtb    # device tree blob
 ├── bootcode.bin                # RPi first-stage bootloader

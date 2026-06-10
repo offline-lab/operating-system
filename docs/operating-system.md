@@ -30,20 +30,24 @@ Key built-in options on all boards: overlayfs, initramfs, zram.
 
 The SD card uses MBR partitioning with an extended partition to hold logical volumes:
 
-```
-Primary:
-  p1  boot       FAT32   32MB    firmware, U-Boot, initramfs, boot.scr
-  p2  (extended)                 container for logical partitions
-  p3  overlay    ext4    96MB    per-slot overlayfs upper+work dirs
-  p4  data       ext4   64MB+   persistent storage (expanded on first boot)
+**Primary partitions**
 
-Logical (inside p2):
-  p5  kernel-a   sqfs   24MB    kernel Image (slot A)
-  p6  rootfs-a   ext4  512MB    root filesystem (slot A)
-  p7  kernel-b   sqfs   24MB    kernel Image (slot B)
-  p8  rootfs-b   ext4  512MB    root filesystem (slot B)
-  p9  bootstate  raw     8MB    U-Boot env: slot order, boot counters
-```
+| # | Name | Type | Size | Contents |
+|---|------|------|------|----------|
+| p1 | boot | FAT32 | 32 MB | firmware, U-Boot, initramfs, boot.scr |
+| p2 | *(extended)* | — | — | container for logical partitions |
+| p3 | overlay | ext4 | 96 MB | per-slot overlayfs upper+work dirs |
+| p4 | data | ext4 | 64 MB+ | persistent storage (expanded on first boot) |
+
+**Logical partitions (inside p2)**
+
+| # | Name | Type | Size | Contents |
+|---|------|------|------|----------|
+| p5 | kernel-a | sqfs | 24 MB | kernel Image (slot A) |
+| p6 | rootfs-a | ext4 | 512 MB | root filesystem (slot A) |
+| p7 | kernel-b | sqfs | 24 MB | kernel Image (slot B) |
+| p8 | rootfs-b | ext4 | 512 MB | root filesystem (slot B) |
+| p9 | bootstate | raw | 8 MB | U-Boot env: slot order, boot counters |
 
 See [Boot](boot.md) for a detailed walkthrough of the boot sequence and A/B mechanics.
 
@@ -74,9 +78,9 @@ Other first-boot setup: machine-id generation, SSH host key generation, config f
 
 ## WiFi
 
-Credentials are read from a `wpa_supplicant.conf` file placed in the `config/` subdirectory on the boot partition. Users configure WiFi by mounting the SD card on any computer and editing the file. No serial console or screen needed.
+WiFi is configured via `bootconf.yaml` on the FAT32 boot partition. Mount the SD card on any computer, copy `bootconf.yaml.example` to `bootconf.yaml`, and fill in the SSID and PSK hash. No serial console or screen needed.
 
-The file is copied to `/data/config/wifi/wpa_supplicant.conf` on first boot and not overwritten afterward. See [Configuration](configuration.md) for details.
+`bootconf.service` reads the file at every boot and writes credentials to `/data/config/wifi/wpa_supplicant.conf` if not already present. See [Configuration](configuration.md) for the full `bootconf.yaml` reference.
 
 ## Systemd usage
 
@@ -85,6 +89,6 @@ The OS uses systemd for:
 - Init and service management
 - Network configuration (systemd-networkd)
 - Mount management (overlayfs, data partition, boot partition)
-- Timer-based tasks (fake-hwclock save)
+- Boot-time configuration (`bootconf`)
 - Boot success signaling for A/B updates
 - Portable service hosting

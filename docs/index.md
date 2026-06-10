@@ -15,7 +15,6 @@ Start here if you want to understand the platform:
 - [Getting Started](getting-started.md) — set up your first device
 - [Hardware](hardware.md) — supported devices, storage, power, networking
 - [Operating System](operating-system.md) — Offline Lab OS design principles
-- [Offline design](offline.md) — design decisions for offline-first computing
 
 ### Build
 
@@ -32,15 +31,11 @@ Reference material for the platform and framework:
 - [Boot](boot.md) — boot chain, partition layout, A/B mechanics
 - [Packages](packages.md) — OS packages and the provisioning pattern
 - [Service model](components.md) — portable service model
-- [App format](app-format.md) — .olab package format spec
+- [App filesystem](app-filesystem.md) — required files inside a portable service image
 - [Disco](discovery/) — service discovery and name resolution
 - [Framework](framework/index.md) — bash library and boxctl CLI reference
 
 ### Contribute
 
 - [How to contribute](contributing.md) — issues, PRs, code of conduct
-- [Development guide](development.md) — repo structure, gotchas, adding packages
-
-### Plan ahead
-
-- [Roadmap](roadmap.md) — development phases and future work
+- [Development guide](development.md) — gotchas, coding conventions, adding packages

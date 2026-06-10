@@ -110,7 +110,10 @@ bin/buildbox.sh sync                        # push local repo to buildbox
 bin/buildbox.sh build [board]               # build (default: pi-zero-2w)
 bin/buildbox.sh verify [board]              # run verification checks
 bin/buildbox.sh fetch [board]               # download artifacts to local machine
+bin/buildbox.sh tail [board]                # tail build log (default: pi-zero-2w)
 bin/buildbox.sh ssh                         # open an interactive shell
+bin/buildbox.sh clean-artifacts             # remove all artifacts from buildbox
+bin/buildbox.sh destroy                     # delete the buildbox VM
 ```
 
 Artifacts land in `artifacts/<board>/` on your local machine after `fetch`.

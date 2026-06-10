@@ -44,7 +44,7 @@ Run `boxctl help` for an interactive command browser (uses fzf when available).
 
 ## Getting started
 
-    ssh app@<device-ip>
+    ssh admin@<device-ip>
     boxctl status
 
 ## Command reference

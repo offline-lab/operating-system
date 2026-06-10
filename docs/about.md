@@ -22,17 +22,13 @@ Offline Lab OS is a minimal, read-only [operating system](operating-system.md) b
 
 Applications ship as **portable services** — squashfs images containing everything they need, managed as systemd portable services. No package managers, no dependency resolution. Drop the image on the device and start it. See the [service model](components.md) for details.
 
-**Disco** handles service discovery and name resolution on the local network. Nodes find each other without manual configuration, whether connected over a travel router, WiFi mesh, or direct WiFi. See the [Discovery](discovery/) documentation for the protocol and CLI.
-
-The **framework** is a Bash utility library and [`boxctl`](boxctl.md) CLI installed on every device. It provides logging, configuration management, WiFi setup, health checks, update operations, and other on-device tooling.
-
 See [Terminology](terminology.md) for definitions of terms used throughout the docs.
 
 Nodes connect over a travel router or WiFi mesh. Each node also works standalone, powered by a USB power bank.
 
 ## Design principles
 
-**[Offline](offline.md)-first, not offline-only.** When internet is available, the platform syncs data and pulls updates. When it isn't, everything keeps working. The system never waits for a network that isn't there.
+**Offline-first, not offline-only.** When internet is available, the platform syncs data and pulls updates. When it isn't, everything keeps working. The system never waits for a network that isn't there.
 
 **Low power above all.** Every design decision optimizes for battery life. No background polling, no unnecessary logging, no idle services. If something costs CPU or memory without directly serving users, it gets cut.
 

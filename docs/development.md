@@ -6,76 +6,7 @@ A guide for contributors working on the OS image, framework, and packages.
 
 For build environment setup (Docker or Buildbox), see [Build the OS image](build-image.md).
 
-This page covers the development workflow after your build environment is working: making changes, coding conventions, and common pitfalls.
-
-## Repository structure
-
-```
-builder/
-├── bin/
-│   ├── builder.sh              # Docker build environment wrapper
-│   ├── buildbox.sh             # Lima VM management and build pipeline
-│   ├── build.sh                # build script (runs inside Docker)
-│   ├── build-image.sh          # per-board build script (runs on buildbox)
-│   ├── clean.sh                # buildroot distclean
-│   ├── verify.sh               # automated artifact inspection (200+ checks)
-│   ├── run-qemu                # run a built QEMU image locally
-│   ├── test-qemu-ota           # end-to-end OTA test in QEMU
-│   ├── test-framework          # framework lint and unit tests
-│   ├── generate-framework-docs # rebuild docs/framework/ from source
-│   ├── lib/                    # shared bash library for bin/ scripts
-│   └── buildbox/
-│       └── cloud-init/         # cloud-init for the Lima buildbox VM
-├── br2-external/
-│   ├── boards/
-│   │   ├── common/             # shared across all boards
-│   │   │   ├── fragments/      # busybox.config, linux-kernel.config
-│   │   │   ├── genimage.cfg.in # partition layout template
-│   │   │   ├── initramfs/      # initramfs init script
-│   │   │   └── splash.{png,svg} # psplash boot image
-│   │   ├── rpi/                # RPi family shared files
-│   │   │   ├── fragments/      # linux-hardware.config
-│   │   │   ├── hook.sh         # post-image hook (all RPi boards)
-│   │   │   ├── uboot/boot.cmd  # U-Boot A/B boot script
-│   │   │   ├── pi-zero-2w/     # Pi Zero 2W board
-│   │   │   │   ├── fragments/  # uboot-fragment.config
-│   │   │   │   ├── meta        # board identity (image name, compatible string)
-│   │   │   │   ├── cmdline.txt
-│   │   │   │   └── config.txt  # RPi firmware config
-│   │   │   ├── rpi3/           # Raspberry Pi 3
-│   │   │   └── rpi4/           # Raspberry Pi 4
-│   │   ├── qemu/               # QEMU family shared files
-│   │   │   ├── hook.sh         # post-image hook (all QEMU boards)
-│   │   │   ├── uboot/boot.cmd  # U-Boot A/B boot script
-│   │   │   └── arm64/          # QEMU arm64 board
-│   │   │       ├── fragments/  # linux-hardware.config, uboot-fragment.config
-│   │   │       └── meta        # board identity
-│   │   └── scripts/            # shared post-build/post-image scripts
-│   │       ├── post-build.sh
-│   │       ├── post-image-lib.sh
-│   │       └── post-image.sh
-│   ├── configs/                # one defconfig per board
-│   │   ├── offlinelab_pi_zero_2w_defconfig
-│   │   ├── offlinelab_rpi3_defconfig
-│   │   ├── offlinelab_rpi4_defconfig
-│   │   └── offlinelab_qemu_arm64_defconfig
-│   ├── package/
-│   │   └── offlinelab-*/       # OS packages
-│   ├── rootfs_overlay/         # static files merged into rootfs
-│   ├── skeleton/               # custom rootfs directory skeleton
-│   ├── Config.in               # top-level Kconfig
-│   ├── external.desc
-│   ├── external.mk
-│   ├── users.txt               # user accounts
-│   └── devices.txt             # device nodes
-├── framework/                  # first-party Bash utility library and boxctl CLI
-├── docs/                       # documentation site (Zensical)
-├── Dockerfile
-├── config.example              # build-time config template
-└── env.example                 # environment template
-```
-
-No binaries, pre-built images, or third-party source code is stored in git. Build artifacts go to `artifacts/` (gitignored). External dependencies are fetched at build time.
+This page covers the development workflow after your build environment is working: making changes and common pitfalls. See the [Style guide](styleguide.md) for coding conventions.
 
 ## Making changes
 
@@ -106,25 +37,13 @@ bin/test-framework --lint
 
 See `framework/.claude/CLAUDE.md` for the full framework development guide including function conventions, variable namespace, and module structure.
 
-## Coding conventions
-
-- **Shell scripts:** POSIX sh where possible, bash only when needed. No unofficial bash-isms.
-- **Systemd units:** explicit `After=`, `Requires=`, `WantedBy=`. Don't rely on implicit ordering.
-- **Config files:** match the style of the file you're editing.
-- **No binaries in git.** Everything fetched at build time.
-- **Framework scripts** must follow the conventions in `framework/.claude/CLAUDE.md`: `namespace::function_name` naming, `log::trace` as first line, return codes 0/1/2.
-- **Use the framework library** for common operations (logging, config reads, network checks, privilege escalation) rather than reimplementing them in package scripts.
-- **Busybox compatibility:** `grep -E` not `grep -P`, `date -u` not `date --universal`, `mktemp -t prefix-XXXX` not `mktemp --suffix`. No gawk-specific features.
-- Run `bin/test-framework --lint` before submitting changes to framework code.
-- Read the `.claude/` and `AGENTS.md` files — they contain project-specific rules that apply to all contributions.
-
 ## Critical gotchas
 
-### Config provisioning is first-boot-only
+### Config provisioning is idempotent
 
-The provisioning services (`provision-wifi`, `provision-ssh`) run once. If the destination file already exists in `/data`, they exit without doing anything.
+Boot-time configuration is applied by `bootconf` reading `/boot/firmware/bootconf.yaml` at every boot. If the target file already exists in `/data`, `bootconf` leaves it unchanged.
 
-To re-provision a running device: delete the live file from `/data` and reboot.
+To re-provision a setting: delete the live file from `/data` and reboot.
 
 To re-provision a flashed card: delete the file from `/data` (requires booting the device first), or reflash.
 
@@ -140,9 +59,9 @@ The overlayfs upper directory is `/overlay/a/upper` or `/overlay/b/upper` on the
 
 If you see unexpected state persisting across rootfs updates, check the overlay partition, not `/data`.
 
-### machine-id lives in bootstate
+### machine-id persists via /data
 
-The machine-id is stored in the U-Boot environment on the bootstate partition (`p9`), not on `/data` or in `/etc/machine-id` on the rootfs. It persists across A/B slot switches and is the same regardless of which slot is active.
+On every boot the initramfs clears the overlay upper directory and restores `/etc/machine-id` from `/data/config/system/machine-id`. On first boot, `persist-machine-id.service` writes the machine-id to `/data` so it survives subsequent slot switches and overlay resets. The framework function `machine_id::persist` (in `system.sh`) handles the persistence logic.
 
 ## Verification
 

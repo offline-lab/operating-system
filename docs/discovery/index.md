@@ -34,8 +34,8 @@ Node A                          Node B
   |                               |
   |-- UDP broadcast (announce) -->|
   |   hostname: web1              |
-  |   addresses: [10.0.0.1]      |
-  |   services: {www: 80}        |
+  |   addresses: [10.0.0.1]       |
+  |   services: {www: 80}         |
   |                               |
   |<-- UDP broadcast (announce) --|
   |        from Node B            |

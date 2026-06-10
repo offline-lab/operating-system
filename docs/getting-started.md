@@ -28,7 +28,7 @@ Insert the SD card into the Pi Zero 2W and connect power. The first boot is slow
 
 Find the device's IP address from your router's DHCP lease table, or use the serial console if you have a USB-to-serial adapter. Then:
 
-    ssh app@<ip-address>
+    ssh admin@<ip-address>
 
 Once connected, check the system status with [boxctl](boxctl.md):
 

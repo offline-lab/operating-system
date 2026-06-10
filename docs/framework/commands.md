@@ -5,6 +5,24 @@ Run `boxctl help` or `boxctl <command> --help` for interactive help.
 
 ---
 
+## `boxctl confext`
+
+```
+Usage: boxctl confext <command>
+
+Manage configuration extension images in /data/extensions/confext/.
+
+Commands:
+  list      List installed extensions and their merge status
+  merge     Merge all extensions into /etc/
+  unmerge   Remove merged extensions from /etc/
+  refresh   Unmerge then re-merge (picks up new or removed images)
+  status    Show current merge state
+
+Extensions are .raw squashfs images stored in /data/extensions/confext/.
+Drop files there and run 'boxctl confext refresh' to apply them.
+```
+
 ## `boxctl config`
 
 ```
@@ -39,6 +57,21 @@ Collects:
 
 Options:
   --output <dir>   Write tarball to this directory (default: /tmp)
+```
+
+## `boxctl firewall`
+
+```
+Usage: boxctl firewall <command>
+
+Manage the nftables firewall.
+
+Commands:
+  list      Show the current ruleset (nft list ruleset)
+  reload    Reload static rules and per-app fragments
+  reset     Flush all rules and remove firewall state
+  up        Load rules (same as reload; used after down)
+  down      Flush all rules and mark firewall inactive
 ```
 
 ## `boxctl logs`
@@ -148,6 +181,24 @@ Usage: boxctl status
 
 Show system health: RAUC slot info, AppArmor, dm-verity, failed units,
 disk and memory usage.
+```
+
+## `boxctl sysext`
+
+```
+Usage: boxctl sysext <command>
+
+Manage system extension images in /data/extensions/sysext/.
+
+Commands:
+  list      List installed extensions and their merge status
+  merge     Merge all extensions into /usr/
+  unmerge   Remove merged extensions from /usr/
+  refresh   Unmerge then re-merge (picks up new or removed images)
+  status    Show current merge state
+
+Extensions are .raw squashfs images stored in /data/extensions/sysext/.
+Drop files there and run 'boxctl sysext refresh' to apply them.
 ```
 
 ## `boxctl update`
