@@ -27,41 +27,10 @@ if BR2_PACKAGE_OFFLINELAB_BOOTCONF
 
 config BR2_PACKAGE_OFFLINELAB_BOOTCONF_VERSION
 	string "bootconf version (git tag or commit)"
-	default "v1.0.0"
+	default "v0.20260610.2"
 	help
 	  Git ref to build. Use a tag (e.g. "v1.0.0") for reproducible builds.
 
 	  To update: change version, run offlinelab-bootconf-dirclean, rebuild.
 
-config BR2_PACKAGE_OFFLINELAB_BOOTCONF_WIFI_CREATE
-	bool "Bake WiFi credentials into bootconf.yaml.example"
-	default n
-	help
-	  Dev/lab convenience: write SSID and password_hash into the example
-	  config placed on /boot/firmware at build time.
-
-	  Never enable on production builds.
-
-if BR2_PACKAGE_OFFLINELAB_BOOTCONF_WIFI_CREATE
-
-config BR2_PACKAGE_OFFLINELAB_BOOTCONF_WIFI_SSID
-	string "WiFi SSID"
-	default ""
-	help
-	  Written into bootconf.yaml.example on /boot/firmware.
-
-config BR2_PACKAGE_OFFLINELAB_BOOTCONF_WIFI_PASSWORD_HASH
-	string "WiFi password hash (from wpa_passphrase)"
-	default ""
-	help
-	  The PSK hash from wpa_passphrase output, not the plaintext password.
-	  Written into bootconf.yaml.example on /boot/firmware.
-
-config BR2_PACKAGE_OFFLINELAB_BOOTCONF_WIFI_COUNTRY
-	string "WiFi regulatory country code"
-	default "NL"
-	help
-	  ISO 3166-1 alpha-2 country code (e.g. NL, US, GB, DE).
-
-endif
 endif

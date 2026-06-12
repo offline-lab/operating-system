@@ -12,8 +12,9 @@
 
 [Unit]
 Description=Expand data partition to fill SD card
-After=bootconf.service
-Wants=bootconf.service
+After=local-fs.target boot-firmware.mount clock-load.service
+Wants=boot-firmware.mount
+Before=bootconf.service
 ConditionPathExists=/data
 
 [Service]

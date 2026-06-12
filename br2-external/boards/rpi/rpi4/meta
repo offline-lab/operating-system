@@ -1,2 +1,3 @@
 BOARD_COMPATIBLE="offlinelab-rpi4"
 BOARD_IMAGE_NAME="offlinelab-rpi4.img"
+BOARD_DTB_OVERLAYS="vc4-kms-v3d vc4-kms-v3d-pi4"

@@ -19,10 +19,12 @@ echo "offlinelab: initramfs starting"
 
 # Parse slot from kernel cmdline (default: A)
 SLOT="a"
+
 for arg in $(cat /proc/cmdline); do
     case "${arg}" in
-        rauc.slot=A) SLOT="a" ;;
-        rauc.slot=B) SLOT="b" ;;
+    rauc.slot=A) SLOT="a" ;;
+    rauc.slot=B) SLOT="b" ;;
+    *) ;;
     esac
 done
 
@@ -31,7 +33,7 @@ done
 #   p5=kernel-a p6=rootfs-a p7=kernel-b p8=rootfs-b p9=bootstate
 i=0
 while [ $i -lt 10 ]; do
-    [ -b /dev/vda ]      && break
+    [ -b /dev/vda ] && break
     [ -b /dev/mmcblk0 ] && break
     i=$((i + 1))
     sleep 1
@@ -42,35 +44,43 @@ if [ -b /dev/vda ]; then
 elif [ -b /dev/mmcblk0 ]; then
     P="/dev/mmcblk0p"
 else
-    echo "offlinelab: FATAL - no block device found"
+    echo "************************************************************"
+    echo "** FATAL - No block device found"
+    echo "************************************************************"
+    echo
     cat /proc/partitions
     exec sh
 fi
 
 case "${SLOT}" in
-    a) ROOTFS_DEV="${P}6" ;;
-    b) ROOTFS_DEV="${P}8" ;;
+a) ROOTFS_DEV="${P}6" ;;
+b) ROOTFS_DEV="${P}8" ;;
+*) ;;
 esac
+
+BOOT_DEV="${P}1"
 OVERLAY_DEV="${P}3"
 DATA_DEV="${P}4"
 
-echo "offlinelab: slot=${SLOT} rootfs=${ROOTFS_DEV}"
+echo "offline-lab: slot=${SLOT} rootfs=${ROOTFS_DEV}"
 
 # Wait for rootfs device
 i=0
-while [ ! -b "${ROOTFS_DEV}" ] && [ "$i" -lt 50 ]; do
+while [ ! -b "${ROOTFS_DEV}" ] && [ "${i}" -lt 50 ]; do
     i=$((i + 1))
     sleep 0.1
 done
 
 if [ ! -b "${ROOTFS_DEV}" ]; then
-    echo "offlinelab: FATAL - ${ROOTFS_DEV} not found"
+    echo "************************************************************"
+    echo "** FATAL - Root device ${ROOTFS_DEV} not found"
+    echo "************************************************************"
     cat /proc/partitions
     exec sh
 fi
 
 # Mount rootfs read-only
-mount -t ext4 -o ro,noatime "${ROOTFS_DEV}" /mnt
+mount -t squashfs -o ro "${ROOTFS_DEV}" /mnt
 
 # Mount data partition early — needed to restore persistent files before overlayfs setup
 mount -t ext4 -o rw,noatime "${DATA_DEV}" /data
@@ -78,6 +88,21 @@ mount -t ext4 -o rw,noatime "${DATA_DEV}" /data
 # Ensure sysext/confext storage dirs exist — systemd-sysext.service runs Before=sysinit.target,
 # which is before tmpfiles, so these must exist before switch_root.
 mkdir -p /data/extensions/sysext /data/extensions/confext
+
+# Provision /data/config from /boot/firmware/config if present.
+# Files are copied then deleted — presence in /boot/firmware/config is an explicit
+# provisioning intent that always overwrites whatever is already in /data/config.
+# This runs every boot so dropping a file onto the SD card from another machine
+# is sufficient to re-provision (WiFi, bootconf.yaml, etc.).
+mkdir -p /boot/firmware
+mount -t vfat -o rw,noatime "${BOOT_DEV}" /boot/firmware
+if [ -d /boot/firmware/config ]; then
+    echo "offlinelab: provisioning /data/config from /boot/firmware/config"
+    mkdir -p /data/config
+    cp -r /boot/firmware/config/. /data/config/
+    rm -rf /boot/firmware/config
+fi
+mount -o remount,ro /boot/firmware
 
 # Mount overlay partition
 mount -t ext4 -o rw,noatime "${OVERLAY_DEV}" /overlay
@@ -108,11 +133,12 @@ mount --move /overlay /newroot/mnt/overlay
 mkdir -p /newroot/data
 mount --bind /data /newroot/data
 
-# Move virtual filesystems
-mkdir -p /newroot/proc /newroot/sys /newroot/dev
+# Move virtual filesystems and boot partition
+mkdir -p /newroot/proc /newroot/sys /newroot/dev /newroot/boot/firmware
 mount --move /proc /newroot/proc
 mount --move /sys /newroot/sys
 mount --move /dev /newroot/dev
+mount --move /boot/firmware /newroot/boot/firmware
 
 echo "offlinelab: switching to rootfs (slot ${SLOT})"
 exec switch_root /newroot /sbin/init

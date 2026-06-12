@@ -1,2 +1,0 @@
-[ -f /etc/bash.bashrc ] && . /etc/bash.bashrc
-export PATH="/data/home/admin/bin:${PATH}"

@@ -1,0 +1,45 @@
+#
+# Bootconf configuration for QEMU testing — no WiFi (virtio-net only).
+#
+
+bootconf:
+  enabled: true
+  directory: /data/config/bootconf
+
+wifi:
+  enabled: false
+
+system:
+  enabled: true
+  timezone: Europe/Amsterdam
+  hostname: offline-lab
+
+ssh:
+  enabled: true
+  directory: /data/config/ssh
+  keytype: ed25519
+  generate_host_keys: true
+  daemon: dropbear
+
+services:
+  enabled: true
+  directory: /data/config/services
+  services:
+  - name: disco
+    enabled: true
+    sentinel: true
+    default_config:
+      copy: true
+      source: /etc/disco/disco.conf
+      destination: /data/config/disco/disco.conf
+
+users:
+  enabled: true
+  directory: /data/config/users
+  users:
+  - name: testuser
+    enabled: true
+    sudo: true
+    home: /home/testuser
+    authorized_keys:
+    - "@@TESTUSER_PUBKEY@@"

@@ -459,7 +459,7 @@ if [[ -f "${ROOTFS}" ]] && command -v mount &>/dev/null; then
         fi
         if [[ -f "${ROOTFS_MNT}/etc/systemd/system/dropbear.service" ]]; then
             assert_contains "${ROOTFS_MNT}/etc/systemd/system/dropbear.service" \
-                "Requires=boxctl-startup" "dropbear requires boxctl-startup (hard dep)"
+                "Requires=bootconf" "dropbear requires bootconf (hard dep)"
         fi
 
         # Overlay files
@@ -800,6 +800,7 @@ if [[ -f "${ROOTFS}" ]] && command -v mount &>/dev/null; then
         assert_file "${PORT_MNT}/usr/bin/portablectl" "portablectl binary"
         assert_file "${PORT_MNT}/usr/bin/systemd-sysext" "systemd-sysext binary"
         assert_file "${PORT_MNT}/usr/bin/systemd-confext" "systemd-confext binary"
+        assert_file "${PORT_MNT}/usr/bin/systemd-sysusers" "systemd-sysusers binary"
 
         # Symlinks to /data
         if [[ -L "${PORT_MNT}/var/lib/portables" ]]; then

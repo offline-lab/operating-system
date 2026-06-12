@@ -29,7 +29,7 @@ image #IMAGE_NAME# {
 
     partition rootfs-a {
         partition-type = 0x83
-        image = "rootfs.ext4"
+        image = "rootfs.squashfs"
     }
 
     partition kernel-b {

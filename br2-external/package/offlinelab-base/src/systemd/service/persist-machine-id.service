@@ -11,18 +11,17 @@
 ################################################################################
 
 [Unit]
-Description=Restore attached portable service apps
-Documentation=https://github.com/offline-lab/appctl
-After=local-fs.target
-Before=multi-user.target
-ConditionPathExists=/usr/bin/appctl
+Description=Persist machine-id to /data on shutdown
+DefaultDependencies=no
+After=multi-user.target
+Before=shutdown.target
+Conflicts=shutdown.target
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/usr/bin/appctl rehydrate
-StandardOutput=journal
-StandardError=journal
+ExecStart=mkdir -p /data/config/system
+ExecStop=cp -n /etc/machine-id /data/config/system/machine-id
 
 [Install]
 WantedBy=multi-user.target

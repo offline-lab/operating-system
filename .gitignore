@@ -22,6 +22,9 @@
 # Build artifacts
 artifacts/
 
+# Infra test output
+tests/reports/
+
 # Temporary files
 tmp/
 

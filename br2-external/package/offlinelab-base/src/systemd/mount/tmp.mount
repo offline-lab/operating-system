@@ -11,18 +11,15 @@
 ################################################################################
 
 [Unit]
-Description=Offline Lab Shutdown Tasks
+Description=Temporary Directory /tmp
 DefaultDependencies=no
-After=multi-user.target
-Before=shutdown.target
-Conflicts=shutdown.target
+Before=local-fs.target
 
-[Service]
-Type=oneshot
-RemainAfterExit=yes
-Environment=PATH=/usr/lib/framework/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ExecStart=/bin/true
-ExecStop=/usr/lib/framework/bin/boxctl shutdown
+[Mount]
+What=tmpfs
+Where=/tmp
+Type=tmpfs
+Options=nosuid,nodev,size=64M
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=local-fs.target

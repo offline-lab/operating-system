@@ -28,14 +28,49 @@ config BR2_PACKAGE_OFFLINELAB_TESTING
 
 if BR2_PACKAGE_OFFLINELAB_TESTING
 
-config BR2_PACKAGE_OFFLINELAB_TESTING_ADMIN_KEY
+config BR2_PACKAGE_OFFLINELAB_TESTING_BOARD
+	string "Board name for bootconf template selection"
+	default ""
+	help
+	  Used to select a board-specific bootconf template from the testing
+	  package source: bootconf-<board>.yaml. Falls back to bootconf.yaml
+	  if no board-specific template exists.
+	  Set this in the board defconfig, e.g. "qemu-arm64".
+
+config BR2_PACKAGE_OFFLINELAB_TESTING_ADMIN_PUBKEY
 	string "SSH authorized public key for admin user"
 	default ""
 	help
 	  Installed to /home/admin/.ssh/authorized_keys at build time.
 	  Set this in .config (gitignored) — do not commit personal keys.
 
-	  testuser's authorized_keys is populated from .ssh/builder.pub
-	  automatically (the same key the infra test suite uses to connect).
+config BR2_PACKAGE_OFFLINELAB_TESTING_TESTUSER_PUBKEY
+	string "SSH authorized public key for testuser"
+	default ""
+	help
+	  Installed to /home/testuser/.ssh/authorized_keys at build time.
+	  Also substituted into bootconf-<board>.yaml as @@TESTUSER_PUBKEY@@.
+	  Set this in .config (gitignored) — do not commit personal keys.
+
+config BR2_PACKAGE_OFFLINELAB_TESTING_WIFI_SSID
+	string "WiFi SSID (baked into bootconf.yaml)"
+	default ""
+	help
+	  Pre-fills the WiFi SSID in bootconf.yaml placed on /boot/firmware.
+	  When set, wifi.enabled is set to true in bootconf.yaml automatically.
+	  Set this in .config (gitignored) — do not commit network credentials.
+
+config BR2_PACKAGE_OFFLINELAB_TESTING_WIFI_PASSWORD_HASH
+	string "WiFi password hash (from wpa_passphrase)"
+	default ""
+	help
+	  PSK hash from wpa_passphrase output, not the plaintext password.
+	  Example: wpa_passphrase MyNetwork MyPassphrase | grep psk=
+
+config BR2_PACKAGE_OFFLINELAB_TESTING_WIFI_COUNTRY
+	string "WiFi regulatory country code"
+	default "NL"
+	help
+	  ISO 3166-1 alpha-2 country code (e.g. NL, US, GB, DE).
 
 endif

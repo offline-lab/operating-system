@@ -311,6 +311,8 @@ function cmd_sync() {
 
 function cmd_build() {
     local board="${1:-pi-zero-2w}"
+    local prod_flag=""
+    [[ "${PRODUCTION}" -eq 1 ]] && prod_flag="--production"
     resolve_host
     cmd_sync
 
@@ -318,7 +320,8 @@ function cmd_build() {
     local start_time
     start_time="$(date +%s)"
 
-    if ! bb_ssh "bash ${REMOTE_WORK}/bin/build-image.sh ${board}" 2>&1 | while IFS= read -r line; do
+    # shellcheck disable=SC2086
+    if ! bb_ssh "bash ${REMOTE_WORK}/bin/build-image.sh ${prod_flag} ${board}" 2>&1 | while IFS= read -r line; do
         if [[ "${line}" == *">>>"* ]]; then
             log_dim "${line}"
         fi
@@ -464,6 +467,7 @@ function cmd_all() {
         board="${board#offlinelab_}"
         board="${board%_defconfig}"
         board="${board//_/-}"
+        [[ "${board}" == "common" ]] && continue
         boards+=("${board}")
     done
 
@@ -502,22 +506,26 @@ function cmd_usage() {
   Buildbox — non-interactive build pipeline for Offline Lab OS
 
   Usage:
-    bin/buildbox.sh [board]             Full pipeline: sync + build + verify + fetch
-    bin/buildbox.sh all                 Build all boards sequentially, fetch all artifacts
-    bin/buildbox.sh create              Create and provision a new buildbox VM
-    bin/buildbox.sh sync                Sync code to buildbox
-    bin/buildbox.sh build [board]       Sync + build (default: pi-zero-2w)
-    bin/buildbox.sh verify [board]      Run verification on remote artifacts
-    bin/buildbox.sh fetch [board]       Download artifacts from buildbox
-    bin/buildbox.sh tail [board]        Tail the build log (default: pi-zero-2w)
-    bin/buildbox.sh clean-artifacts     Remove all artifacts from buildbox
-    bin/buildbox.sh ssh [cmd]           SSH into buildbox
-    bin/buildbox.sh destroy             Delete the buildbox VM
+    bin/buildbox.sh [--production] [board]    Full pipeline (default: pi-zero-2w)
+    bin/buildbox.sh all [--production]        Build all boards sequentially
+    bin/buildbox.sh create                    Create and provision a new buildbox VM
+    bin/buildbox.sh sync                      Sync code to buildbox
+    bin/buildbox.sh build [--production] [board]   Sync + build
+    bin/buildbox.sh verify [board]            Run verification on remote artifacts
+    bin/buildbox.sh fetch [board]             Download artifacts from buildbox
+    bin/buildbox.sh tail [board]              Tail the build log
+    bin/buildbox.sh clean-artifacts           Remove all artifacts from buildbox
+    bin/buildbox.sh ssh [cmd]                 SSH into buildbox
+    bin/buildbox.sh destroy                   Delete the buildbox VM
+
+  Flags:
+    --production    Build without offlinelab-testing (no test users, no bootconf.yaml)
+                    Default builds include testing for lab/CI use.
 
   Board examples:
     bin/buildbox.sh build pi-zero-2w
+    bin/buildbox.sh --production build pi-zero-2w
     bin/buildbox.sh build qemu-arm64
-    bin/buildbox.sh fetch qemu-arm64
 
   Environment:
     BUILDBOX_HOST=<ip>:<port>           Override buildbox SSH endpoint
@@ -540,6 +548,18 @@ if [[ ! -f "${SSH_KEY}" ]]; then
     log_err "Create one: ssh-keygen -t ecdsa -f .ssh/builder -N ''"
     exit 1
 fi
+
+# Extract --production flag before command dispatch; applies to all build commands
+PRODUCTION=0
+_remaining_args=()
+for _arg in "${@}"; do
+    if [[ "${_arg}" == "--production" ]]; then
+        PRODUCTION=1
+    else
+        _remaining_args+=("${_arg}")
+    fi
+done
+set -- "${_remaining_args[@]}"
 
 case "${1:-}" in
     all)            shift; cmd_all "${@}" ;;

@@ -22,7 +22,7 @@
 
 OFFLINELAB_BOOTCONF_VERSION = $(call qstrip,$(BR2_PACKAGE_OFFLINELAB_BOOTCONF_VERSION))
 OFFLINELAB_BOOTCONF_SITE    = $(call github,offline-lab,bootconf,$(OFFLINELAB_BOOTCONF_VERSION))
-OFFLINELAB_BOOTCONF_LICENSE       = MIT
+OFFLINELAB_BOOTCONF_LICENSE       = AGPL-3.0-only
 OFFLINELAB_BOOTCONF_LICENSE_FILES = LICENSE
 
 OFFLINELAB_BOOTCONF_DEPENDENCIES = host-go systemd
@@ -37,16 +37,21 @@ OFFLINELAB_BOOTCONF_GO_ENV = \
 	GOARCH=$(if $(BR2_aarch64),arm64,$(if $(BR2_arm),arm,$(GO_GOARCH))) \
 	CGO_ENABLED=0
 
-OFFLINELAB_BOOTCONF_LDFLAGS = -s -w \
-	-X github.com/offline-lab/bootconf/internal/version.Version=$(OFFLINELAB_BOOTCONF_VERSION)
+OFFLINELAB_BOOTCONF_PKG = github.com/offline-lab/bootconf/cmd/bootconf/commands
 
-# BuildTime is injected inside the recipe (not in the variable above) so that
-# $$(date ...) is evaluated by the shell at build time, not by Make at parse
-# time. Using $(shell ...) in .mk variables is disallowed by Buildroot style
-# and would also break reproducible builds if SOURCE_DATE_EPOCH is in use.
+OFFLINELAB_BOOTCONF_LDFLAGS = -s -w \
+	-X $(OFFLINELAB_BOOTCONF_PKG).Version=$(OFFLINELAB_BOOTCONF_VERSION)
+
+# BuildTime and Commit are injected inside the recipe (not in the variable
+# above) so that $$(date ...) is evaluated by the shell at build time, not by
+# Make at parse time. Using $(shell ...) in .mk variables is disallowed by
+# Buildroot style and would also break reproducible builds if SOURCE_DATE_EPOCH
+# is in use.
 define OFFLINELAB_BOOTCONF_BUILD_CMDS
 	cd $(@D) && $(OFFLINELAB_BOOTCONF_GO_ENV) $(HOST_DIR)/bin/go build \
-		-ldflags="$(OFFLINELAB_BOOTCONF_LDFLAGS) -X github.com/offline-lab/bootconf/internal/version.BuildTime=$$(date -u '+%Y-%m-%d_%H:%M:%S')" \
+		-ldflags="$(OFFLINELAB_BOOTCONF_LDFLAGS) \
+			-X $(OFFLINELAB_BOOTCONF_PKG).BuildTime=$$(date -u '+%Y-%m-%d_%H:%M:%S') \
+			-X $(OFFLINELAB_BOOTCONF_PKG).Commit=$(OFFLINELAB_BOOTCONF_VERSION)" \
 		-trimpath -buildvcs=false \
 		-o $(@D)/bin/bootconf ./cmd/bootconf/main.go
 endef
@@ -57,21 +62,27 @@ define OFFLINELAB_BOOTCONF_INSTALL_TARGET_CMDS
 
 	$(INSTALL) -D -m 0644 $(OFFLINELAB_BOOTCONF_SRC_DIR)/systemd/service/bootconf.service \
 		$(TARGET_DIR)/etc/systemd/system/bootconf.service
+
+	$(INSTALL) -D -m 0644 $(@D)/systemd/service/offlinelab-sysusers.service \
+		$(TARGET_DIR)/etc/systemd/system/offlinelab-sysusers.service
+
+	$(INSTALL) -D -m 0644 $(@D)/systemd/service/offlinelab-tempfiles.service \
+		$(TARGET_DIR)/etc/systemd/system/offlinelab-tempfiles.service
+
 	mkdir -p $(TARGET_DIR)/etc/systemd/system/multi-user.target.wants
+
 	ln -sf /etc/systemd/system/bootconf.service \
 		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/bootconf.service
 
-	$(INSTALL) -D -m 0644 $(OFFLINELAB_BOOTCONF_SRC_DIR)/systemd/service/bootconf-sysusers.service \
-		$(TARGET_DIR)/etc/systemd/system/bootconf-sysusers.service
-	ln -sf /etc/systemd/system/bootconf-sysusers.service \
-		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/bootconf-sysusers.service
+	ln -sf /etc/systemd/system/offlinelab-sysusers.service \
+		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/offlinelab-sysusers.service
 
-	sed \
-		-e 's|@@WIFI_SSID@@|$(call qstrip,$(BR2_PACKAGE_OFFLINELAB_BOOTCONF_WIFI_SSID))|g' \
-		-e 's|@@WIFI_PASSWORD_HASH@@|$(call qstrip,$(BR2_PACKAGE_OFFLINELAB_BOOTCONF_WIFI_PASSWORD_HASH))|g' \
-		-e 's|@@WIFI_COUNTRY@@|$(call qstrip,$(BR2_PACKAGE_OFFLINELAB_BOOTCONF_WIFI_COUNTRY))|g' \
-		$(OFFLINELAB_BOOTCONF_SRC_DIR)/bootconf.yaml.example \
-		> $(BINARIES_DIR)/bootconf.yaml.example
+	ln -sf /etc/systemd/system/offlinelab-tempfiles.service \
+	$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/offlinelab-tempfiles.service
+
+	mkdir -p $(TARGET_DIR)/data/config/tempfiles  $(TARGET_DIR)/data/config/sysusers
+
+	cp $(OFFLINELAB_BOOTCONF_SRC_DIR)/bootconf.yaml.example $(BINARIES_DIR)/bootconf.yaml.example
 endef
 
 $(eval $(generic-package))

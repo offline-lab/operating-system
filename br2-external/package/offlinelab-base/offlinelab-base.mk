@@ -61,6 +61,11 @@ define OFFLINELAB_BASE_INSTALL_TARGET_CMDS
 	ln -sf /etc/systemd/system/boot-firmware.mount \
 		$(TARGET_DIR)/etc/systemd/system/local-fs.target.wants/boot-firmware.mount
 
+	$(INSTALL) -D -m 0644 $(@D)/systemd/mount/tmp.mount \
+		$(TARGET_DIR)/etc/systemd/system/tmp.mount
+	ln -sf /etc/systemd/system/tmp.mount \
+		$(TARGET_DIR)/etc/systemd/system/local-fs.target.wants/tmp.mount
+
 	$(INSTALL) -D -m 0644 $(@D)/systemd/mount/var-lib-extensions.mount \
 		$(TARGET_DIR)/etc/systemd/system/var-lib-extensions.mount
 	ln -sf /etc/systemd/system/var-lib-extensions.mount \
@@ -84,15 +89,20 @@ define OFFLINELAB_BASE_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0755 $(@D)/init-expand-data \
 		$(TARGET_DIR)/usr/local/bin/init-expand-data
 
-	# boxctl-startup is replaced by bootconf — keep the service file for reference
-	# but do not enable it (no symlink in multi-user.target.wants)
-	$(INSTALL) -D -m 0644 $(@D)/systemd/service/boxctl-startup.service \
-		$(TARGET_DIR)/etc/systemd/system/boxctl-startup.service
+	$(INSTALL) -D -m 0644 $(@D)/systemd/service/clock-load.service \
+		$(TARGET_DIR)/etc/systemd/system/clock-load.service
+	ln -sf /etc/systemd/system/clock-load.service \
+		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/clock-load.service
 
-	$(INSTALL) -D -m 0644 $(@D)/systemd/service/boxctl-shutdown.service \
-		$(TARGET_DIR)/etc/systemd/system/boxctl-shutdown.service
-	ln -sf /etc/systemd/system/boxctl-shutdown.service \
-		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/boxctl-shutdown.service
+	$(INSTALL) -D -m 0644 $(@D)/systemd/service/clock-save.service \
+		$(TARGET_DIR)/etc/systemd/system/clock-save.service
+	ln -sf /etc/systemd/system/clock-save.service \
+		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/clock-save.service
+
+	$(INSTALL) -D -m 0644 $(@D)/systemd/service/persist-machine-id.service \
+		$(TARGET_DIR)/etc/systemd/system/persist-machine-id.service
+	ln -sf /etc/systemd/system/persist-machine-id.service \
+		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/persist-machine-id.service
 
 	$(INSTALL) -D -m 0644 $(@D)/systemd/service/power-profile.service \
 		$(TARGET_DIR)/etc/systemd/system/power-profile.service
@@ -113,12 +123,16 @@ define OFFLINELAB_BASE_INSTALL_TARGET_CMDS
 	echo "Offline Lab OS"                            >> $(@D)/issue
 	echo "---------------------------------------"   >> $(@D)/issue
 	echo "Kernel:  $(LINUX_VERSION_PROBED)"          >> $(@D)/issue
-	echo "Built:   $$(date +"%Y-%m-%d %H:%M")"      >> $(@D)/issue
+	echo "Built:   $$(date +"%Y-%m-%d %H:%M")"       >> $(@D)/issue
 	printf 'wlan0:   \\4{wlan0}\n'                   >> $(@D)/issue
 	printf 'usb0:    \\4{usb0}\n'                    >> $(@D)/issue
 	echo ""                                          >> $(@D)/issue
+
 	$(INSTALL) -D -m 0644 $(@D)/issue $(TARGET_DIR)/etc/issue
 	$(INSTALL) -D -m 0644 $(@D)/issue $(TARGET_DIR)/etc/issue.net
+
+	$(INSTALL) -D -m 0644 $(@D)/skel/bashrc \
+		$(TARGET_DIR)/etc/skel/.bashrc
 
 	# Sudo: system-wide defaults, sudo group rule, and include for bootconf-managed rules
 	$(INSTALL) -D -m 0440 $(@D)/sudoers/defaults.conf \

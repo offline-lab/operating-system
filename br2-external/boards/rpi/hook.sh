@@ -11,6 +11,22 @@
 _FAMILY_DIR="$(dirname "${BOARD_DIR}")"
 export BOOT_CMD_FILE="${_FAMILY_DIR}/uboot/boot.cmd"
 
+function prune_overlays() {
+    local overlay_dir="${BINARIES_DIR}/rpi-firmware/overlays"
+    [[ -d "${overlay_dir}" ]] || return 0
+    [[ -n "${BOARD_DTB_OVERLAYS:-}" ]] || return 0
+
+    local overlay base name
+    for overlay in "${overlay_dir}"/*.dtbo; do
+        [[ -e "${overlay}" ]] || continue
+        base="$(basename "${overlay}" .dtbo)"
+        for name in ${BOARD_DTB_OVERLAYS}; do
+            [[ "${base}" == "${name}" ]] && continue 2
+        done
+        rm "${overlay}"
+    done
+}
+
 function board_post_build() {
     # Patch RAUC config with the board-specific compatible string from meta.
     # For Pi Zero 2W this is a no-op (value matches the hardcoded default).

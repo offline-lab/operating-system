@@ -1,0 +1,50 @@
+#
+# Bootconf configuration for offline-lab testing
+#
+
+bootconf:
+  enabled: true
+  directory: /data/config/bootconf
+
+wifi:
+  enabled: @@WIFI_ENABLED@@
+  directory: /data/config/wifi
+  ssid: "@@WIFI_SSID@@"
+  password_hash: "@@WIFI_PASSWORD_HASH@@"
+  country: @@WIFI_COUNTRY@@
+
+system:
+  enabled: true
+  timezone: Europe/Amsterdam
+  hostname: offline-lab
+
+ssh:
+  enabled: true
+  directory: /data/config/ssh
+  keytype: ed25519
+  generate_host_keys: true
+  daemon: dropbear
+
+services:
+  enabled: true
+  directory: /data/config/services
+  services:
+  - name: disco
+    enabled: true
+    sentinel: true
+    default_config:
+      copy: true
+      source: /etc/disco/disco.conf
+      destination: /data/config/disco/disco.conf
+
+users:
+  enabled: true
+  directory: /data/config/users
+  users:
+  - name: labuser
+    enabled: true
+    sudo: true
+    home: /data/home/labuser
+    authorized_keys:
+    - "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBCY1/jmHp/cSIPfG388BbaP/kISOKnsvPiMgLYm/vUsOFIvXfxqPo5Xh5r8wfwUQrjw1iLb3DYp6FWKEzAGpJRs= lab@test-user"
+    - "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBKyoTp9EL+KwQzMUoITDO9r/0QljINBmWhsj17XNZmOe/11Q0SXN4sPu5yxW8i6Hlya2EeCNKd0rUuvJ795H2cU= flip@fliphess.com"

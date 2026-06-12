@@ -1,3 +1,9 @@
+config BR2_PACKAGE_OFFLINELAB_FRAMEWORK_VERSION
+	string "offlinelab-framework version (git tag or commit)"
+	default "e0fe1d6651ce57d885923f3884a107a2b5134819"
+	help
+	  Git tag or commit hash to fetch from github.com/offline-lab/framework.
+
 config BR2_PACKAGE_OFFLINELAB_FRAMEWORK
 	bool "offlinelab-framework"
 	default y

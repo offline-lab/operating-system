@@ -11,16 +11,16 @@
 ################################################################################
 
 [Unit]
-Description=Restore attached portable service apps
-Documentation=https://github.com/offline-lab/appctl
-After=local-fs.target
-Before=multi-user.target
-ConditionPathExists=/usr/bin/appctl
+Description=Apply bootconf-generated tmpfiles configuration
+Documentation=https://github.com/offline-lab/bootconf
+After=bootconf.service
+Requires=bootconf.service
+ConditionPathIsDirectory=/data/config/tempfiles
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/usr/bin/appctl rehydrate
+ExecStart=systemd-tmpfiles --create /data/config/tempfiles/
 StandardOutput=journal
 StandardError=journal
 

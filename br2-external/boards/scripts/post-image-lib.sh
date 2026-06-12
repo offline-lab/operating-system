@@ -66,6 +66,13 @@ function create_data() {
     mkdir -p "${tmpdir}/config/disco"
     chmod 750 "${tmpdir}/config/sudo"
 
+    # Bake the testing bootconf.yaml into the data partition at the path bootconf.service reads.
+    # This is only present for test builds (offlinelab-testing generates it); production images
+    # have an empty data partition and the user provisions via /boot/firmware/config/ instead.
+    if [[ -f "${BINARIES_DIR}/bootconf.yaml" ]]; then
+        cp "${BINARIES_DIR}/bootconf.yaml" "${tmpdir}/config/bootconf.yaml"
+    fi
+
     mkfs.ext4 -F -d "${tmpdir}" -L "data" "${BINARIES_DIR}/data.ext4" 64M
 }
 
@@ -83,7 +90,7 @@ function build_rauc_bundle() {
     fi
 
     cp "${BINARIES_DIR}/kernel-a.img" "${tmpdir}/kernel.img"
-    cp "${BINARIES_DIR}/rootfs.ext4" "${tmpdir}/rootfs.img"
+    cp "${BINARIES_DIR}/rootfs.squashfs" "${tmpdir}/rootfs.img"
 
     cat > "${tmpdir}/manifest.raucm" <<EOF
 [update]

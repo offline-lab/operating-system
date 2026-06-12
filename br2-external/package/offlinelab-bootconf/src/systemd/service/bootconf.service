@@ -13,15 +13,15 @@
 [Unit]
 Description=Bootconf — boot-time configuration
 Documentation=https://github.com/offline-lab/bootconf
-After=local-fs.target boot-firmware.mount
-Wants=boot-firmware.mount
-ConditionPathExists=/boot/firmware/bootconf.yaml
-Before=expand-data.service network.target
+After=local-fs.target boot-firmware.mount expand-data.service
+Wants=boot-firmware.mount expand-data.service
+ConditionPathExists=/data/config/bootconf.yaml
+Before=network.target
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/usr/local/bin/bootconf run --config /boot/firmware/bootconf.yaml
+ExecStart=/usr/local/bin/bootconf run --config /data/config/bootconf.yaml
 StandardOutput=journal
 StandardError=journal
 

@@ -11,16 +11,15 @@
 ################################################################################
 
 [Unit]
-Description=Offline Lab Startup Tasks
-After=local-fs.target boot-firmware.mount
-Wants=boot-firmware.mount
-ConditionPathIsMountPoint=/data
+Description=Load fake hardware clock
+After=local-fs.target
+Before=expand-data.service bootconf.service
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
 Environment=PATH=/usr/lib/framework/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ExecStart=/usr/lib/framework/bin/boxctl startup
+ExecStart=/usr/lib/framework/bin/boxctl clock --load
 
 [Install]
 WantedBy=multi-user.target

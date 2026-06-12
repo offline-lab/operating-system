@@ -1,0 +1,16 @@
+# Hashes for offlinelab-framework.
+# Source: https://github.com/offline-lab/framework
+#
+# The tarball name is: offlinelab-framework-<version>.tar.gz
+# GitHub generates these from a tag or commit hash; they are stable once pushed.
+#
+# How to update:
+#   wget https://github.com/offline-lab/framework/archive/refs/tags/<VERSION>.tar.gz
+#   sha256sum <VERSION>.tar.gz
+#
+# Add one sha256 line per version you build. The version in BR2_PACKAGE_OFFLINELAB_FRAMEWORK_VERSION
+# must match an entry here or the build will be rejected.
+#
+sha256  bd42ececcd445f96327502f85ec1aef5ce6a8d5e22d09867cc34918b7b6c82cf  offlinelab-framework-229127b2b43500ee0ff4b04576c6c073b9b0ca27.tar.gz
+sha256  4efaef7779f8573ede6632f0726ed2c6d27658e252289d7788ed796a09d2c2c7  offlinelab-framework-815d17a957f7392d94220aa6bdf72c6374d7d866.tar.gz
+sha256  d94eac4fcf07922acac531fcb6b7619fde530d5db1817fec81471b414450aa6b  offlinelab-framework-e0fe1d6651ce57d885923f3884a107a2b5134819.tar.gz

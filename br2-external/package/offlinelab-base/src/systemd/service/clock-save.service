@@ -11,18 +11,18 @@
 ################################################################################
 
 [Unit]
-Description=Restore attached portable service apps
-Documentation=https://github.com/offline-lab/appctl
-After=local-fs.target
-Before=multi-user.target
-ConditionPathExists=/usr/bin/appctl
+Description=Save fake hardware clock
+DefaultDependencies=no
+After=multi-user.target
+Before=shutdown.target
+Conflicts=shutdown.target
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/usr/bin/appctl rehydrate
-StandardOutput=journal
-StandardError=journal
+Environment=PATH=/usr/lib/framework/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/bin/true
+ExecStop=/usr/lib/framework/bin/boxctl clock --save
 
 [Install]
 WantedBy=multi-user.target
