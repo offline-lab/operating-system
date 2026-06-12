@@ -14,7 +14,7 @@
 Description=Apply bootconf-generated tmpfiles configuration
 Documentation=https://github.com/offline-lab/bootconf
 After=bootconf.service
-Requires=bootconf.service
+Wants=bootconf.service
 ConditionPathIsDirectory=/data/config/tempfiles
 
 [Service]

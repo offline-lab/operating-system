@@ -41,10 +41,10 @@ users:
   enabled: true
   directory: /data/config/users
   users:
-  - name: labuser
+  - name: app
     enabled: true
     sudo: true
-    home: /data/home/labuser
+    home: /data/home/app
     authorized_keys:
     - "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBCY1/jmHp/cSIPfG388BbaP/kISOKnsvPiMgLYm/vUsOFIvXfxqPo5Xh5r8wfwUQrjw1iLb3DYp6FWKEzAGpJRs= lab@test-user"
     - "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBKyoTp9EL+KwQzMUoITDO9r/0QljINBmWhsj17XNZmOe/11Q0SXN4sPu5yxW8i6Hlya2EeCNKd0rUuvJ795H2cU= flip@fliphess.com"

@@ -75,7 +75,7 @@ Boot-time configuration tool that reads `/data/config/bootconf.yaml` and applies
 
 **Systemd units:**
 - `bootconf.service`: reads and applies `bootconf.yaml` at boot
-- `bootconf-sysusers.service`: creates users/groups declared in the config
+- `offlinelab-sysusers.service`: creates users/groups declared in the config
 
 **Build options:**
 - `BR2_PACKAGE_OFFLINELAB_BOOTCONF_VERSION`: git tag to build (e.g. `v1.0.0`)

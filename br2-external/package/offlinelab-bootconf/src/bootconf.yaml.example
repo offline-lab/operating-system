@@ -18,7 +18,7 @@ wifi:
   enabled: true
   country: NL
   directory: /data/config/wifi
-  password_hash: 'a2b3c4d5e6f7a2b3c4d5e6f7a2b3c4d5e6f7a2b3c4d5e6f7a2b3c4d5e6f7a2b3'
+  password_hash: 'dummyc4d5e6f7a2b3cdummy6f7a2b3c4d5e6fdummyc4d5e6f7a2b3c4d5deadbabe'
   ssid: something
 
 #
@@ -28,7 +28,6 @@ system:
   enabled: true
   hostname: offline-lab
   timezone: UTC
-
 
 #
 # SSH Configuration
@@ -53,8 +52,8 @@ services:
     sentinel: true
     default_config:
       copy: true
-      source: /etc/disco/disco.conf
-      destination: /data/config/disco/disco.conf
+      source: /etc/disco/config.yaml
+      destination: /data/config/disco/config.yaml
 
 #
 # Users configuration (Done using systemd-sysusers)
@@ -73,141 +72,55 @@ users:
 # Configs that should be moved into place
 #
 files:
-  enabled: true
-  files:
-  - source: /boot/firmware/config/disco.conf
-    destination: /data/config/disco/disco.conf
-    chmod: 640
+  enabled: false
+  files: []
 
 # render templates to files
 templates:
-  enabled: true
-  templates:
-    - source: /boot/firmware/config/disco.conf.tpl
-      destination: /data/config/disco/disco.conf
-      variables:
-        some: blabla
-        another: yes
-      chmod: 640
+  enabled: false
+  templates: []
+  # - source: /boot/firmware/config/config.yaml.tpl
+  #   destination: /data/config/disco/config.yaml
+  #   variables:
+  #     some: blabla
+  #     another: yes
+  #   chmod: 640
 
 shell:
-  enabled: true
-  directory: /data/bootconf/shell
+  enabled: false
+  directory: /data/config/ssh
   # Prepend a directory to PATH for every command (e.g. /usr/lib/framework/bin)
   # Leave empty to inherit PATH from the environment unchanged.
   path: ""
-  commands:
-    - name: get-process-list
-      allow_fail: true
-      firstboot: true
-      command: |
-        bash -c 'ps -ef'
-    - name: get-df
-      allow_fail: false
-      firstboot: false
-      command: df /
+  commands: []
+  # - name: get-process-list
+  #   allow_fail: true
+  #   firstboot: true
+  #   command: |
+  #     bash -c 'ps -ef'
+  # - name: get-df
+  #   allow_fail: false
+  #   firstboot: false
+  #   command: df /
 
 unitrun:
-  # enable / disable
-  enabled: true
+  enabled: false
   # Only run at first boot
   firstboot: false
   # Prepend a directory to PATH in every generated unit (e.g. /usr/lib/framework/bin)
   # Leave empty to omit the Environment=PATH line entirely.
   path: ""
   # Where to save the scripts
-  directory: /data/bootconf/scripts
-  # unit declarations
-  units:
-  - name: some-name
-    enabled: true
-    dependencies:
-      - After=multi-user.target
-      - Before=shutdown.target
-      - Conflicts=shutdown.target
-    command: |
-      a bunch of commands here
-      to run several things
-      in a script
-      exit 0
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
--=------------------------------------------
-
-bootconf:
-  enabled: true
-  # Status files are written here after each run
-  directory: /data/bootconf
-
-wifi:
-  # Set enabled: true and fill in ssid/password_hash/country to configure WiFi.
-  # password_hash is the PSK hash from wpa_passphrase, not the plaintext password.
-  enabled: false
-  directory: /data/config/wifi
-  ssid: ""
-  password_hash: ""
-  country: NL
-
-ssh:
-  enabled: true
-  directory: /data/config/ssh
-  keytype: ed25519
-  generate_host_keys: true
-  daemon: dropbear
-
-system:
-  enabled: true
-  timezone: Europe/Amsterdam
-  hostname: offline-lab
-
-services:
-  enabled: true
-  directory: /data/config/services
-  services:
-    - name: disco
-      # Set enabled: true to start the disco service discovery daemon.
-      enabled: false
-      sentinel: true
-      default_config:
-        copy: true
-        source: /etc/disco/config.yaml
-        destination: /data/config/disco/config.yaml
-
-sudo:
-  enabled: true
-  directory: /data/config/sudo
-
-users:
-  # Add users here to create them via systemd-sysusers on each boot.
-  enabled: false
-  directory: /data/config/users
-  users: []
-
-files:
-  # Copy files from the filesystem into place on /data.
-  # Existing files are never overwritten — they get a .new suffix instead.
-  enabled: false
-  files: []
+  directory: /data/config/bootconf/scripts
+  units: []
+  #- name: some-name
+  #  enabled: true
+  #  dependencies:
+  #    - After=multi-user.target
+  #    - Before=shutdown.target
+  #    - Conflicts=shutdown.target
+  #  command: |
+  #    a bunch of commands here
+  #    to run several things
+  #    in a script
+  #    exit 0

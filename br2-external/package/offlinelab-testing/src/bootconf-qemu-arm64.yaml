@@ -30,8 +30,8 @@ services:
     sentinel: true
     default_config:
       copy: true
-      source: /etc/disco/disco.conf
-      destination: /data/config/disco/disco.conf
+      source: /etc/disco/config.yaml
+      destination: /data/config/disco/config.yaml
 
 users:
   enabled: true
@@ -42,4 +42,4 @@ users:
     sudo: true
     home: /home/testuser
     authorized_keys:
-    - "@@TESTUSER_PUBKEY@@"
+    - "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBCY1/jmHp/cSIPfG388BbaP/kISOKnsvPiMgLYm/vUsOFIvXfxqPo5Xh5r8wfwUQrjw1iLb3DYp6FWKEzAGpJRs= flip@bigmac.local"

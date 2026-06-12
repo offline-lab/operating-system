@@ -459,7 +459,7 @@ if [[ -f "${ROOTFS}" ]] && command -v mount &>/dev/null; then
         fi
         if [[ -f "${ROOTFS_MNT}/etc/systemd/system/dropbear.service" ]]; then
             assert_contains "${ROOTFS_MNT}/etc/systemd/system/dropbear.service" \
-                "Requires=bootconf" "dropbear requires bootconf (hard dep)"
+                "Wants=bootconf" "dropbear soft-depends on bootconf (Wants, not Requires)"
         fi
 
         # Overlay files

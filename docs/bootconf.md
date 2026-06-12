@@ -12,9 +12,9 @@ Source: [github.com/offline-lab/bootconf](https://github.com/offline-lab/bootcon
 2. `bootconf.service` runs after `expand-data.service` (data partition ready) and before `network.target`.
 3. It reads `/data/config/bootconf.yaml`.
 4. For each enabled section it applies the configuration to `/data`.
-5. `bootconf-sysusers.service` runs immediately after and calls `systemd-sysusers` to create any declared users and groups.
+5. `offlinelab-sysusers.service` runs immediately after and calls `systemd-sysusers` to create any declared users and groups.
 
-Bootconf is **idempotent**: each section writes a status file under `/data/bootconf/`. If the status file already exists and the configuration hasn't changed, the section is skipped. To force re-provisioning, delete the relevant file from `/data` and reboot.
+Bootconf is **idempotent**: each section writes a status file under `/data/config/bootconf/`. If the status file already exists and the configuration hasn't changed, the section is skipped. To force re-provisioning, delete the relevant file from `/data` and reboot.
 
 ## Setup
 
@@ -34,7 +34,7 @@ To update credentials after first boot (e.g. WiFi change), repeat steps 1–5 wi
 bootconf:
   enabled: true
   # Status files written here after each section runs
-  directory: /data/bootconf
+  directory: /data/config/bootconf
 
 wifi:
   enabled: false
@@ -115,7 +115,7 @@ Writes sudoers drop-in files to `/data/config/sudo/` (included from `/etc/sudoer
 
 ### users
 
-Writes sysusers config fragments that `bootconf-sysusers.service` passes to `systemd-sysusers`. Use this to create per-app users before services start.
+Writes sysusers config fragments that `offlinelab-sysusers.service` passes to `systemd-sysusers`. Use this to create per-app users before services start.
 
 ### files
 
@@ -139,4 +139,4 @@ This writes the values into the example file placed on the boot partition. Copy 
 | Unit | When | What |
 |---|---|---|
 | `bootconf.service` | `multi-user.target` | Reads `bootconf.yaml` and applies all enabled sections |
-| `bootconf-sysusers.service` | After `bootconf.service` | Runs `systemd-sysusers` to create declared users |
+| `offlinelab-sysusers.service` | After `bootconf.service` | Runs `systemd-sysusers` to create declared users |

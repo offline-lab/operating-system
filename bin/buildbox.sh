@@ -297,10 +297,12 @@ function cmd_sync() {
             "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_WORK}/.rauc/"
     fi
 
-    bb_rsync \
-        --exclude '.git' \
-        "${BASEDIR}/framework/" \
-        "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_WORK}/framework/"
+    if [[ -d "${BASEDIR}/framework" ]]; then
+        bb_rsync \
+            --exclude '.git' \
+            "${BASEDIR}/framework/" \
+            "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_WORK}/framework/"
+    fi
 
     log "Sync complete"
 }
