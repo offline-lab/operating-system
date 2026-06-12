@@ -66,15 +66,17 @@ define OFFLINELAB_DISCO_INSTALL_TARGET_CMDS
 		$(TARGET_DIR)/usr/lib/libnss_disco.so.2
 
 	mkdir -p $(TARGET_DIR)/etc/systemd/system/multi-user.target.wants
-	mkdir -p $(TARGET_DIR)/data/config/disco
+
+	$(INSTALL) -D -m 0644 $(OFFLINELAB_DISCO_SRC_DIR)/config/config.yaml \
+		$(BINARIES_DIR)/disco/config.yaml
+
+	ln -sf /data/config/disco/config.yaml $(TARGET_DIR)/etc/disco/config.yaml
 
 	$(INSTALL) -D -m 0644 $(OFFLINELAB_DISCO_SRC_DIR)/systemd/service/disco-daemon.service \
 		$(TARGET_DIR)/etc/systemd/system/disco-daemon.service
+
 	ln -sf /etc/systemd/system/disco-daemon.service \
 		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/disco-daemon.service
-
-	$(INSTALL) -D -m 0644 $(OFFLINELAB_DISCO_SRC_DIR)/config/config.yaml \
-		$(TARGET_DIR)/etc/disco/config.yaml
 
 	$(INSTALL) -D -m 0644 $(OFFLINELAB_DISCO_SRC_DIR)/systemd/service/disco-gps-broadcaster.service \
 		$(TARGET_DIR)/etc/systemd/system/disco-gps-broadcaster.service

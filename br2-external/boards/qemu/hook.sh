@@ -33,7 +33,7 @@ EOF
 
     # Patch fw_env.config for virtio block bootstate partition
     if [[ -f "${TARGET_DIR}/etc/fw_env.config" ]]; then
-        sed -i 's|/dev/mmcblk0p9|/dev/vda9|g' "${TARGET_DIR}/etc/fw_env.config"
+        sed -i 's|/dev/mmcblk0p6|/dev/vda6|g' "${TARGET_DIR}/etc/fw_env.config"
     fi
 }
 

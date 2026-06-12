@@ -16,11 +16,12 @@ Documentation=https://github.com/offline-lab/bootconf
 After=bootconf.service
 Wants=bootconf.service
 ConditionPathIsDirectory=/data/config/users
+ConditionPathIsNotEmpty=/data/config/users
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=systemd-sysusers /data/config/users/
+ExecStart=/bin/sh -c 'systemd-sysusers /data/config/users/*.conf'
 StandardOutput=journal
 StandardError=journal
 

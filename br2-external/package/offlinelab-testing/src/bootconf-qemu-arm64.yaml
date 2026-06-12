@@ -29,7 +29,7 @@ services:
     enabled: true
     sentinel: true
     default_config:
-      copy: true
+      copy: false
       source: /etc/disco/config.yaml
       destination: /data/config/disco/config.yaml
 

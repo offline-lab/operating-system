@@ -24,8 +24,6 @@ OFFLINELAB_BASE_LICENSE     = AGPL-3.0-only
 OFFLINELAB_BASE_DEPENDENCIES = \
 	bash \
 	coreutils \
-	e2fsprogs \
-	parted \
 	systemd
 
 define OFFLINELAB_SPLASH_GENERATE
@@ -81,13 +79,8 @@ define OFFLINELAB_BASE_INSTALL_TARGET_CMDS
 	ln -sf /lib/systemd/system/systemd-confext.service \
 		$(TARGET_DIR)/etc/systemd/system/sysinit.target.wants/systemd-confext.service
 
-	$(INSTALL) -D -m 0644 $(@D)/systemd/service/expand-data.service \
-		$(TARGET_DIR)/etc/systemd/system/expand-data.service
-	ln -sf /etc/systemd/system/expand-data.service \
-		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/expand-data.service
-
-	$(INSTALL) -D -m 0755 $(@D)/init-expand-data \
-		$(TARGET_DIR)/usr/local/bin/init-expand-data
+	$(INSTALL) -D -m 0644 $(@D)/repart.d/10-data.conf \
+		$(TARGET_DIR)/usr/lib/repart.d/10-data.conf
 
 	$(INSTALL) -D -m 0644 $(@D)/systemd/service/clock-load.service \
 		$(TARGET_DIR)/etc/systemd/system/clock-load.service

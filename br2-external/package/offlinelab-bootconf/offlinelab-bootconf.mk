@@ -63,10 +63,10 @@ define OFFLINELAB_BOOTCONF_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0644 $(OFFLINELAB_BOOTCONF_SRC_DIR)/systemd/service/bootconf.service \
 		$(TARGET_DIR)/etc/systemd/system/bootconf.service
 
-	$(INSTALL) -D -m 0644 $(@D)/systemd/service/offlinelab-sysusers.service \
+	$(INSTALL) -D -m 0644 $(OFFLINELAB_BOOTCONF_SRC_DIR)/systemd/service/offlinelab-sysusers.service \
 		$(TARGET_DIR)/etc/systemd/system/offlinelab-sysusers.service
 
-	$(INSTALL) -D -m 0644 $(@D)/systemd/service/offlinelab-tempfiles.service \
+	$(INSTALL) -D -m 0644 $(OFFLINELAB_BOOTCONF_SRC_DIR)/systemd/service/offlinelab-tempfiles.service \
 		$(TARGET_DIR)/etc/systemd/system/offlinelab-tempfiles.service
 
 	mkdir -p $(TARGET_DIR)/etc/systemd/system/multi-user.target.wants
@@ -78,9 +78,7 @@ define OFFLINELAB_BOOTCONF_INSTALL_TARGET_CMDS
 		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/offlinelab-sysusers.service
 
 	ln -sf /etc/systemd/system/offlinelab-tempfiles.service \
-	$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/offlinelab-tempfiles.service
-
-	mkdir -p $(TARGET_DIR)/data/config/tempfiles  $(TARGET_DIR)/data/config/sysusers
+		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/offlinelab-tempfiles.service
 
 	cp $(OFFLINELAB_BOOTCONF_SRC_DIR)/bootconf.yaml.example $(BINARIES_DIR)/bootconf.yaml.example
 endef

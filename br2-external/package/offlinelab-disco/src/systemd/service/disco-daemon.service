@@ -13,8 +13,7 @@
 [Unit]
 Description=Disco - Service Discovery Daemon for offline networks
 Documentation=https://github.com/offline-lab/disco
-After=bootconf.service offlinelab-sysusers.service systemd-networkd.service
-Wants=bootconf.service
+After=offlinelab-sysusers.service systemd-networkd.service
 ConditionPathExists=/data/config/services/disco
 
 [Service]

@@ -18,40 +18,53 @@ function build_initramfs() {
     cp "${TARGET_DIR}/bin/busybox" "${tmpdir}/bin/busybox"
     chmod 755 "${tmpdir}/bin/busybox"
 
-    for cmd in sh mount umount mkdir switch_root cat echo sleep; do
+    for cmd in sh mount umount mkdir rm cp chmod switch_root cat echo sleep; do
         ln -s busybox "${tmpdir}/bin/${cmd}"
     done
 
     cp "${COMMON_DIR}/initramfs/init" "${tmpdir}/init"
+
     chmod 755 "${tmpdir}/init"
 
-    (cd "${tmpdir}" && find . | cpio -o -H newc 2>/dev/null | gzip -9 \
-        > "${BINARIES_DIR}/initramfs.cpio.gz")
+    (
+        cd "${tmpdir}" && find . | cpio -o -H newc 2>/dev/null | gzip -9 \
+            >"${BINARIES_DIR}/initramfs.cpio.gz"
+    )
 }
 
 function build_boot_scr() {
-    "${HOST_DIR}/bin/mkimage" -C none -A arm64 -T script \
+    "${HOST_DIR}/bin/mkimage" \
+        -C none \
+        -A arm64 \
+        -T script \
         -d "${BOOT_CMD_FILE}" "${BINARIES_DIR}/boot.scr"
 }
 
 function build_kernel_squashfs() {
     local tmpdir="$(mktemp -d)"
+
     cp "${BINARIES_DIR}/Image" "${tmpdir}/Image"
+
     "${HOST_DIR}/bin/mksquashfs" "${tmpdir}" "${BINARIES_DIR}/kernel-a.img" \
         -noappend -comp lzo -b 131072 -quiet
+
     rm -rf "${tmpdir}"
 }
 
 function create_overlay() {
     local tmpdir="$(mktemp -d)"
+
     mkdir -p "${tmpdir}/a/upper" "${tmpdir}/a/work"
     mkdir -p "${tmpdir}/b/upper" "${tmpdir}/b/work"
+
     mkfs.ext4 -F -d "${tmpdir}" -L "overlay" "${BINARIES_DIR}/overlay.ext4" 96M
+
     rm -rf "${tmpdir}"
 }
 
 function create_data() {
     local tmpdir="$(mktemp -d)"
+
     trap 'rm -rf "${tmpdir}"' RETURN
 
     mkdir -p "${tmpdir}/apps"
@@ -66,9 +79,15 @@ function create_data() {
     mkdir -p "${tmpdir}/config/disco"
     chmod 750 "${tmpdir}/config/sudo"
 
+    if [[ -f "${BINARIES_DIR}/disco/config.yaml" ]]; then
+        cp "${BINARIES_DIR}/disco/config.yaml" "${tmpdir}/config/disco/config.yaml"
+    fi
+
     # Bake the testing bootconf.yaml into the data partition at the path bootconf.service reads.
-    # This is only present for test builds (offlinelab-testing generates it); production images
-    # have an empty data partition and the user provisions via /boot/firmware/config/ instead.
+    # This is only present for test builds (offlinelab-testing generates it).
+    # production images have an empty data partition and the user provisions
+    # via /boot/firmware/config/ instead.
+    #
     if [[ -f "${BINARIES_DIR}/bootconf.yaml" ]]; then
         cp "${BINARIES_DIR}/bootconf.yaml" "${tmpdir}/config/bootconf.yaml"
     fi
@@ -92,7 +111,7 @@ function build_rauc_bundle() {
     cp "${BINARIES_DIR}/kernel-a.img" "${tmpdir}/kernel.img"
     cp "${BINARIES_DIR}/rootfs.squashfs" "${tmpdir}/rootfs.img"
 
-    cat > "${tmpdir}/manifest.raucm" <<EOF
+    cat >"${tmpdir}/manifest.raucm" <<EOF
 [update]
 compatible=${BOARD_COMPATIBLE}
 version=$(date +%Y%m%d)

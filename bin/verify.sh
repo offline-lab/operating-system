@@ -122,21 +122,21 @@ BOARD="$(basename "${ARTIFACTS}")"
 IS_RPI=0
 [[ "${BOARD}" == *pi* || "${BOARD}" == *rpi* ]] && IS_RPI=1
 
-# Board-specific RAUC partition layout
+# Board-specific RAUC partition layout (GPT: p1=boot p2=kernel-a p3=rootfs-a p4=kernel-b p5=rootfs-b p6=bootstate p7=overlay p8=data)
 if [[ "${IS_RPI}" -eq 1 ]]; then
     _RAUC_COMPATIBLE="offlinelab-pi-zero-2w"
-    _RAUC_KSLOT_A="mmcblk0p5"
-    _RAUC_RSLOT_A="mmcblk0p6"
-    _RAUC_KSLOT_B="mmcblk0p7"
-    _RAUC_RSLOT_B="mmcblk0p8"
-    _RAUC_BOOTSTATE="mmcblk0p9"
+    _RAUC_KSLOT_A="mmcblk0p2"
+    _RAUC_RSLOT_A="mmcblk0p3"
+    _RAUC_KSLOT_B="mmcblk0p4"
+    _RAUC_RSLOT_B="mmcblk0p5"
+    _RAUC_BOOTSTATE="mmcblk0p6"
 else
     _RAUC_COMPATIBLE="offlinelab-${BOARD}"
-    _RAUC_KSLOT_A="vda5"
-    _RAUC_RSLOT_A="vda6"
-    _RAUC_KSLOT_B="vda7"
-    _RAUC_RSLOT_B="vda8"
-    _RAUC_BOOTSTATE="vda9"
+    _RAUC_KSLOT_A="vda2"
+    _RAUC_RSLOT_A="vda3"
+    _RAUC_KSLOT_B="vda4"
+    _RAUC_RSLOT_B="vda5"
+    _RAUC_BOOTSTATE="vda6"
 fi
 
 CLEANUP=()
@@ -185,40 +185,33 @@ section "SD card partition layout"
 if [[ -n "${SDCARD}" ]] && command -v fdisk &>/dev/null; then
     FDISK_OUT="$(fdisk -l "${SDCARD}" 2>/dev/null || true)"
 
-    # MBR with extended partition: p1=boot p2=extended p3=overlay p4=data
-    # Logical: p5=kernel-a p6=rootfs-a p7=kernel-b p8=rootfs-b p9=bootstate
+    # GPT: p1=boot(ESP) p2=kernel-a p3=rootfs-a p4=kernel-b p5=rootfs-b p6=bootstate p7=overlay p8=data
     part_count="$(echo "${FDISK_OUT}" | grep -c "^${SDCARD}" || true)"
-    if [[ "${part_count}" -ge 9 ]]; then
-        pass "${part_count} partitions found (MBR extended layout)"
+    if [[ "${part_count}" -ge 8 ]]; then
+        pass "${part_count} partitions found (GPT layout)"
     else
-        fail "Expected >=9 partitions (MBR extended), found ${part_count}"
+        fail "Expected >=8 partitions (GPT), found ${part_count}"
     fi
 
-    if echo "${FDISK_OUT}" | grep -q "${SDCARD}1.*FAT\|${SDCARD}1.*W95 FAT32\|${SDCARD}1.*0c"; then
-        pass "Partition 1 is FAT (boot)"
+    if echo "${FDISK_OUT}" | grep -q "${SDCARD}1.*EFI\|${SDCARD}1.*ESP\|${SDCARD}1.*FAT\|${SDCARD}1.*uefi"; then
+        pass "Partition 1 is EFI/ESP (boot)"
     else
-        fail "Partition 1 not FAT type"
+        fail "Partition 1 not EFI/ESP type"
     fi
 
-    if echo "${FDISK_OUT}" | grep -q "${SDCARD}2.*Extended\|${SDCARD}2.*W95 Ext\|${SDCARD}2.*05\|${SDCARD}2.*0f"; then
-        pass "Partition 2 is Extended container"
+    if echo "${FDISK_OUT}" | grep -q "Disklabel type: gpt"; then
+        pass "Disk uses GPT partition table"
     else
-        fail "Partition 2 not Extended type"
+        fail "Disk is not GPT"
     fi
 
-    for p in 3 4 5 6 7 8 9; do
+    for p in 2 3 4 5 6 7 8; do
         if echo "${FDISK_OUT}" | grep -q "${SDCARD}${p}.*Linux\|${SDCARD}${p}.*83"; then
             pass "Partition ${p} is Linux"
         else
             fail "Partition ${p} not Linux type"
         fi
     done
-
-    if echo "${FDISK_OUT}" | grep "${SDCARD}1" | grep -q "\*"; then
-        pass "Partition 1 is bootable"
-    else
-        fail "Partition 1 not marked bootable"
-    fi
 else
     skip "SD card partition check (no sdcard.img or fdisk)"
 fi
@@ -244,15 +237,15 @@ if [[ -n "${SDCARD}" ]] && command -v losetup &>/dev/null; then
                 assert_file "${BOOT_MNT}/config.txt" "config.txt on boot partition"
                 assert_file "${BOOT_MNT}/cmdline.txt" "cmdline.txt on boot partition"
 
-                if compgen -G "${BOOT_MNT}/*.dtb" >/dev/null 2>&1 \
-                    || compgen -G "${BOOT_MNT}/bcm271*.dtb" >/dev/null 2>&1; then
+                if compgen -G "${BOOT_MNT}/*.dtb" >/dev/null 2>&1 ||
+                    compgen -G "${BOOT_MNT}/bcm271*.dtb" >/dev/null 2>&1; then
                     pass "DTB files present"
                 else
                     fail "No DTB files on boot partition"
                 fi
 
-                if [[ -f "${BOOT_MNT}/bootcode.bin" ]] \
-                    || [[ -f "${BOOT_MNT}/rpi-firmware/bootcode.bin" ]]; then
+                if [[ -f "${BOOT_MNT}/bootcode.bin" ]] ||
+                    [[ -f "${BOOT_MNT}/rpi-firmware/bootcode.bin" ]]; then
                     pass "bootcode.bin present"
                 else
                     if find "${BOOT_MNT}" -name "bootcode.bin" -print -quit 2>/dev/null | grep -q .; then
@@ -334,10 +327,10 @@ if [[ -f "${INITRAMFS}" ]]; then
         if [[ -f "${INITRAMFS_DIR}/init" ]]; then
             assert_contains "${INITRAMFS_DIR}/init" "overlay" "init mounts overlayfs"
             assert_contains "${INITRAMFS_DIR}/init" "rauc.slot" "init parses rauc.slot from cmdline"
-            assert_contains "${INITRAMFS_DIR}/init" "p6=rootfs-a" "init mounts rootfs-a (p6)"
-            assert_contains "${INITRAMFS_DIR}/init" "p8=rootfs-b" "init mounts rootfs-b (p8)"
-            assert_contains "${INITRAMFS_DIR}/init" "p3=overlay" "init mounts overlay partition (p3)"
-            assert_contains "${INITRAMFS_DIR}/init" "p4=data" "init mounts data partition (p4)"
+            assert_contains "${INITRAMFS_DIR}/init" "p3=rootfs-a" "init mounts rootfs-a (p3)"
+            assert_contains "${INITRAMFS_DIR}/init" "p5=rootfs-b" "init mounts rootfs-b (p5)"
+            assert_contains "${INITRAMFS_DIR}/init" "p7=overlay" "init mounts overlay partition (p7)"
+            assert_contains "${INITRAMFS_DIR}/init" "p8=data" "init mounts data partition (p8)"
             assert_contains "${INITRAMFS_DIR}/init" "switch_root" "init calls switch_root"
         fi
     else
@@ -360,8 +353,8 @@ if [[ -f "${ROOTFS}" ]] && command -v mount &>/dev/null; then
     if sudo mount -o ro,loop "${ROOTFS}" "${ROOTFS_MNT}" 2>/dev/null; then
 
         # Init system
-        if [[ -f "${ROOTFS_MNT}/lib/systemd/systemd" ]] \
-            || [[ -f "${ROOTFS_MNT}/usr/lib/systemd/systemd" ]]; then
+        if [[ -f "${ROOTFS_MNT}/lib/systemd/systemd" ]] ||
+            [[ -f "${ROOTFS_MNT}/usr/lib/systemd/systemd" ]]; then
             pass "systemd installed"
         else
             fail "systemd not found"
@@ -370,9 +363,7 @@ if [[ -f "${ROOTFS}" ]] && command -v mount &>/dev/null; then
         assert_file "${ROOTFS_MNT}/usr/bin/bash" "bash installed"
 
         # Systemd units
-        for unit in usb-gadget.service wifi-setup.service show-ip.service zram-swap.service \
-            expand-data.service boot-firmware.mount boxctl-startup.service \
-            dropbear.service boxctl-shutdown.service; do
+        for unit in usb-gadget.service wifi-setup.service show-ip.service zram-swap.service boot-firmware.mount dropbear.service; do
             if [[ -f "${ROOTFS_MNT}/etc/systemd/system/${unit}" ]]; then
                 pass "Unit ${unit} installed"
             else
@@ -381,14 +372,22 @@ if [[ -f "${ROOTFS}" ]] && command -v mount &>/dev/null; then
         done
 
         # Multi-user wants
-        for unit in wifi-setup.service show-ip.service zram-swap.service expand-data.service \
-            boxctl-startup.service dropbear.service boxctl-shutdown.service; do
+        for unit in wifi-setup.service show-ip.service zram-swap.service dropbear.service; do
             if [[ -L "${ROOTFS_MNT}/etc/systemd/system/multi-user.target.wants/${unit}" ]]; then
                 pass "Unit ${unit} enabled (wanted by multi-user)"
             else
                 fail "Unit ${unit} not enabled"
             fi
         done
+
+        # systemd-repart drop-in
+        assert_file "${ROOTFS_MNT}/usr/lib/repart.d/10-data.conf" "repart.d/10-data.conf installed"
+        if [[ -f "${ROOTFS_MNT}/usr/lib/repart.d/10-data.conf" ]]; then
+            assert_contains "${ROOTFS_MNT}/usr/lib/repart.d/10-data.conf" "GrowFileSystem=yes" \
+                "repart.d/10-data.conf has GrowFileSystem=yes"
+            assert_contains "${ROOTFS_MNT}/usr/lib/repart.d/10-data.conf" "Label=data" \
+                "repart.d/10-data.conf targets data partition by label"
+        fi
 
         # Sysinit wants
         for unit in usb-gadget.service; do
@@ -441,7 +440,7 @@ if [[ -f "${ROOTFS}" ]] && command -v mount &>/dev/null; then
 
         # Scripts
         for script in \
-            init-usb-gadget init-wifi-setup init-show-ip init-zram-swap init-expand-data init-resources; do
+            init-usb-gadget init-wifi-setup init-show-ip init-zram-swap init-resources; do
             assert_exec "${ROOTFS_MNT}/usr/local/bin/${script}" "Script ${script} installed and executable"
         done
 
@@ -855,8 +854,8 @@ if [[ -f "${ROOTFS}" ]] && command -v mount &>/dev/null; then
         fi
 
         # portabled service unit
-        if [[ -f "${PORT_MNT}/usr/lib/systemd/system/systemd-portabled.service" ]] \
-            || [[ -f "${PORT_MNT}/lib/systemd/system/systemd-portabled.service" ]]; then
+        if [[ -f "${PORT_MNT}/usr/lib/systemd/system/systemd-portabled.service" ]] ||
+            [[ -f "${PORT_MNT}/lib/systemd/system/systemd-portabled.service" ]]; then
             pass "systemd-portabled.service unit exists"
         else
             fail "systemd-portabled.service unit missing"

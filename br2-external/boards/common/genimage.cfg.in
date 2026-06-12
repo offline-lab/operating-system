@@ -10,52 +10,48 @@ image bootfs.vfat {
 
 image #IMAGE_NAME# {
     hdimage {
-        partition-table-type = "mbr"
+        partition-table-type = "gpt"
         align = 1M
-        extended-partition = 2
     }
 
     partition boot {
-        partition-type = 0xC
-        bootable = "yes"
+        partition-type-uuid = "esp"
         image = "bootfs.vfat"
     }
 
     partition kernel-a {
-        partition-type = 0x83
+        partition-type-uuid = "linux-generic"
         size = 24M
         image = "kernel-a.img"
     }
 
     partition rootfs-a {
-        partition-type = 0x83
+        partition-type-uuid = "linux-generic"
         image = "rootfs.squashfs"
     }
 
     partition kernel-b {
-        partition-type = 0x83
+        partition-type-uuid = "linux-generic"
         size = 24M
     }
 
     partition rootfs-b {
-        partition-type = 0x83
+        partition-type-uuid = "linux-generic"
         size = 512M
     }
 
     partition bootstate {
-        partition-type = 0x83
+        partition-type-uuid = "linux-generic"
         size = 8M
     }
 
     partition overlay {
-        partition-type = 0x83
+        partition-type-uuid = "linux-generic"
         image = "overlay.ext4"
-        forced-primary = "yes"
     }
 
     partition data {
-        partition-type = 0x83
+        partition-type-uuid = "linux-generic"
         image = "data.ext4"
-        forced-primary = "yes"
     }
 }

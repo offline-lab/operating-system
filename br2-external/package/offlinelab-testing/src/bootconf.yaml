@@ -26,16 +26,16 @@ ssh:
   daemon: dropbear
 
 services:
-  enabled: true
+  enabled: false
   directory: /data/config/services
-  services:
-  - name: disco
-    enabled: true
-    sentinel: true
-    default_config:
-      copy: true
-      source: /etc/disco/disco.conf
-      destination: /data/config/disco/disco.conf
+  services: []
+  #- name: disco
+  #  enabled: true
+  #  sentinel: true
+  #  default_config:
+  #    copy: true
+  #    source: /etc/disco/disco.conf
+  #    destination: /data/config/disco/disco.conf
 
 users:
   enabled: true

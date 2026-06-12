@@ -29,8 +29,7 @@ for arg in $(cat /proc/cmdline); do
 done
 
 # Detect block device at runtime — wait up to 10s for MMC to initialize
-# Partition layout (MBR extended): p1=boot p3=overlay p4=data
-#   p5=kernel-a p6=rootfs-a p7=kernel-b p8=rootfs-b p9=bootstate
+# Partition layout (GPT): p1=boot p2=kernel-a p3=rootfs-a p4=kernel-b p5=rootfs-b p6=bootstate p7=overlay p8=data
 i=0
 while [ $i -lt 10 ]; do
     [ -b /dev/vda ] && break
@@ -53,14 +52,14 @@ else
 fi
 
 case "${SLOT}" in
-a) ROOTFS_DEV="${P}6" ;;
-b) ROOTFS_DEV="${P}8" ;;
+a) ROOTFS_DEV="${P}3" ;;
+b) ROOTFS_DEV="${P}5" ;;
 *) ;;
 esac
 
 BOOT_DEV="${P}1"
-OVERLAY_DEV="${P}3"
-DATA_DEV="${P}4"
+OVERLAY_DEV="${P}7"
+DATA_DEV="${P}8"
 
 echo "offline-lab: slot=${SLOT} rootfs=${ROOTFS_DEV}"
 
