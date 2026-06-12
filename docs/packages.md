@@ -6,8 +6,8 @@ The OS is organised as a Buildroot external tree (`br2-external`). Functionality
 
 | Package | Purpose |
 |---|---|
-| `offlinelab-base` | Core OS setup: boot partition mount, data partition expansion, sysext/confext bind mounts, power profile, serial console, `/etc/issue` |
-| `offlinelab-bootconf` | Boot-time configuration tool: reads `/boot/firmware/bootconf.yaml` and applies SSH keys, WiFi config, sudoers, and sysusers before other services start |
+| `offlinelab-base` | Core OS setup: boot partition mount, data partition expansion, fake hardware clock, machine-id persistence, sysext/confext bind mounts, power profile, serial console, `/etc/issue` |
+| `offlinelab-bootconf` | Boot-time configuration tool: reads `/data/config/bootconf.yaml` (provisioned from boot partition by initramfs) and applies SSH keys, WiFi config, sudoers, and sysusers before other services start |
 | `offlinelab-framework` | Bash utility library and boxctl CLI installed at `/usr/lib/framework/` |
 | `offlinelab-firewall` | nftables-based firewall: static rules on the read-only rootfs, per-app rule fragments under `/data/config/firewall/rules.d/` |
 | `offlinelab-usb-gadget` | USB composite gadget: ACM serial (ttyGS0) + ECM ethernet (usb0, 10.55.0.1/24) |
@@ -39,7 +39,9 @@ The `.mk` file installs everything from `src/` into the target rootfs and enable
 
 ## Provisioning pattern
 
-First-boot configuration is handled by `offlinelab-bootconf`. At every boot, `bootconf.service` reads `/boot/firmware/bootconf.yaml` and applies the configuration it describes:
+Provisioning uses a **boot partition inbox**: files placed under `/boot/firmware/config/` are copied into `/data/config/` by the initramfs on the next boot, then deleted from the boot partition. All services read exclusively from `/data/config/`.
+
+`bootconf.service` reads `/data/config/bootconf.yaml` and applies:
 
 - SSH authorized keys: `/data/home/admin/.ssh/authorized_keys`
 - WiFi credentials: `/data/config/wifi/wpa_supplicant.conf`
@@ -47,17 +49,20 @@ First-boot configuration is handled by `offlinelab-bootconf`. At every boot, `bo
 
 Bootconf is idempotent: if a target file already exists on `/data`, it is left unchanged. To re-provision a setting, delete the live copy from `/data` and reboot.
 
-To configure a new device, copy `bootconf.yaml.example` from the boot partition (written there at build time) to `bootconf.yaml` and fill in your credentials. The boot partition is FAT32 and can be written from any OS.
+To configure a new device, copy `bootconf.yaml.example` from the boot partition to `config/bootconf.yaml` and fill in your credentials. The boot partition is FAT32 and can be written from any OS.
 
 ## offlinelab-base
 
 **Systemd units:**
-- `boot-firmware.mount`: mounts `/boot/firmware` read-only after `dev-mmcblk0p1.device` appears
-- `expand-data.service`: first-boot data partition resize and format; creates `/data` directory structure
+- `boot-firmware.mount`: names the `/boot/firmware` mount set up by initramfs; systemd adopts it as read-only without remounting
+- `expand-data.service`: first-boot data partition resize and format; runs before `bootconf.service`
+- `clock-load.service`: loads the fake hardware clock from `/data/config/fake-hwclock.data` at boot; runs before `expand-data.service`
+- `clock-save.service`: saves the fake hardware clock on shutdown
+- `persist-machine-id.service`: copies `/etc/machine-id` to `/data/config/system/machine-id` on shutdown (idempotent)
+- `tmp.mount`: mounts `tmpfs` on `/tmp` (64 MB, `nosuid,nodev`)
 - `var-lib-extensions.mount`, `etc-extensions.mount`: bind-mount `/data/extensions/sysext/` and `/data/extensions/confext/` at sysinit
 - `systemd-sysext.service`, `systemd-confext.service`: enabled at sysinit.target
 - `power-profile.service`: applies CPU governor and power settings at boot
-- `boxctl-shutdown.service`: runs boxctl shutdown hook on shutdown
 
 **Other:**
 - `serial-getty@ttyS0.service`: enabled for GPIO UART console (115200 baud)
@@ -66,7 +71,7 @@ To configure a new device, copy `bootconf.yaml.example` from the boot partition 
 
 ## offlinelab-bootconf
 
-Boot-time configuration tool that reads `/boot/firmware/bootconf.yaml` and applies SSH keys, WiFi credentials, sudoers rules, and sysusers entries before `multi-user.target`.
+Boot-time configuration tool that reads `/data/config/bootconf.yaml` and applies SSH keys, WiFi credentials, sudoers rules, and sysusers entries before `multi-user.target`. The config file is provisioned from `/boot/firmware/config/bootconf.yaml` by the initramfs on first boot (or whenever the file is placed on the boot partition).
 
 **Systemd units:**
 - `bootconf.service`: reads and applies `bootconf.yaml` at boot

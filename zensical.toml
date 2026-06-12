@@ -35,6 +35,12 @@ nav = [
     { "Boot partition config" = "bootfs-config.md" },
     { "Boot configuration (bootconf)" = "bootconf.md" },
     { "Packages" = "packages.md" },
+    { "Command line tools" = [
+      { "Overview" = "cli/index.md" },
+      { "boxctl" = "cli/boxctl.md" },
+      { "appctl" = "cli/appctl.md" },
+      { "buildctl" = "cli/buildctl.md" },
+    ]},
     { "Service model" = "components.md" },
     { "Discovery" = [
       { "Overview" = "discovery/index.md" },
@@ -43,7 +49,6 @@ nav = [
     ]},
     { "App format" = "app-format.md" },
     { "Terminology" = "terminology.md" },
-    { "boxctl" = "boxctl.md" },
   ]},
 
   { "Specifications" = [

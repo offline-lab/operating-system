@@ -64,11 +64,9 @@ using the machine-id for device identity.
 it to the slot upper at boot before `switch_root`, ensuring consistency across slots.
 
 Flow:
-1. First boot: systemd generates machine-id, writes to `/etc/machine-id` (overlay upper)
-2. `persist-machine-id.service` runs once: copies `/etc/machine-id` to
-   `/data/config/system/machine-id` if the destination doesn't exist yet
-3. Every subsequent boot: initramfs copies `/data/config/system/machine-id` to
-   `/overlay/<slot>/upper/etc/machine-id` before `switch_root`
+1. First boot: systemd generates machine-id, writes to `/etc/machine-id` (overlay upper).
+2. `persist-machine-id.service` runs on shutdown: copies `/etc/machine-id` to `/data/config/system/machine-id` (skipped if destination already exists).
+3. Every subsequent boot: initramfs copies `/data/config/system/machine-id` to `/overlay/<slot>/upper/etc/machine-id` before `switch_root`.
 
 The file in `/data/config/system/machine-id` is the authoritative copy. The overlay
 entry is always populated from it, never generated fresh after first boot.

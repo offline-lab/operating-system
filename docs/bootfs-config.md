@@ -1,15 +1,14 @@
 # Boot partition configuration
 
-The boot partition (`/boot/firmware`, FAT32, ~32 MB) is mounted read-only at runtime.
-It holds firmware blobs, U-Boot, the kernel squashfs, and a `bootconf.yaml` file that
-configures the device on every boot.
+The boot partition (`/boot/firmware`, FAT32, ~32 MB) holds firmware blobs,
+U-Boot, the kernel, and a `config/` provisioning directory.
 
 ## Boot partition layout
 
 ```
 /boot/firmware/
-├── bootconf.yaml               # active configuration (copy from bootconf.yaml.example)
-├── bootconf.yaml.example       # template written by the build
+├── bootconf.yaml.example       # template — copy to config/bootconf.yaml to activate
+├── config/                     # provisioning inbox (consumed by initramfs, see below)
 ├── overlays/                   # RPi device tree overlays (firmware package)
 ├── bcm2710-rpi-zero-2-w.dtb    # device tree blob
 ├── bootcode.bin                # RPi first-stage bootloader
@@ -22,17 +21,29 @@ configures the device on every boot.
 └── u-boot.bin                  # U-Boot
 ```
 
+## Provisioning via config/
+
+`/boot/firmware/config/` is a **provisioning inbox**. On every boot, the initramfs:
+
+1. Mounts the boot partition read-write.
+2. If `config/` exists: copies the entire directory tree into `/data/config/`, overwriting any existing files, then deletes `config/` from the boot partition.
+3. Remounts the boot partition read-only.
+
+This means files placed in `config/` are **consumed on first boot** and are gone from the SD card afterwards. The live configuration is always in `/data/config/`. To re-provision after first boot, place the new files in `config/` again.
+
+The directory structure under `config/` mirrors `/data/config/` exactly:
+
+| Place on boot partition | Lands in |
+|---|---|
+| `config/bootconf.yaml` | `/data/config/bootconf.yaml` |
+| `config/wifi/wpa_supplicant.conf` | `/data/config/wifi/wpa_supplicant.conf` |
+| `config/ssh/authorized_keys` | `/data/config/ssh/authorized_keys` |
+
 ## bootconf.yaml
 
-`bootconf` reads `/boot/firmware/bootconf.yaml` at every boot and applies the
-configuration it describes to `/data`. If a target file already exists, it is not
-overwritten. See [Boot configuration (bootconf)](bootconf.md) for the full YAML reference.
+To configure the device, place a `bootconf.yaml` in `config/` on the boot partition before first boot. After the initramfs moves it to `/data/config/bootconf.yaml`, `bootconf.service` reads it there on every boot.
 
-To activate configuration on a new card:
-1. Mount the boot partition (FAT32, readable from any OS).
-2. Copy `bootconf.yaml.example` to `bootconf.yaml`.
-3. Edit the file with your credentials (WiFi PSK hash, SSH keys, etc.).
-4. Eject and boot.
+See [Boot configuration (bootconf)](bootconf.md) for the full YAML reference.
 
 ## Getting config onto the boot partition
 
@@ -52,26 +63,36 @@ BR2_PACKAGE_OFFLINELAB_BOOTCONF_WIFI_COUNTRY="NL"
 ### Method 2: manual SD card write
 
 After flashing the image, mount the boot partition (first partition, FAT32) and
-copy `bootconf.yaml.example` to `bootconf.yaml`, then edit it:
+copy `bootconf.yaml.example` to `config/bootconf.yaml`, then edit it:
 
 ```sh
 mount /dev/sdX1 /mnt
-cp /mnt/bootconf.yaml.example /mnt/bootconf.yaml
-# edit /mnt/bootconf.yaml — set wifi.ssid, wifi.password_hash, etc.
+mkdir -p /mnt/config
+cp /mnt/bootconf.yaml.example /mnt/config/bootconf.yaml
+# edit /mnt/config/bootconf.yaml — set wifi.ssid, wifi.password_hash, etc.
 umount /mnt
 ```
 
 The boot partition can be mounted and edited from macOS, Windows, or Linux without
 any special tools.
 
+### Re-provisioning after first boot
+
+To update credentials on a running device without SSH access (e.g. WiFi changed):
+
+```sh
+mount /dev/sdX1 /mnt
+mkdir -p /mnt/config
+cp new-bootconf.yaml /mnt/config/bootconf.yaml
+umount /mnt
+# reboot — initramfs overwrites /data/config/bootconf.yaml
+```
+
 ## Security notes
 
-- The boot partition is mounted read-only at runtime (`ro,noatime`).
-- `bootconf.yaml` is world-readable on the FAT32 partition. Store only the WiFi PSK
-  hash (from `wpa_passphrase`), never the plaintext password.
-- SSH authorized keys in `bootconf.yaml` are written to `/data/home/admin/.ssh/` with
-  mode `600`, owned by `admin` (uid 1000).
-- After first boot the live copies in `/data` are authoritative; the boot partition
-  file is re-read on every boot but only applies changes that haven't already been applied.
+- The boot partition is mounted read-only at runtime after provisioning completes.
+- `bootconf.yaml` is world-readable on the FAT32 partition while it is present. Store
+  only the WiFi PSK hash (from `wpa_passphrase`), never the plaintext password.
+- After the initramfs consumes `config/`, the boot partition contains no credentials.
 - If you used the build-time WiFi option, the hash is stored in your `.config` and
   baked into the boot partition image. Treat both as sensitive.

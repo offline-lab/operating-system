@@ -72,15 +72,15 @@ U-Boot reads a boot counter from the bootstate partition. If the new slot fails 
 
 ## First boot
 
-On first boot, the data partition is resized to fill the remaining SD card space and formatted. This is automatic: if the partition can't be mounted because there's no filesystem, resize and format run before systemd continues.
+On first boot, the data partition is resized to fill the remaining SD card space and formatted. This is automatic and runs via `expand-data.service` before `bootconf.service` or any other services start.
 
-Other first-boot setup: machine-id generation, SSH host key generation, config file provisioning from the boot partition. Each is idempotent: if the expected file already exists in `/data`, the setup step is skipped.
+Config provisioning happens even earlier: the initramfs copies `/boot/firmware/config/` into `/data/config/` before `switch_root`. On first boot, this is how `bootconf.yaml` and any other config files get onto the device. Each is idempotent: placing a file in `config/` always overwrites the `/data/config/` copy.
 
 ## WiFi
 
-WiFi is configured via `bootconf.yaml` on the FAT32 boot partition. Mount the SD card on any computer, copy `bootconf.yaml.example` to `bootconf.yaml`, and fill in the SSID and PSK hash. No serial console or screen needed.
+WiFi is configured via `bootconf.yaml`. Place it at `config/bootconf.yaml` on the FAT32 boot partition. The initramfs moves it to `/data/config/bootconf.yaml` on the next boot, and `bootconf.service` applies it. No serial console or screen needed.
 
-`bootconf.service` reads the file at every boot and writes credentials to `/data/config/wifi/wpa_supplicant.conf` if not already present. See [Configuration](configuration.md) for the full `bootconf.yaml` reference.
+To change WiFi credentials after first boot, place an updated `bootconf.yaml` (or just `wifi/wpa_supplicant.conf`) in the `config/` directory on the boot partition and reboot. See [Configuration](configuration.md) for the full reference.
 
 ## Systemd usage
 

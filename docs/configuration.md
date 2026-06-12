@@ -3,7 +3,7 @@
 There are three ways to configure the OS:
 
 1. **Build time**: options in `.config` baked into the image
-2. **Boot partition**: `bootconf.yaml` placed on the FAT32 boot partition, applied at every boot by `bootconf`
+2. **Boot partition provisioning**: files placed in `/boot/firmware/config/` are consumed by the initramfs on next boot and land in `/data/config/`
 3. **Runtime**: editing files directly on `/data` (requires SSH or console access)
 
 ## Build-time configuration
@@ -32,21 +32,30 @@ Writes WiFi credentials into `bootconf.yaml.example` on the boot partition at bu
 
 **Security note:** Build-time credentials are baked into every image flashed from that build. For per-card configuration, use `bootconf.yaml` on the boot partition instead.
 
-## Boot-partition provisioning (bootconf)
+## Boot-partition provisioning
 
-Place a `bootconf.yaml` file on the FAT32 boot partition. `bootconf.service` reads it at every boot and applies the configuration before other services start.
+Place files under `/boot/firmware/config/` on the FAT32 boot partition. On the next boot, the initramfs copies the entire `config/` tree into `/data/config/` (overwriting existing files) and then deletes `config/` from the boot partition. All services read exclusively from `/data/config/`.
 
-The boot partition contains `bootconf.yaml.example`. Copy it to `bootconf.yaml` and fill in your settings. The file format covers:
+The primary provisioning file is `bootconf.yaml`. The boot partition contains `bootconf.yaml.example` at build time. To activate:
+
+```sh
+# mount boot partition, then:
+mkdir -p /mnt/config
+cp /mnt/bootconf.yaml.example /mnt/config/bootconf.yaml
+# edit /mnt/config/bootconf.yaml
+```
+
+The file format covers:
 - SSH authorized keys
 - WiFi SSID and PSK hash
 - Sudoers rules
 - sysusers entries (custom users/groups)
 
-Bootconf is idempotent: it tracks what it has already applied and skips re-applying unchanged entries. To force re-provisioning, delete the relevant file from `/data` and reboot.
+`bootconf.service` is idempotent: it tracks what it has already applied and skips re-applying unchanged entries. To force re-provisioning, delete the relevant file from `/data` and reboot.
 
-The boot partition is FAT32 and can be written from any OS before the card is inserted.
+The boot partition is FAT32 and can be written from any OS. Re-provisioning after first boot (e.g. WiFi credentials changed) works the same way: place updated files in `config/` on the SD card and reboot.
 
-See [Boot partition configuration](bootfs-config.md) for the boot partition layout and full `bootconf.yaml` reference.
+See [Boot partition configuration](bootfs-config.md) for the full layout and `bootconf.yaml` reference.
 
 ## Runtime configuration
 

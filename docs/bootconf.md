@@ -1,17 +1,18 @@
 # Boot configuration (bootconf)
 
 `bootconf` is the boot-time configuration tool for Offline Lab OS. It reads
-`/boot/firmware/bootconf.yaml` at every boot and applies the configuration it
+`/data/config/bootconf.yaml` at every boot and applies the configuration it
 describes before other services start.
 
 Source: [github.com/offline-lab/bootconf](https://github.com/offline-lab/bootconf) · Docs: [bootconf.offline-lab.com](https://bootconf.offline-lab.com)
 
 ## How it works
 
-1. `bootconf.service` runs at `multi-user.target` before other services.
-2. It reads `/boot/firmware/bootconf.yaml` (on the FAT32 boot partition).
-3. For each enabled section it applies the configuration to `/data`.
-4. `bootconf-sysusers.service` runs immediately after and calls `systemd-sysusers` to create any declared users and groups.
+1. During initramfs, any files placed under `/boot/firmware/config/` are copied into `/data/config/` and the `config/` directory is deleted from the boot partition. This is how `bootconf.yaml` gets onto the device in the first place.
+2. `bootconf.service` runs after `expand-data.service` (data partition ready) and before `network.target`.
+3. It reads `/data/config/bootconf.yaml`.
+4. For each enabled section it applies the configuration to `/data`.
+5. `bootconf-sysusers.service` runs immediately after and calls `systemd-sysusers` to create any declared users and groups.
 
 Bootconf is **idempotent**: each section writes a status file under `/data/bootconf/`. If the status file already exists and the configuration hasn't changed, the section is skipped. To force re-provisioning, delete the relevant file from `/data` and reboot.
 
@@ -20,9 +21,12 @@ Bootconf is **idempotent**: each section writes a status file under `/data/bootc
 The boot partition contains a `bootconf.yaml.example` file placed there at build time. To activate it:
 
 1. Mount the boot partition (FAT32, accessible from any OS).
-2. Copy `bootconf.yaml.example` to `bootconf.yaml`.
-3. Edit `bootconf.yaml` with your credentials.
-4. Eject the card and boot.
+2. Create a `config/` directory on the boot partition.
+3. Copy `bootconf.yaml.example` to `config/bootconf.yaml`.
+4. Edit `config/bootconf.yaml` with your credentials.
+5. Eject the card and boot. The initramfs moves `config/bootconf.yaml` to `/data/config/bootconf.yaml` and deletes `config/` from the boot partition.
+
+To update credentials after first boot (e.g. WiFi change), repeat steps 1–5 with the updated file. The initramfs overwrites the existing `/data/config/bootconf.yaml`.
 
 ## bootconf.yaml reference
 

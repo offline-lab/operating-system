@@ -30,7 +30,7 @@ Find the device's IP address from your router's DHCP lease table, or use the ser
 
     ssh admin@<ip-address>
 
-Once connected, check the system status with [boxctl](boxctl.md):
+Once connected, check the system status with [boxctl](https://framework.offline-lab.com):
 
     boxctl status
 
