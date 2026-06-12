@@ -12,7 +12,7 @@ wifi:
 system:
   enabled: true
   timezone: Europe/Amsterdam
-  hostname: offline-lab
+  hostname: offlinelab
 
 ssh:
   enabled: true
@@ -41,5 +41,11 @@ users:
     enabled: true
     sudo: true
     home: /home/testuser
+    authorized_keys:
+    - "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBCY1/jmHp/cSIPfG388BbaP/kISOKnsvPiMgLYm/vUsOFIvXfxqPo5Xh5r8wfwUQrjw1iLb3DYp6FWKEzAGpJRs= flip@bigmac.local"
+  - name: app
+    enabled: true
+    sudo: true
+    home: /data/home/app
     authorized_keys:
     - "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBCY1/jmHp/cSIPfG388BbaP/kISOKnsvPiMgLYm/vUsOFIvXfxqPo5Xh5r8wfwUQrjw1iLb3DYp6FWKEzAGpJRs= flip@bigmac.local"
