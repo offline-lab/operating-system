@@ -34,6 +34,9 @@ Reference material for the platform and companion projects:
 - [App filesystem](app-filesystem.md): required files inside a portable service image
 - [Disco](discovery/): service discovery and name resolution
 - [framework.offline-lab.com](https://framework.offline-lab.com): bash library and boxctl CLI reference
+- [appctl.offline-lab.com](https://appctl.offline-lab.com): on-device app management CLI reference
+- [buildctl.offline-lab.com](https://buildctl.offline-lab.com): package build and publishing CLI reference
+- [disco.offline-lab.com](https://disco.offline-lab.com): service discovery protocol and CLI reference
 - [bootconf.offline-lab.com](https://bootconf.offline-lab.com): boot-time configuration reference
 
 ### Contribute

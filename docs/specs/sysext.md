@@ -7,7 +7,7 @@ of the read-only rootfs without modifying the OS image: **sysext** and **confext
 |---|---|---|
 | Extends | `/usr/` and `/opt/` | `/etc/` |
 | Storage on device | `/data/extensions/sysext/` | `/data/extensions/confext/` |
-| Bind-mount target | `/var/lib/extensions/` | `/etc/confexts/` |
+| Bind-mount target | `/var/lib/extensions/` | `/etc/extensions/` |
 | Merged by | `systemd-sysext.service` | `systemd-confext.service` |
 | Metadata path | `/usr/lib/extension-release.d/extension-release.<name>` | `/etc/extension-release.d/extension-release.<name>` |
 | boxctl command | `boxctl sysext` | `boxctl confext` |
@@ -100,7 +100,7 @@ Extensions are stored on `/data/` and bind-mounted to the paths systemd scans:
 
 ```
 /data/extensions/sysext/<name>_<arch>.raw   →   /var/lib/extensions/
-/data/extensions/confext/<name>_<arch>.raw  →   /etc/confexts/
+/data/extensions/confext/<name>_<arch>.raw  →   /etc/extensions/
 ```
 
 Both `systemd-sysext.service` and `systemd-confext.service` are enabled at boot and

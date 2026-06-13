@@ -14,9 +14,9 @@ Quick reference for terms used across the documentation.
 | **Boot partition** | The FAT32 partition holding firmware, U-Boot, kernel, initramfs, and `bootconf.yaml` |
 | **Overlay partition** | Holds per-slot overlayfs upper/work directories |
 | **/data** | The persistent read-write partition for user data and package state |
-| **bootconf** | Boot-time configuration tool: reads `/boot/firmware/bootconf.yaml` at every boot and provisions SSH keys, WiFi, hostname, and user config |
+| **bootconf** | Boot-time configuration tool: reads `/data/config/bootconf.yaml` at every boot and provisions SSH keys, WiFi, hostname, and user config |
 | **boxctl** | On-device CLI for managing Offline Lab OS (status, updates, network, diagnostics) |
-| **appctl** | On-device CLI for installing and managing app packages (planned) |
-| **buildctl** | Developer-side CLI for building, signing, and publishing app packages (planned) |
+| **appctl** | On-device CLI for installing and managing app packages |
+| **buildctl** | Developer-side CLI for building, signing, and publishing app packages |
 | **sysext** | systemd system extension: a squashfs image that extends `/usr/` or `/opt/` at runtime without modifying the read-only rootfs |
 | **confext** | systemd configuration extension: a squashfs image that layers additional config under `/etc/` at runtime |

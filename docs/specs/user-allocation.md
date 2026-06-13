@@ -235,5 +235,5 @@ On remove the snippet is deleted; the user is not recreated on next boot.
 ## Buildroot implications
 
 - `systemd-sysusers`: part of `BR2_PACKAGE_SYSTEMD`, already required
-- `offlinelab-sysusers.service`: ships with `offlinelab-base` package
+- `offlinelab-sysusers.service`: ships with `offlinelab-bootconf` package
 - No `useradd`/`groupadd` required

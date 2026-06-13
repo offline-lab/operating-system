@@ -10,14 +10,17 @@ There are three ways to configure the OS:
 
 Copy `config.example` to `.config` in the repo root. Options in `.config` override the Buildroot defconfig at build time.
 
-### Development admin user
+### Development users and SSH keys
+
+The `offlinelab-testing` package (dev/test only, never in production) creates an `admin` user (uid 1000) and a `testuser` (uid 1001). Set their SSH public keys:
 
 ```ini
-BR2_PACKAGE_OFFLINELAB_ADMIN=y
-BR2_PACKAGE_OFFLINELAB_ADMIN_AUTHORIZED_KEY="ssh-ed25519 AAAA... you@host"
+BR2_PACKAGE_OFFLINELAB_TESTING=y
+BR2_PACKAGE_OFFLINELAB_TESTING_ADMIN_PUBKEY="ssh-ed25519 AAAA... you@host"
+BR2_PACKAGE_OFFLINELAB_TESTING_TESTUSER_PUBKEY="ssh-ed25519 AAAA... builder@host"
 ```
 
-Bakes an `admin` user (uid 1000) with your SSH key into the read-only rootfs. Convenient for development; do not use in production images.
+See the [Development guide](development.md) for SSH key setup details.
 
 ### Baking WiFi credentials into the boot partition example config
 
@@ -93,6 +96,10 @@ Changes take effect immediately; dropbear re-reads the file on each connection.
 │   │   └── rules.d/                # per-app nftables rule fragments
 │   ├── system/
 │   │   └── machine-id              # stable machine-id across A/B slot switches
+│   ├── keys/                       # appctl repo verification certs
+│   ├── sysusers.d/                 # appctl user allocation snippets
+│   ├── disco/
+│   │   └── config.yaml             # disco daemon configuration
 │   └── resources.json              # resource baseline (written at boot)
 ├── home/
 │   └── admin/
@@ -100,6 +107,9 @@ Changes take effect immediately; dropbear re-reads the file on each connection.
 │       └── .ssh/
 │           └── authorized_keys     # live SSH public keys
 ├── apps/                           # systemd portable service images (.raw)
+├── offline-lab/
+│   ├── images/                     # staged app package images
+│   └── packages.db                 # appctl database (installed apps, uids)
 └── extensions/
     ├── sysext/                     # sysext images (bind-mounted to /var/lib/extensions)
     └── confext/                    # confext images (bind-mounted to /etc/extensions)

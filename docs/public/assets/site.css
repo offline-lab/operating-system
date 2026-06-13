@@ -546,8 +546,12 @@ footer { padding: 2rem; border-top: 1px solid var(--border); }
   flex-wrap: wrap;
 }
 
+.footer-left { display: flex; align-items: center; gap: 1rem; }
+
 .footer-logo { font-family: var(--font-mono); font-size: 0.8rem; color: var(--fg-muted); }
 .footer-logo span { color: var(--accent); }
+
+.footer-made-eu { display: flex; align-items: center; gap: 0.35rem; font-family: var(--font-mono); font-size: 0.7rem; color: var(--fg-subtle); }
 
 .footer-links { display: flex; gap: 1.25rem; }
 

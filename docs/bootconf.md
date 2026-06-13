@@ -9,7 +9,7 @@ Source: [github.com/offline-lab/bootconf](https://github.com/offline-lab/bootcon
 ## How it works
 
 1. During initramfs, any files placed under `/boot/firmware/config/` are copied into `/data/config/` and the `config/` directory is deleted from the boot partition. This is how `bootconf.yaml` gets onto the device in the first place.
-2. `bootconf.service` runs after `expand-data.service` (data partition ready) and before `network.target`.
+2. `bootconf.service` runs after `systemd-repart` (data partition ready) and before `network.target`.
 3. It reads `/data/config/bootconf.yaml`.
 4. For each enabled section it applies the configuration to `/data`.
 5. `offlinelab-sysusers.service` runs immediately after and calls `systemd-sysusers` to create any declared users and groups.
@@ -140,3 +140,4 @@ This writes the values into the example file placed on the boot partition. Copy 
 |---|---|---|
 | `bootconf.service` | `multi-user.target` | Reads `bootconf.yaml` and applies all enabled sections |
 | `offlinelab-sysusers.service` | After `bootconf.service` | Runs `systemd-sysusers` to create declared users |
+| `offlinelab-tempfiles.service` | After `bootconf.service` | Creates temporary files declared in the config |

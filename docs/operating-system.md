@@ -72,7 +72,7 @@ U-Boot reads a boot counter from the bootstate partition. If the new slot fails 
 
 ## First boot
 
-On first boot, the data partition is resized to fill the remaining SD card space and formatted. This is automatic and runs via `expand-data.service` before `bootconf.service` or any other services start.
+On first boot, the data partition is grown to fill the remaining SD card space by `systemd-repart` (configured via `/usr/lib/repart.d/10-data.conf`). This runs before `bootconf.service` or any other services start.
 
 Config provisioning happens even earlier: the initramfs copies `/boot/firmware/config/` into `/data/config/` before `switch_root`. On first boot, this is how `bootconf.yaml` and any other config files get onto the device. Each is idempotent: placing a file in `config/` always overwrites the `/data/config/` copy.
 

@@ -55,7 +55,7 @@ The recommended setup is a low-power travel router providing WiFi between nodes 
 
 ### WiFi
 
-Devices connect to the travel router or any configured network. WiFi credentials are provisioned by `bootconf` from `/boot/firmware/bootconf.yaml` on the boot partition. DHCP is used for IP assignment. See [Boot configuration](bootconf.md) for details.
+Devices connect to the travel router or any configured network. WiFi credentials are provisioned by `bootconf` from `/data/config/bootconf.yaml`. DHCP is used for IP assignment. See [Boot configuration](bootconf.md) for details.
 
 ### USB
 

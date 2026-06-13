@@ -4,7 +4,7 @@
 
 Offline Lab is an open-source platform for running applications on low-power devices without internet. We build software for situations where connectivity is unreliable or unavailable: travel, remote areas, temporary setups where existing tools stop working when the network drops.
 
-Offline Lab OS currently targets the Raspberry Pi Zero 2W and QEMU, with support for additional hardware planned.
+Offline Lab OS currently targets the Raspberry Pi Zero 2W, Pi 3, Pi 4, and QEMU arm64.
 
 ## Use cases
 
@@ -43,8 +43,9 @@ See [Terminology](terminology.md) for definitions of terms used throughout the d
 | [operating-system](https://github.com/offline-lab/operating-system) | [docs.offline-lab.com](https://docs.offline-lab.com) | OS image builder (Buildroot), packages, and on-device tooling |
 | [framework](https://github.com/offline-lab/framework) | [framework.offline-lab.com](https://framework.offline-lab.com) | Bash utility library and boxctl device management CLI |
 | [bootconf](https://github.com/offline-lab/bootconf) | [bootconf.offline-lab.com](https://bootconf.offline-lab.com) | Declarative boot-time configuration for Offline Lab OS |
-| [disco](https://github.com/offline-lab/disco) | — | Service discovery and name resolution for offline networks |
-| packages | — | Portable systemd service packages (planned) |
+| [disco](https://github.com/offline-lab/disco) | [disco.offline-lab.com](https://disco.offline-lab.com) | Service discovery and name resolution for offline networks |
+| [appctl](https://github.com/offline-lab/appctl) | [appctl.offline-lab.com](https://appctl.offline-lab.com) | On-device CLI for installing and managing app packages |
+| [buildctl](https://github.com/offline-lab/buildctl) | [buildctl.offline-lab.com](https://buildctl.offline-lab.com) | Developer-side CLI for building, signing, and publishing app packages |
 | sync | — | Data synchronization tools (planned) |
 
 ## License

@@ -104,20 +104,20 @@ After a successful A/B slot switch, the old slot's overlay directory is left as-
 
 ## First boot
 
-On first boot the data partition is formatted and resized by `expand-data.service` before anything else starts. Systemd boot order is:
+On first boot the data partition is grown by `systemd-repart` using the configuration at `/usr/lib/repart.d/10-data.conf`. Systemd boot order is:
 
 ```
 clock-load.service      ← loads fake hardware clock from /data
-  └─ expand-data.service   ← resizes + formats /data if needed (first boot only)
+  └─ systemd-repart       ← grows /data partition to fill remaining card (first boot only)
        └─ bootconf.service  ← applies /data/config/bootconf.yaml
             └─ network, wifi, ssh, and all other services
 ```
 
-`expand-data.service` resizes the data partition to fill the remaining SD card space using `parted` and `resize2fs`, then creates the `/data` directory structure. It is a no-op on subsequent boots if `/data` is already formatted and mounted.
+`systemd-repart` grows the data partition to fill the remaining SD card space. It is a no-op on subsequent boots if `/data` is already at the expected size.
 
 **First boot duration scales with card size.** `resize2fs` must initialise the entire partition. On an 8 GB card this takes a few seconds; on large cards (512 GB–1 TB) it can take several minutes on the Zero 2W. The device will reach the login prompt once it finishes; no intervention needed.
 
-Boot-time provisioning (WiFi credentials, SSH keys) is applied by `bootconf` after `expand-data`. See [Boot configuration](bootconf.md) and [Configuration](configuration.md).
+Boot-time provisioning (WiFi credentials, SSH keys) is applied by `bootconf` after the data partition is ready. See [Boot configuration](bootconf.md) and [Configuration](configuration.md).
 
 ## Boot partition contents
 

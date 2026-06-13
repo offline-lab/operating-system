@@ -22,7 +22,7 @@ Then rebuild. Without this, your changes won't appear in the image. This is the 
 
 ### Framework development
 
-The framework lives in its own repository at [github.com/offline-lab/framework](https://github.com/offline-lab/framework). Edit it there. The builder's `.mk` file points at the sibling `../framework` directory via `SITE_METHOD = local` for local development.
+The framework lives in its own repository at [github.com/offline-lab/framework](https://github.com/offline-lab/framework). Edit it there, then update the pinned commit in `BR2_PACKAGE_OFFLINELAB_FRAMEWORK_VERSION` (in the package Config.in or your `.config`) to pick up the changes.
 
 After editing framework source, rebuild:
 
@@ -36,7 +36,7 @@ See [framework.offline-lab.com](https://framework.offline-lab.com) for the full 
 
 ### Config provisioning is idempotent
 
-Boot-time configuration is applied by `bootconf` reading `/boot/firmware/bootconf.yaml` at every boot. If the target file already exists in `/data`, `bootconf` leaves it unchanged.
+Boot-time configuration is applied by `bootconf` reading `/data/config/bootconf.yaml` at every boot. If the target file already exists in `/data`, `bootconf` leaves it unchanged.
 
 To re-provision a setting: delete the live file from `/data` and reboot.
 
@@ -146,11 +146,17 @@ Tests live in `tests/tests/` and are grouped by package:
 |---|---|
 | `test_boot.py` | Systemd target, failed units, mounts, kernel |
 | `test_base.py` | Users, groups, services, sudoers, framework |
+| `test_system.py` | Rootfs overlay, skeleton files, system config |
 | `test_firewall.py` | nftables rules, service state |
 | `test_bootconf.py` | bootconf binary, service, sysusers, provisioned users |
 | `test_resources.py` | offlinelab-resources oneshot service |
 | `test_portable.py` | portablectl, sysext, AppArmor, /var/lib/portables symlink |
 | `test_disco.py` | disco-daemon binary, service, NSS, capabilities |
+| `test_ssh.py` | Dropbear service, key-only auth, host key persistence |
+| `test_wifi.py` | wpa_supplicant, wlan0 network config, WiFi fix |
+| `test_rauc.py` | RAUC slots, rauc-mark-good, fw_env config, USB update |
+| `test_usb_gadget.py` | USB gadget service, ttyGS0, usb0 network |
+| `test_zram.py` | zram swap device, LZ4 compression, module loading |
 | `test_testing.py` | admin/testuser accounts (offlinelab-testing package only) |
 
 The `offlinelab-testing` package (enabled via `BR2_PACKAGE_OFFLINELAB_TESTING=y`) is required for the test suite to run. It creates `testuser` (uid 1001) with NOPASSWD sudo and installs the test SSH key. It must never be included in production builds.
