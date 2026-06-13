@@ -40,7 +40,7 @@ See [Terminology](terminology.md) for definitions of terms used throughout the d
 
 | Project | Docs | Description |
 |---|---|---|
-| [builder](https://github.com/offline-lab/builder) | [docs.offline-lab.com](https://docs.offline-lab.com) | OS image builder (Buildroot), packages, and on-device tooling |
+| [operating-system](https://github.com/offline-lab/operating-system) | [docs.offline-lab.com](https://docs.offline-lab.com) | OS image builder (Buildroot), packages, and on-device tooling |
 | [framework](https://github.com/offline-lab/framework) | [framework.offline-lab.com](https://framework.offline-lab.com) | Bash utility library and boxctl device management CLI |
 | [bootconf](https://github.com/offline-lab/bootconf) | [bootconf.offline-lab.com](https://bootconf.offline-lab.com) | Declarative boot-time configuration for Offline Lab OS |
 | [disco](https://github.com/offline-lab/disco) | — | Service discovery and name resolution for offline networks |

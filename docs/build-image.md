@@ -23,8 +23,8 @@ Both produce the same output: a compressed SD card image in `artifacts/`.
 Clone the repository and copy the example config files:
 
 ```bash
-git clone https://github.com/offline-lab/builder
-cd builder
+git clone https://github.com/offline-lab/operating-system
+cd operating-system
 
 cp env.example .env
 cp config.example .config

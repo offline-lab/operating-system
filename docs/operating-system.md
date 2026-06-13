@@ -16,7 +16,7 @@ The base OS (**Offline Lab OS**) is a minimal read-only Linux image built with B
 
 Offline Lab OS is built with [Buildroot](https://buildroot.org/). Builds run in Docker on macOS or on a native arm64 Debian VM (the "buildbox"). Multiple boards are supported; each has its own defconfig under `br2-external/configs/`.
 
-The [builder repository](https://github.com/offline-lab/builder) contains the Buildroot configuration, external tree, and tooling for producing SD card images.
+The [operating-system repository](https://github.com/offline-lab/operating-system) contains the Buildroot configuration, external tree, and tooling for producing SD card images.
 
 ## Kernel
 

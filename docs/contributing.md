@@ -4,7 +4,7 @@ Offline Lab is an open-source community project under AGPL v3. Contributions are
 
 ## Getting started
 
-The best place to start is the [builder](https://github.com/offline-lab/builder) repository, which contains the OS image builder, the framework, and all on-device tooling. Read the [Development guide](development.md) for build setup and coding conventions.
+The best place to start is the [operating-system](https://github.com/offline-lab/operating-system) repository, which contains the OS image builder, the framework, and all on-device tooling. Read the [Development guide](development.md) for build setup and coding conventions.
 
 If you have something specific in mind, open an issue first. Discussing the approach before writing code saves everyone time, especially for larger changes.
 
