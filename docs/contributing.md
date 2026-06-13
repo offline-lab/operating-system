@@ -4,24 +4,9 @@ Offline Lab is an open-source community project under AGPL v3. Contributions are
 
 ## Getting started
 
-1. Browse the [GitHub organization](https://github.com/offline-lab) to find a repository.
-2. Read the repository README for build instructions.
-3. Check the issue tracker for open issues, or create one to discuss your idea before starting.
+The best place to start is the [builder](https://github.com/offline-lab/builder) repository, which contains the OS image builder, the framework, and all on-device tooling. Read the [Development guide](development.md) for build setup and coding conventions.
 
-For build setup and coding conventions, see the [Development guide](development.md).
-
-## Repositories
-
-| Repository | Description |
-|---|---|
-| [builder](https://github.com/offline-lab/builder) | Offline Lab OS image builder (Buildroot), framework, boxctl, and on-device tooling |
-| [disco](https://github.com/offline-lab/disco) | Service discovery and name resolution for offline networks |
-| services | Portable systemd service images (planned) |
-| sync | Data synchronization tools (planned) |
-
-## Framework
-
-The [Framework](framework/index.md) is the most actively developed part of the codebase. It's a Bash utility library installed on every Offline Lab OS device. See the [framework contributor guide](https://github.com/offline-lab/builder/blob/main/framework/.claude/CLAUDE.md) for coding conventions, and run `bin/test-framework --lint` before submitting changes.
+If you have something specific in mind, open an issue first. Discussing the approach before writing code saves everyone time, especially for larger changes.
 
 ## Submitting a pull request
 

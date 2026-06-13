@@ -16,9 +16,10 @@
 #
 ################################################################################
 
-OFFLINELAB_USB_GADGET_VERSION = 1.0
-OFFLINELAB_USB_GADGET_SITE = $(BR2_EXTERNAL_OFFLINELAB_PATH)/package/offlinelab-usb-gadget/src
+OFFLINELAB_USB_GADGET_VERSION     = 1.0
+OFFLINELAB_USB_GADGET_SITE        = $(BR2_EXTERNAL_OFFLINELAB_PATH)/package/offlinelab-usb-gadget/src
 OFFLINELAB_USB_GADGET_SITE_METHOD = local
+OFFLINELAB_USB_GADGET_LICENSE     = AGPL-3.0-only
 
 define OFFLINELAB_USB_GADGET_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0644 $(@D)/systemd/service/usb-gadget.service \

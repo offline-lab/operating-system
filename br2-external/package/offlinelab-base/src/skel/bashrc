@@ -1,0 +1,2 @@
+[[ -f /etc/bash.bashrc ]] && . /etc/bash.bashrc
+export PATH="${HOME}/bin:${PATH}"

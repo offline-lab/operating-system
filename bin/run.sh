@@ -6,7 +6,7 @@ declare -a arguments=(
     -m 512M
     -smp 4
     -bios artifacts/qemu-arm64/u-boot.bin
-    -drive "file=artifacts/qemu-arm64/qemu.img,format=raw,if=virtio,id=hd0"
+    -drive "file=artifacts/qemu-arm64/offlinelab-qemu-arm64.img,format=raw,if=virtio,id=hd0"
     -nographic
 )
 

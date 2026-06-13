@@ -16,12 +16,14 @@
 # Copy to .config and edit. This file is merged on top of the defconfig.
 #
 
-# SSH authorized keys for the app user
-BR2_PACKAGE_OFFLINELAB_SSH_CREATE_AUTHORIZED_KEYS=y
-BR2_PACKAGE_OFFLINELAB_SSH_CREATE_AUTHORIZED_KEYS_CONTENT="ssh-ed25519 AAAA... you@host"
+# SSH authorized keys for admin and testuser (offlinelab-testing package)
+# Get your public key: cat ~/.ssh/id_ed25519.pub
+BR2_PACKAGE_OFFLINELAB_TESTING_ADMIN_PUBKEY="ssh-ed25519 AAAA... you@host"
+BR2_PACKAGE_OFFLINELAB_TESTING_TESTUSER_PUBKEY="ssh-ed25519 AAAA... builder@host"
 
-# WiFi credentials baked into the image
-BR2_PACKAGE_OFFLINELAB_WIFI_WPA_CREATE=y
-BR2_PACKAGE_OFFLINELAB_WIFI_WPA_SSID="your-ssid"
-BR2_PACKAGE_OFFLINELAB_WIFI_WPA_PASSWORD="your-password"
-BR2_PACKAGE_OFFLINELAB_WIFI_WPA_COUNTRY="00"
+# WiFi credentials baked into bootconf.yaml (offlinelab-testing package)
+# password_hash is from: wpa_passphrase "<ssid>" "<password>" | grep -v '#' | grep psk= | cut -d= -f2
+# Remove this block if you don't need WiFi baked in at build time.
+BR2_PACKAGE_OFFLINELAB_TESTING_WIFI_SSID="your-ssid"
+BR2_PACKAGE_OFFLINELAB_TESTING_WIFI_PASSWORD_HASH="<psk hash from wpa_passphrase>"
+BR2_PACKAGE_OFFLINELAB_TESTING_WIFI_COUNTRY="NL"

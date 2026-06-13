@@ -1,0 +1,15 @@
+# Hashes for offlinelab-disco.
+# Source: https://github.com/offline-lab/disco/releases
+#
+# The tarball name is: offlinelab-disco-<version>.tar.gz
+# Buildroot names downloaded archives as <pkgname>-<version>.tar.gz.
+#
+# How to update:
+#   wget https://github.com/offline-lab/disco/archive/refs/tags/<VERSION>.tar.gz
+#   sha256sum the downloaded file
+#
+# Add one sha256 line per version you build. The version in BR2_PACKAGE_OFFLINELAB_DISCO_VERSION
+# must match an entry here or the build will be rejected.
+#
+sha256  2e49d4e8fe21bfe2acbef46797e9e3f6fcb6d02198278823e3b6567689c567c3  offlinelab-disco-v0.20260605.1.tar.gz
+sha256  14e18d7ea7320cf564627b941dc16bbdc386937f59e4ece0f0dd030955b64a15  offlinelab-disco-v0.20260613.1.tar.gz

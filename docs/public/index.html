@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Offline Lab</title>
-  <meta name="description" content="A platform for running and managing personal services on low-power hardware, no internet required." />
+  <meta name="description" content="A battery-powered platform for life without internet. Minimal OS, portable services, no cloud required." />
   <link rel="icon" href="/images/offline-lab.ico" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -98,10 +98,9 @@
         </g>
       </svg>
       <div class="hero-badge">early development</div>
-      <h1>Run your services.<br><em>Anywhere.</em></h1>
+      <h1>A battery-powered platform<br><em>for life without internet.</em></h1>
       <div class="hero-desc">
-        <p>Offline Lab is a platform for running and managing personal services on low-power, resource-constrained devices. It ships a minimal read-only operating system, a portable service format for packaging and distributing applications, and tooling to build, sign, and publish those services.</p>
-        <p>No internet required.</p>
+        <p>Minimal OS. Portable services. Build, sign, and ship — no cloud required.</p>
       </div>
       <div class="hero-actions">
         <a class="btn btn-primary" href="/docs/">
@@ -124,21 +123,21 @@
 
       <div class="components-grid">
 
-        <a class="component-card" href="/moreos/">
+        <a class="component-card" href="/docs/operating-system/">
           <div class="card-header">
-            <span class="card-name">MoreOS</span>
+            <span class="card-name">Offline Lab OS</span>
             <span class="card-status status-wip">in development</span>
           </div>
           <p class="card-desc">A minimal, read-only Linux operating system built on Buildroot, designed to host personal services on low-power hardware with minimal overhead.</p>
           <span class="card-link">learn more →</span>
         </a>
 
-        <a class="component-card" href="/olpf/">
+        <a class="component-card" href="/docs/components/">
           <div class="card-header">
-            <span class="card-name">OLPF</span>
+            <span class="card-name">portable services</span>
             <span class="card-status status-planned">planned</span>
           </div>
-          <p class="card-desc">The Offline Lab Package Format. A packaging spec built around squashfs and systemd portable services for distributing and running services on MoreOS.</p>
+          <p class="card-desc">The service format. A squashfs image containing everything a service needs, managed as a systemd portable service. No package managers, no dependency resolution.</p>
           <span class="card-link">learn more →</span>
         </a>
 
@@ -151,30 +150,30 @@
           <span class="card-link">learn more →</span>
         </a>
 
-        <a class="component-card" href="/pkgctl/">
+        <a class="component-card" href="/docs/">
           <div class="card-header">
-            <span class="card-name">pkgctl</span>
+            <span class="card-name">buildctl</span>
             <span class="card-status status-planned">planned</span>
           </div>
-          <p class="card-desc">The toolchain for building, signing, and publishing packages. Runs on Mac or Linux. Build a service, sign it, and push it to a repository or copy the artifact straight to local storage.</p>
+          <p class="card-desc">The developer-side toolchain for building, signing, and publishing portable services. Runs on Mac or Linux. Build a service, sign it, and push it to a repository or copy the artifact to local storage.</p>
           <span class="card-link">learn more →</span>
         </a>
 
-        <a class="component-card" href="/boxctl/">
+        <a class="component-card" href="/docs/framework/">
           <div class="card-header">
             <span class="card-name">boxctl</span>
             <span class="card-status status-planned">planned</span>
           </div>
-          <p class="card-desc">The on-device CLI for managing MoreOS. Handles system status, updates, reboots, network configuration, logs, and diagnostics.</p>
+          <p class="card-desc">The on-device CLI for managing the system. Handles system status, updates, reboots, network configuration, logs, and diagnostics.</p>
           <span class="card-link">learn more →</span>
         </a>
 
-        <a class="component-card" href="/appctl/">
+        <a class="component-card" href="/docs/">
           <div class="card-header">
             <span class="card-name">appctl</span>
             <span class="card-status status-planned">planned</span>
           </div>
-          <p class="card-desc">The on-device CLI for managing apps on MoreOS. Handles app lifecycle — install, start, stop, enable, disable, and remove portable services.</p>
+          <p class="card-desc">The on-device CLI for managing apps. Handles app lifecycle — install, start, stop, enable, disable, and remove portable services.</p>
           <span class="card-link">learn more →</span>
         </a>
 
@@ -192,10 +191,9 @@
         <div class="phase">
           <div class="phase-dot current"></div>
           <div class="phase-content">
-            <div class="phase-title">Phase 1 — MoreOS</div>
+            <div class="phase-title">Phase 1 — Offline Lab OS</div>
             <p class="phase-desc">The read-only operating system. Buildroot-based, A/B partition updates, systemd portable services as the only way to extend the system. Currently targeting Raspberry Pi Zero 2W and QEMU.</p>
             <div class="phase-links">
-              <a class="phase-link" href="/moreos/">MoreOS →</a>
               <a class="phase-link" href="/docs/operating-system/">docs →</a>
             </div>
           </div>
@@ -203,11 +201,11 @@
         <div class="phase">
           <div class="phase-dot"></div>
           <div class="phase-content">
-            <div class="phase-title">Phase 2 — OLPF + pkgctl</div>
-            <p class="phase-desc">The packaging spec and build toolchain. Define what a service looks like, how it's built, signed, and distributed — with or without internet access.</p>
+            <div class="phase-title">Phase 2 — portable services + buildctl</div>
+            <p class="phase-desc">The service format and build toolchain. Define what a service looks like, how it's built, signed, and distributed — with or without internet access.</p>
             <div class="phase-links">
-              <a class="phase-link" href="/olpf/">OLPF →</a>
-              <a class="phase-link" href="/pkgctl/">pkgctl →</a>
+              <a class="phase-link" href="/docs/components/">portable services →</a>
+              <a class="phase-link" href="/docs/">buildctl →</a>
             </div>
           </div>
         </div>
@@ -245,7 +243,7 @@
       <div class="contribute-grid">
         <div class="contribute-card">
           <h3>Use it</h3>
-          <p>Run MoreOS on a Raspberry Pi Zero 2W or test it in QEMU. Try it, break it, tell us what's wrong.</p>
+          <p>Run Offline Lab OS on a Raspberry Pi Zero 2W or test it in QEMU. Try it, break it, tell us what's wrong.</p>
           <a class="btn btn-secondary" href="/docs/">get started</a>
         </div>
         <div class="contribute-card">

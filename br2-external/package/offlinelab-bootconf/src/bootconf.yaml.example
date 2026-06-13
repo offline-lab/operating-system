@@ -1,0 +1,127 @@
+#
+# Bootconf configuration — rename this file to bootconf.yaml to activate.
+# Runs every boot. Each section is independently enabled/disabled.
+# See: https://github.com/offline-lab/bootconf
+#
+
+#
+# Bootconf configuration: manipulate how the tool itself works.
+#
+bootconf:
+  enabled: true
+  directory: /data/config/bootconf
+
+#
+# Wifi configuration
+#
+wifi:
+  enabled: true
+  country: NL
+  directory: /data/config/wifi
+  password_hash: 'dummyc4d5e6f7a2b3cdummy6f7a2b3c4d5e6fdummyc4d5e6f7a2b3c4d5deadbabe'
+  ssid: something
+
+#
+# System configuration
+#
+system:
+  enabled: true
+  hostname: offline-lab
+  timezone: UTC
+
+#
+# SSH Configuration
+#
+ssh:
+  enabled: true
+  daemon: dropbear
+  directory: /data/config/ssh
+  generate_host_keys: true
+  keytype: ed25519
+
+
+#
+# Services configuration
+#
+services:
+  enabled: true
+  directory: /data/config/services
+  services:
+  - name: disco
+    unit: disco-daemon
+    enabled: true
+    sentinel: true
+    default_config:
+      copy: true
+      source: /etc/disco/config.yaml
+      destination: /data/config/disco/config.yaml
+
+#
+# Users configuration (Done using systemd-sysusers)
+#
+users:
+  enabled: true
+  directory: /data/config/users
+  users:
+  - name: app
+    enabled: true
+    sudo: false
+    home: /data/home/app
+    authorized_keys: []
+
+#
+# Configs that should be moved into place
+#
+files:
+  enabled: false
+  files: []
+
+# render templates to files
+templates:
+  enabled: false
+  templates: []
+  # - source: /boot/firmware/config/config.yaml.tpl
+  #   destination: /data/config/disco/config.yaml
+  #   variables:
+  #     some: blabla
+  #     another: yes
+  #   chmod: 640
+
+shell:
+  enabled: false
+  directory: /data/config/ssh
+  # Prepend a directory to PATH for every command (e.g. /usr/lib/framework/bin)
+  # Leave empty to inherit PATH from the environment unchanged.
+  path: ""
+  commands: []
+  # - name: get-process-list
+  #   allow_fail: true
+  #   firstboot: true
+  #   command: |
+  #     bash -c 'ps -ef'
+  # - name: get-df
+  #   allow_fail: false
+  #   firstboot: false
+  #   command: df /
+
+unitrun:
+  enabled: false
+  # Only run at first boot
+  firstboot: false
+  # Prepend a directory to PATH in every generated unit (e.g. /usr/lib/framework/bin)
+  # Leave empty to omit the Environment=PATH line entirely.
+  path: ""
+  # Where to save the scripts
+  directory: /data/config/bootconf/scripts
+  units: []
+  #- name: some-name
+  #  enabled: true
+  #  dependencies:
+  #    - After=multi-user.target
+  #    - Before=shutdown.target
+  #    - Conflicts=shutdown.target
+  #  command: |
+  #    a bunch of commands here
+  #    to run several things
+  #    in a script
+  #    exit 0

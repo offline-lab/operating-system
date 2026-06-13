@@ -1,6 +1,6 @@
 # Getting Started
 
-Walk through getting Offline Lab OS running on a Raspberry Pi Zero 2W — from building the OS to connecting over SSH.
+Get Offline Lab OS running on a Raspberry Pi Zero 2W: build the image, flash the SD card, and connect over SSH.
 
 ## What you need
 
@@ -10,33 +10,33 @@ Walk through getting Offline Lab OS running on a Raspberry Pi Zero 2W — from b
 - A computer to build the image and write the SD card (macOS or Linux)
 - Docker Desktop or a native arm64 build VM
 
-## Step 1 — Build and configure the image
+## Step 1: Build and configure the image
 
 Build the OS image and configure WiFi and SSH credentials. See [Build the OS image](build-image.md) for full instructions covering both Docker and Buildbox paths.
 
 The output is a compressed image file: `artifacts/pi-zero-2w/offlinelab-rpi-pi-zero-2w-arm64-<date>.img.gz`.
 
-## Step 2 — Install Offline Lab OS on the SD card
+## Step 2: Install Offline Lab OS on the SD card
 
 Write the image to your SD card. See [Install Offline Lab OS](burn-image.md) for the full procedure with troubleshooting.
 
-## Step 3 — Boot
+## Step 3: Boot
 
-Insert the SD card into the Pi Zero 2W and connect power. The first boot is slower because the data partition is resized and formatted to fill the card. On large cards (512 GB–1 TB) this can take several minutes on the Zero 2W's single-core IO — the device will eventually reach the login prompt, but be patient.
+Insert the SD card into the Pi Zero 2W and connect power. The first boot is slower because the data partition is resized and formatted to fill the card. On large cards (512 GB–1 TB) this can take several minutes on the Zero 2W's single-core IO. The device will reach the login prompt once it finishes.
 
-## Step 4 — Connect
+## Step 4: Connect
 
 Find the device's IP address from your router's DHCP lease table, or use the serial console if you have a USB-to-serial adapter. Then:
 
-    ssh app@<ip-address>
+    ssh admin@<ip-address>
 
-Once connected, check the system status with [boxctl](boxctl.md):
+Once connected, check the system status with [boxctl](https://framework.offline-lab.com):
 
     boxctl status
 
 ## What's next
 
-- [Hardware](hardware.md) — power and networking setup
-- [Packages](packages.md) — how the OS is structured
-- [Configuration](configuration.md) — WiFi, SSH, and runtime config
-- [Contributing](contributing.md) — if you want to help build
+- [Hardware](hardware.md): power and networking setup
+- [Packages](packages.md): how the OS is structured
+- [Configuration](configuration.md): WiFi, SSH, and runtime config
+- [Contributing](contributing.md): if you want to help build

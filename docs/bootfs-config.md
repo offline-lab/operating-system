@@ -1,16 +1,14 @@
 # Boot partition configuration
 
-The boot partition (`/boot/firmware`, vfat, ~32 MB) is mounted read-only at runtime.
-It holds firmware blobs, U-Boot, the kernel squashfs, and a `config/` subdirectory
-for user-supplied configuration that is provisioned into `/data` on first boot.
+The boot partition (`/boot/firmware`, FAT32, ~32 MB) holds firmware blobs,
+U-Boot, the kernel, and a `config/` provisioning directory.
 
 ## Boot partition layout
 
 ```
 /boot/firmware/
-├── config/                     # user configuration (see below)
-│   ├── authorized_keys         # optional — SSH public keys for the app user
-│   └── wpa_supplicant.conf     # optional — WiFi credentials
+├── bootconf.yaml.example       # template — copy to config/bootconf.yaml to activate
+├── config/                     # provisioning inbox (consumed by initramfs, see below)
 ├── overlays/                   # RPi device tree overlays (firmware package)
 ├── bcm2710-rpi-zero-2-w.dtb    # device tree blob
 ├── bootcode.bin                # RPi first-stage bootloader
@@ -23,25 +21,29 @@ for user-supplied configuration that is provisioned into `/data` on first boot.
 └── u-boot.bin                  # U-Boot
 ```
 
-## The config/ subdirectory
+## Provisioning via config/
 
-Only `config/authorized_keys` and `config/wpa_supplicant.conf` are recognised.
-Both are optional — if absent, provisioning skips silently.
+`/boot/firmware/config/` is a **provisioning inbox**. On every boot, the initramfs:
 
-Files are picked up by `post-image.sh` during the build and included in the vfat
-image only if they exist. They are never baked into the root filesystem.
+1. Mounts the boot partition read-write.
+2. If `config/` exists: copies the entire directory tree into `/data/config/`, overwriting any existing files, then deletes `config/` from the boot partition.
+3. Remounts the boot partition read-only.
 
-## Provisioning on first boot
+This means files placed in `config/` are **consumed on first boot** and are gone from the SD card afterwards. The live configuration is always in `/data/config/`. To re-provision after first boot, place the new files in `config/` again.
 
-Each file is a one-shot copy into persistent storage under `/data`:
+The directory structure under `config/` mirrors `/data/config/` exactly:
 
-| Boot partition file                     | Destination                              | Service            |
-|-----------------------------------------|------------------------------------------|--------------------|
-| `config/authorized_keys`               | `/data/home/app/.ssh/authorized_keys`    | `provision-ssh`    |
-| `config/wpa_supplicant.conf`           | `/data/config/wifi/wpa_supplicant.conf`  | `provision-wifi`   |
+| Place on boot partition | Lands in |
+|---|---|
+| `config/bootconf.yaml` | `/data/config/bootconf.yaml` |
+| `config/wifi/wpa_supplicant.conf` | `/data/config/wifi/wpa_supplicant.conf` |
+| `config/ssh/authorized_keys` | `/data/config/ssh/authorized_keys` |
 
-Provisioning is idempotent — if the destination already exists the service exits
-without overwriting it. Re-provisioning requires manually removing the file from `/data`.
+## bootconf.yaml
+
+To configure the device, place a `bootconf.yaml` in `config/` on the boot partition before first boot. After the initramfs moves it to `/data/config/bootconf.yaml`, `bootconf.service` reads it there on every boot.
+
+See [Boot configuration (bootconf)](bootconf.md) for the full YAML reference.
 
 ## Getting config onto the boot partition
 
@@ -50,63 +52,47 @@ without overwriting it. Re-provisioning requires manually removing the file from
 Set options in your `.config` overlay (copy `config.example` to `.config`):
 
 ```ini
-# SSH authorized keys
-BR2_PACKAGE_OFFLINELAB_SSH_CREATE_AUTHORIZED_KEYS=y
-BR2_PACKAGE_OFFLINELAB_SSH_CREATE_AUTHORIZED_KEYS_CONTENT="ssh-ed25519 AAAA... you@host"
-
-# WiFi credentials
-BR2_PACKAGE_OFFLINELAB_WIFI_WPA_CREATE=y
-BR2_PACKAGE_OFFLINELAB_WIFI_WPA_SSID="your-ssid"
-BR2_PACKAGE_OFFLINELAB_WIFI_WPA_PASSWORD="your-password"
-BR2_PACKAGE_OFFLINELAB_WIFI_WPA_COUNTRY="NL"
+# Bake WiFi credentials into bootconf.yaml.example at build time
+BR2_PACKAGE_OFFLINELAB_BOOTCONF_WIFI_CREATE=y
+BR2_PACKAGE_OFFLINELAB_BOOTCONF_WIFI_SSID="your-ssid"
+# PSK hash from: wpa_passphrase <ssid> <password>
+BR2_PACKAGE_OFFLINELAB_BOOTCONF_WIFI_PASSWORD_HASH="abc123..."
+BR2_PACKAGE_OFFLINELAB_BOOTCONF_WIFI_COUNTRY="NL"
 ```
-
-The build writes the files to `BINARIES_DIR/config/` and `post-image.sh` includes
-them in the vfat image automatically.
 
 ### Method 2: manual SD card write
 
-After flashing `sdcard.img`, mount the boot partition (first partition, vfat) and
-create the `config/` directory:
+After flashing the image, mount the boot partition (first partition, FAT32) and
+copy `bootconf.yaml.example` to `config/bootconf.yaml`, then edit it:
 
 ```sh
-# mount the boot partition
 mount /dev/sdX1 /mnt
-
 mkdir -p /mnt/config
-
-# WiFi
-cp wpa_supplicant.conf /mnt/config/
-chmod 600 /mnt/config/wpa_supplicant.conf
-
-# SSH
-cp ~/.ssh/id_ed25519.pub /mnt/config/authorized_keys
-
+cp /mnt/bootconf.yaml.example /mnt/config/bootconf.yaml
+# edit /mnt/config/bootconf.yaml — set wifi.ssid, wifi.password_hash, etc.
 umount /mnt
 ```
 
-The `wpa_supplicant.conf` format for WPA2:
+The boot partition can be mounted and edited from macOS, Windows, or Linux without
+any special tools.
 
+### Re-provisioning after first boot
+
+To update credentials on a running device without SSH access (e.g. WiFi changed):
+
+```sh
+mount /dev/sdX1 /mnt
+mkdir -p /mnt/config
+cp new-bootconf.yaml /mnt/config/bootconf.yaml
+umount /mnt
+# reboot — initramfs overwrites /data/config/bootconf.yaml
 ```
-ctrl_interface=DIR=/run/wpa_supplicant GROUP=netdev
-update_config=1
-country=NL
-
-network={
-    ssid="your-ssid"
-    psk="your-password"
-}
-```
-
-Use `wpa_passphrase <ssid> <password>` to generate a hashed PSK instead of
-storing the password in plain text.
 
 ## Security notes
 
-- The boot partition is mounted read-only at runtime (`ro,noatime`).
-- `authorized_keys` is copied with mode `600`, owned by `app` (uid 1000).
-- `wpa_supplicant.conf` is copied with mode `600`.
-- After first boot the boot partition files are no longer needed; the live copies
-  are in `/data/config/` and `/data/home/app/.ssh/`.
-- If you used the build-time method, the credentials are stored in your buildroot
-  `.config` and in the image. Treat both as sensitive.
+- The boot partition is mounted read-only at runtime after provisioning completes.
+- `bootconf.yaml` is world-readable on the FAT32 partition while it is present. Store
+  only the WiFi PSK hash (from `wpa_passphrase`), never the plaintext password.
+- After the initramfs consumes `config/`, the boot partition contains no credentials.
+- If you used the build-time WiFi option, the hash is stored in your `.config` and
+  baked into the boot partition image. Treat both as sensitive.

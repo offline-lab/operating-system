@@ -16,9 +16,10 @@
 #
 ################################################################################
 
-OFFLINELAB_ZRAM_VERSION = 1.0
-OFFLINELAB_ZRAM_SITE = $(BR2_EXTERNAL_OFFLINELAB_PATH)/package/offlinelab-zram/src
+OFFLINELAB_ZRAM_VERSION     = 1.0
+OFFLINELAB_ZRAM_SITE        = $(BR2_EXTERNAL_OFFLINELAB_PATH)/package/offlinelab-zram/src
 OFFLINELAB_ZRAM_SITE_METHOD = local
+OFFLINELAB_ZRAM_LICENSE     = AGPL-3.0-only
 
 define OFFLINELAB_ZRAM_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0644 $(@D)/systemd/service/zram-swap.service \

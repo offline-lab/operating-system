@@ -1,0 +1,15 @@
+qemu:
+  binary: qemu-system-aarch64
+  machine: virt
+  cpu: cortex-a53
+  memory: 512M
+  smp: 4
+  startup_timeout: 120
+
+artifacts:
+  bios: u-boot.bin
+  drive: offlinelab-qemu-arm64.img
+
+ssh:
+  user: testuser
+  port: 2223

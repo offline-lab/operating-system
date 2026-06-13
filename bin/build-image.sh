@@ -15,8 +15,11 @@
 # shellcheck shell=bash
 #
 # Build a board image on the native Linux build host.
-# Usage: build-image.sh <board>
+# Usage: build-image.sh [--production] <board>
 #   board: pi-zero-2w, qemu-arm64, pi4, etc.
+#
+# By default builds a test image (offlinelab-testing enabled).
+# Pass --production to build without the testing package.
 #
 # Expects: buildroot at ~/buildroot, br2-external at ~/work/br2-external
 #
@@ -27,9 +30,16 @@ source "$(dirname "${0}")/lib/common.sh"
 
 require_tools nproc ccache make date
 
-[[ "${#}" -eq 1 ]] || { log_err "Usage: build-image.sh <board>"; exit 1; }
-
-BOARD="${1}"
+PRODUCTION=0
+BOARD=""
+while [[ "${#}" -gt 0 ]]; do
+    case "${1}" in
+        --production) PRODUCTION=1 ;;
+        *) BOARD="${1}" ;;
+    esac
+    shift
+done
+[[ -n "${BOARD}" ]] || { log_err "Usage: build-image.sh [--production] <board>"; exit 1; }
 LOG_FILE="${HOME}/build-${BOARD}.log"
 # tee exit status is irrelevant; script exit status comes from make
 # shellcheck disable=SC2312
@@ -45,12 +55,19 @@ ARTIFACTS="${HOME}/artifacts/${BOARD}"
 DL_DIR="${HOME}/downloads"
 CCACHE_DIR="${HOME}/.ccache"
 
-DEFCONFIG="offlinelab_${BOARD//-/_}_defconfig"
+COMMON_DEFCONFIG="offlinelab_common_defconfig"
+BOARD_DEFCONFIG="offlinelab_${BOARD//-/_}_defconfig"
+BOARD_FRAGMENT="${WORK}/br2-external/configs/${BOARD_DEFCONFIG}"
 
 export BR2_DL_DIR="${DL_DIR}"
 
 if [[ ! -d "${BUILDROOT}" ]]; then
     log_err "buildroot not found at ${BUILDROOT}"
+    exit 1
+fi
+
+if [[ ! -f "${BOARD_FRAGMENT}" ]]; then
+    log_err "No defconfig fragment for board '${BOARD}': ${BOARD_FRAGMENT}"
     exit 1
 fi
 
@@ -82,14 +99,25 @@ fi
 # Remove stale bundle so post-image.sh always rebuilds it with the current kernel
 rm -f "${BUILDROOT_OUT}/images/offlinelab-update.raucb"
 
+# Load common base, then merge board fragment on top (board always wins)
 make -C "${BUILDROOT}" O="${BUILDROOT_OUT}" BR2_EXTERNAL="${WORK}/br2-external" \
-    "${DEFCONFIG}"
+    "${COMMON_DEFCONFIG}"
 
-if [[ -f "${WORK}/.config" ]]; then
-    "${BUILDROOT}/support/kconfig/merge_config.sh" \
-        -m -r -O "${BUILDROOT_OUT}" \
-        "${BUILDROOT_OUT}/.config" "${WORK}/.config"
+CONFIG_FRAGMENTS=("${BOARD_FRAGMENT}")
+if [[ "${PRODUCTION}" -eq 0 ]]; then
+    log "Test build: enabling offlinelab-testing"
+    TESTING_FRAGMENT="${BUILDROOT_OUT}/testing-fragment.config"
+    printf 'BR2_PACKAGE_OFFLINELAB_TESTING=y\n' > "${TESTING_FRAGMENT}"
+    CONFIG_FRAGMENTS+=("${TESTING_FRAGMENT}")
+else
+    log "Production build: offlinelab-testing disabled"
 fi
+if [[ -f "${WORK}/.config" ]]; then
+    CONFIG_FRAGMENTS+=("${WORK}/.config")
+fi
+"${BUILDROOT}/support/kconfig/merge_config.sh" \
+    -m -r -O "${BUILDROOT_OUT}" \
+    "${BUILDROOT_OUT}/.config" "${CONFIG_FRAGMENTS[@]}"
 
 make -C "${BUILDROOT}" O="${BUILDROOT_OUT}" BR2_EXTERNAL="${WORK}/br2-external" \
     olddefconfig
@@ -102,6 +130,14 @@ fi
 make -C "${BUILDROOT}" O="${BUILDROOT_OUT}" BR2_EXTERNAL="${WORK}/br2-external" \
     BR2_CCACHE_DIR="${CCACHE_DIR}" \
     BR2_JLEVEL="${NPROC}" -j"${NPROC}"
+
+log "Generating SBOM..."
+make -C "${BUILDROOT}" O="${BUILDROOT_OUT}" BR2_EXTERNAL="${WORK}/br2-external" show-info \
+    | python3 "${BUILDROOT}/utils/generate-cyclonedx" \
+        --project-name "offlinelab-${BOARD}" \
+        --project-version "$(date +%Y%m%d)" \
+        --out-file "${BUILDROOT_OUT}/images/sbom-${BOARD}.cdx.json" \
+    2>/dev/null || log "WARNING: SBOM generation failed (non-fatal)"
 
 log "Copying artifacts to ${ARTIFACTS}..."
 cp -rv "${BUILDROOT_OUT}/images/"* "${ARTIFACTS}/"

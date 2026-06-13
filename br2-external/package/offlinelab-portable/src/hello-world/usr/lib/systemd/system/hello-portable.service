@@ -1,7 +1,0 @@
-[Unit]
-Description=Hello portable test service
-
-[Service]
-Type=oneshot
-ExecStart=/bin/sh -c 'echo "hello-portable: $(date)" > /run/hello-portable.stamp'
-RemainAfterExit=yes

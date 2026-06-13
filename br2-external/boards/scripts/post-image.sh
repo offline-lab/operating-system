@@ -25,6 +25,7 @@ export COMMON_DIR="${BR2_EXTERNAL_OFFLINELAB_PATH}/boards/common"
 export GENIMAGE_TMP="${BUILD_DIR}/genimage.tmp"
 
 source "${BOARD_DIR}/meta"
+function prune_overlays() { :; }   # no-op default; RPi hook overrides this
 source "${3}"   # hook: defines gen_config(), board_post_build(), BOOT_CMD_FILE
 
 source "${BR2_EXTERNAL_OFFLINELAB_PATH}/boards/scripts/post-image-lib.sh"
@@ -34,6 +35,7 @@ build_boot_scr && sync
 build_kernel_squashfs && sync
 create_overlay && sync
 create_data && sync
+prune_overlays && sync
 assemble && sync
 build_rauc_bundle && sync
 exit $?

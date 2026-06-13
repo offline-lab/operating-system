@@ -16,9 +16,12 @@
 #
 ################################################################################
 
-OFFLINELAB_UPDATE_VERSION = 1.0
-OFFLINELAB_UPDATE_SITE = $(BR2_EXTERNAL_OFFLINELAB_PATH)/package/offlinelab-update/src
+OFFLINELAB_UPDATE_VERSION     = 1.0
+OFFLINELAB_UPDATE_SITE        = $(BR2_EXTERNAL_OFFLINELAB_PATH)/package/offlinelab-update/src
 OFFLINELAB_UPDATE_SITE_METHOD = local
+OFFLINELAB_UPDATE_LICENSE     = AGPL-3.0-only
+
+OFFLINELAB_UPDATE_KEYRING = $(call qstrip,$(BR2_PACKAGE_OFFLINELAB_UPDATE_KEYRING))
 
 OFFLINELAB_UPDATE_DEPENDENCIES = \
 	rauc \
@@ -31,7 +34,7 @@ define OFFLINELAB_UPDATE_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0644 $(@D)/rauc/system.conf \
 		$(TARGET_DIR)/etc/rauc/system.conf
 
-	$(INSTALL) -D -m 0644 $(BR2_EXTERNAL_OFFLINELAB_PATH)/../.rauc/ca.cert.pem \
+	$(INSTALL) -D -m 0644 $(OFFLINELAB_UPDATE_KEYRING) \
 		$(TARGET_DIR)/etc/rauc/keyring.pem
 
 	$(INSTALL) -D -m 0644 $(@D)/rauc/fw_env.config \

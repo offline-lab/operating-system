@@ -117,6 +117,28 @@ KERNEL_SQFS="${ARTIFACTS}/kernel-a.img"
 UBOOT="${ARTIFACTS}/u-boot.bin"
 BOOTSCR="${ARTIFACTS}/boot.scr"
 
+# Board detection from artifacts path (e.g. artifacts/pi-zero-2w or artifacts/qemu-arm64)
+BOARD="$(basename "${ARTIFACTS}")"
+IS_RPI=0
+[[ "${BOARD}" == *pi* || "${BOARD}" == *rpi* ]] && IS_RPI=1
+
+# Board-specific RAUC partition layout (GPT: p1=boot p2=kernel-a p3=rootfs-a p4=kernel-b p5=rootfs-b p6=bootstate p7=overlay p8=data)
+if [[ "${IS_RPI}" -eq 1 ]]; then
+    _RAUC_COMPATIBLE="offlinelab-pi-zero-2w"
+    _RAUC_KSLOT_A="mmcblk0p2"
+    _RAUC_RSLOT_A="mmcblk0p3"
+    _RAUC_KSLOT_B="mmcblk0p4"
+    _RAUC_RSLOT_B="mmcblk0p5"
+    _RAUC_BOOTSTATE="mmcblk0p6"
+else
+    _RAUC_COMPATIBLE="offlinelab-${BOARD}"
+    _RAUC_KSLOT_A="vda2"
+    _RAUC_RSLOT_A="vda3"
+    _RAUC_KSLOT_B="vda4"
+    _RAUC_RSLOT_B="vda5"
+    _RAUC_BOOTSTATE="vda6"
+fi
+
 CLEANUP=()
 # shellcheck disable=SC2329
 function cleanup() {
@@ -163,40 +185,33 @@ section "SD card partition layout"
 if [[ -n "${SDCARD}" ]] && command -v fdisk &>/dev/null; then
     FDISK_OUT="$(fdisk -l "${SDCARD}" 2>/dev/null || true)"
 
-    # MBR with extended partition: p1=boot p2=extended p3=overlay p4=data
-    # Logical: p5=kernel-a p6=rootfs-a p7=kernel-b p8=rootfs-b p9=bootstate
+    # GPT: p1=boot(ESP) p2=kernel-a p3=rootfs-a p4=kernel-b p5=rootfs-b p6=bootstate p7=overlay p8=data
     part_count="$(echo "${FDISK_OUT}" | grep -c "^${SDCARD}" || true)"
-    if [[ "${part_count}" -ge 9 ]]; then
-        pass "${part_count} partitions found (MBR extended layout)"
+    if [[ "${part_count}" -ge 8 ]]; then
+        pass "${part_count} partitions found (GPT layout)"
     else
-        fail "Expected >=9 partitions (MBR extended), found ${part_count}"
+        fail "Expected >=8 partitions (GPT), found ${part_count}"
     fi
 
-    if echo "${FDISK_OUT}" | grep -q "${SDCARD}1.*FAT\|${SDCARD}1.*W95 FAT32\|${SDCARD}1.*0c"; then
-        pass "Partition 1 is FAT (boot)"
+    if echo "${FDISK_OUT}" | grep -q "${SDCARD}1.*EFI\|${SDCARD}1.*ESP\|${SDCARD}1.*FAT\|${SDCARD}1.*uefi"; then
+        pass "Partition 1 is EFI/ESP (boot)"
     else
-        fail "Partition 1 not FAT type"
+        fail "Partition 1 not EFI/ESP type"
     fi
 
-    if echo "${FDISK_OUT}" | grep -q "${SDCARD}2.*Extended\|${SDCARD}2.*W95 Ext\|${SDCARD}2.*05\|${SDCARD}2.*0f"; then
-        pass "Partition 2 is Extended container"
+    if echo "${FDISK_OUT}" | grep -q "Disklabel type: gpt"; then
+        pass "Disk uses GPT partition table"
     else
-        fail "Partition 2 not Extended type"
+        fail "Disk is not GPT"
     fi
 
-    for p in 3 4 5 6 7 8 9; do
+    for p in 2 3 4 5 6 7 8; do
         if echo "${FDISK_OUT}" | grep -q "${SDCARD}${p}.*Linux\|${SDCARD}${p}.*83"; then
             pass "Partition ${p} is Linux"
         else
             fail "Partition ${p} not Linux type"
         fi
     done
-
-    if echo "${FDISK_OUT}" | grep "${SDCARD}1" | grep -q "\*"; then
-        pass "Partition 1 is bootable"
-    else
-        fail "Partition 1 not marked bootable"
-    fi
 else
     skip "SD card partition check (no sdcard.img or fdisk)"
 fi
@@ -214,45 +229,47 @@ if [[ -n "${SDCARD}" ]] && command -v losetup &>/dev/null; then
         CLEANUP+=("${BOOT_MNT}")
 
         if sudo mount -o ro "${LOOP_DEV}p1" "${BOOT_MNT}" 2>/dev/null; then
-            assert_file "${BOOT_MNT}/u-boot.bin" "u-boot.bin on boot partition"
             assert_file "${BOOT_MNT}/boot.scr" "boot.scr on boot partition"
             assert_file "${BOOT_MNT}/initramfs.cpio.gz" "initramfs.cpio.gz on boot partition"
-            assert_file "${BOOT_MNT}/config.txt" "config.txt on boot partition"
-            assert_file "${BOOT_MNT}/cmdline.txt" "cmdline.txt on boot partition"
 
-            if compgen -G "${BOOT_MNT}/*.dtb" >/dev/null 2>&1 \
-                || compgen -G "${BOOT_MNT}/bcm271*.dtb" >/dev/null 2>&1; then
-                pass "DTB files present"
-            else
-                fail "No DTB files on boot partition"
-            fi
+            if [[ "${IS_RPI}" -eq 1 ]]; then
+                assert_file "${BOOT_MNT}/u-boot.bin" "u-boot.bin on boot partition"
+                assert_file "${BOOT_MNT}/config.txt" "config.txt on boot partition"
+                assert_file "${BOOT_MNT}/cmdline.txt" "cmdline.txt on boot partition"
 
-            if [[ -f "${BOOT_MNT}/bootcode.bin" ]] \
-                || [[ -f "${BOOT_MNT}/rpi-firmware/bootcode.bin" ]]; then
-                pass "bootcode.bin present"
-            else
-                # check in root and subdirs
-                if find "${BOOT_MNT}" -name "bootcode.bin" -print -quit 2>/dev/null | grep -q .; then
-                    pass "bootcode.bin found"
+                if compgen -G "${BOOT_MNT}/*.dtb" >/dev/null 2>&1 ||
+                    compgen -G "${BOOT_MNT}/bcm271*.dtb" >/dev/null 2>&1; then
+                    pass "DTB files present"
                 else
-                    fail "bootcode.bin missing from boot partition"
+                    fail "No DTB files on boot partition"
                 fi
-            fi
 
-            if [[ -f "${BOOT_MNT}/start.elf" ]]; then
-                pass "start.elf present"
-            else
-                fail "start.elf missing"
-            fi
+                if [[ -f "${BOOT_MNT}/bootcode.bin" ]] ||
+                    [[ -f "${BOOT_MNT}/rpi-firmware/bootcode.bin" ]]; then
+                    pass "bootcode.bin present"
+                else
+                    if find "${BOOT_MNT}" -name "bootcode.bin" -print -quit 2>/dev/null | grep -q .; then
+                        pass "bootcode.bin found"
+                    else
+                        fail "bootcode.bin missing from boot partition"
+                    fi
+                fi
 
-            if [[ -f "${BOOT_MNT}/config.txt" ]]; then
-                assert_contains "${BOOT_MNT}/config.txt" "kernel=u-boot.bin" "config.txt loads u-boot.bin"
-                assert_contains "${BOOT_MNT}/config.txt" "arm_64bit=1" "config.txt sets arm_64bit=1"
-                assert_contains "${BOOT_MNT}/config.txt" "dwc2" "config.txt has dwc2 overlay"
-            fi
+                if [[ -f "${BOOT_MNT}/start.elf" ]]; then
+                    pass "start.elf present"
+                else
+                    fail "start.elf missing"
+                fi
 
-            if [[ -f "${BOOT_MNT}/cmdline.txt" ]]; then
-                assert_contains "${BOOT_MNT}/cmdline.txt" "ttyS0" "cmdline.txt uses ttyS0 console"
+                if [[ -f "${BOOT_MNT}/config.txt" ]]; then
+                    assert_contains "${BOOT_MNT}/config.txt" "kernel=u-boot.bin" "config.txt loads u-boot.bin"
+                    assert_contains "${BOOT_MNT}/config.txt" "arm_64bit=1" "config.txt sets arm_64bit=1"
+                    assert_contains "${BOOT_MNT}/config.txt" "dwc2" "config.txt has dwc2 overlay"
+                fi
+
+                if [[ -f "${BOOT_MNT}/cmdline.txt" ]]; then
+                    assert_contains "${BOOT_MNT}/cmdline.txt" "ttyS0" "cmdline.txt uses ttyS0 console"
+                fi
             fi
 
             # boot.scr A/B logic (mkimage header + script text)
@@ -310,10 +327,10 @@ if [[ -f "${INITRAMFS}" ]]; then
         if [[ -f "${INITRAMFS_DIR}/init" ]]; then
             assert_contains "${INITRAMFS_DIR}/init" "overlay" "init mounts overlayfs"
             assert_contains "${INITRAMFS_DIR}/init" "rauc.slot" "init parses rauc.slot from cmdline"
-            assert_contains "${INITRAMFS_DIR}/init" "mmcblk0p6" "init mounts rootfs-a (p6)"
-            assert_contains "${INITRAMFS_DIR}/init" "mmcblk0p8" "init mounts rootfs-b (p8)"
-            assert_contains "${INITRAMFS_DIR}/init" "mmcblk0p3" "init mounts overlay partition (p3)"
-            assert_contains "${INITRAMFS_DIR}/init" "mmcblk0p4" "init mounts data partition (p4)"
+            assert_contains "${INITRAMFS_DIR}/init" "p3=rootfs-a" "init mounts rootfs-a (p3)"
+            assert_contains "${INITRAMFS_DIR}/init" "p5=rootfs-b" "init mounts rootfs-b (p5)"
+            assert_contains "${INITRAMFS_DIR}/init" "p7=overlay" "init mounts overlay partition (p7)"
+            assert_contains "${INITRAMFS_DIR}/init" "p8=data" "init mounts data partition (p8)"
             assert_contains "${INITRAMFS_DIR}/init" "switch_root" "init calls switch_root"
         fi
     else
@@ -336,8 +353,8 @@ if [[ -f "${ROOTFS}" ]] && command -v mount &>/dev/null; then
     if sudo mount -o ro,loop "${ROOTFS}" "${ROOTFS_MNT}" 2>/dev/null; then
 
         # Init system
-        if [[ -f "${ROOTFS_MNT}/lib/systemd/systemd" ]] \
-            || [[ -f "${ROOTFS_MNT}/usr/lib/systemd/systemd" ]]; then
+        if [[ -f "${ROOTFS_MNT}/lib/systemd/systemd" ]] ||
+            [[ -f "${ROOTFS_MNT}/usr/lib/systemd/systemd" ]]; then
             pass "systemd installed"
         else
             fail "systemd not found"
@@ -346,9 +363,7 @@ if [[ -f "${ROOTFS}" ]] && command -v mount &>/dev/null; then
         assert_file "${ROOTFS_MNT}/usr/bin/bash" "bash installed"
 
         # Systemd units
-        for unit in usb-gadget.service wifi-setup.service zram-swap.service \
-            expand-data.service boot-firmware.mount provision-wifi.service \
-            provision-ssh.service dropbear.service fake-hwclock.service; do
+        for unit in usb-gadget.service wifi-setup.service show-ip.service zram-swap.service boot-firmware.mount dropbear.service; do
             if [[ -f "${ROOTFS_MNT}/etc/systemd/system/${unit}" ]]; then
                 pass "Unit ${unit} installed"
             else
@@ -357,8 +372,7 @@ if [[ -f "${ROOTFS}" ]] && command -v mount &>/dev/null; then
         done
 
         # Multi-user wants
-        for unit in wifi-setup.service zram-swap.service expand-data.service \
-            provision-wifi.service provision-ssh.service dropbear.service; do
+        for unit in wifi-setup.service show-ip.service zram-swap.service dropbear.service; do
             if [[ -L "${ROOTFS_MNT}/etc/systemd/system/multi-user.target.wants/${unit}" ]]; then
                 pass "Unit ${unit} enabled (wanted by multi-user)"
             else
@@ -366,8 +380,17 @@ if [[ -f "${ROOTFS}" ]] && command -v mount &>/dev/null; then
             fi
         done
 
+        # systemd-repart drop-in
+        assert_file "${ROOTFS_MNT}/usr/lib/repart.d/10-data.conf" "repart.d/10-data.conf installed"
+        if [[ -f "${ROOTFS_MNT}/usr/lib/repart.d/10-data.conf" ]]; then
+            assert_contains "${ROOTFS_MNT}/usr/lib/repart.d/10-data.conf" "GrowFileSystem=yes" \
+                "repart.d/10-data.conf has GrowFileSystem=yes"
+            assert_contains "${ROOTFS_MNT}/usr/lib/repart.d/10-data.conf" "Label=data" \
+                "repart.d/10-data.conf targets data partition by label"
+        fi
+
         # Sysinit wants
-        for unit in usb-gadget.service fake-hwclock.service; do
+        for unit in usb-gadget.service; do
             if [[ -L "${ROOTFS_MNT}/etc/systemd/system/sysinit.target.wants/${unit}" ]]; then
                 pass "Unit ${unit} enabled (wanted by sysinit)"
             else
@@ -417,8 +440,7 @@ if [[ -f "${ROOTFS}" ]] && command -v mount &>/dev/null; then
 
         # Scripts
         for script in \
-            init-usb-gadget init-wifi-setup init-zram-swap init-expand-data \
-            init-provision-wifi init-provision-ssh init-fake-hwclock; do
+            init-usb-gadget init-wifi-setup init-show-ip init-zram-swap init-resources; do
             assert_exec "${ROOTFS_MNT}/usr/local/bin/${script}" "Script ${script} installed and executable"
         done
 
@@ -436,7 +458,7 @@ if [[ -f "${ROOTFS}" ]] && command -v mount &>/dev/null; then
         fi
         if [[ -f "${ROOTFS_MNT}/etc/systemd/system/dropbear.service" ]]; then
             assert_contains "${ROOTFS_MNT}/etc/systemd/system/dropbear.service" \
-                "Requires=provision-ssh" "dropbear requires init-provision-ssh (hard dep)"
+                "Wants=bootconf" "dropbear soft-depends on bootconf (Wants, not Requires)"
         fi
 
         # Overlay files
@@ -587,16 +609,16 @@ if [[ -f "${ROOTFS}" ]] && command -v mount &>/dev/null; then
         if [[ -f "${RAUC_MNT}/etc/rauc/system.conf" ]]; then
             assert_contains "${RAUC_MNT}/etc/rauc/system.conf" "bootloader=uboot" \
                 "system.conf uses U-Boot backend"
-            assert_contains "${RAUC_MNT}/etc/rauc/system.conf" "compatible=offlinelab-pi-zero-2w" \
+            assert_contains "${RAUC_MNT}/etc/rauc/system.conf" "${_RAUC_COMPATIBLE}" \
                 "system.conf has correct compatible"
-            assert_contains "${RAUC_MNT}/etc/rauc/system.conf" "mmcblk0p5" \
-                "system.conf has kernel slot A (p5)"
-            assert_contains "${RAUC_MNT}/etc/rauc/system.conf" "mmcblk0p6" \
-                "system.conf has rootfs slot A (p6)"
-            assert_contains "${RAUC_MNT}/etc/rauc/system.conf" "mmcblk0p7" \
-                "system.conf has kernel slot B (p7)"
-            assert_contains "${RAUC_MNT}/etc/rauc/system.conf" "mmcblk0p8" \
-                "system.conf has rootfs slot B (p8)"
+            assert_contains "${RAUC_MNT}/etc/rauc/system.conf" "${_RAUC_KSLOT_A}" \
+                "system.conf has kernel slot A"
+            assert_contains "${RAUC_MNT}/etc/rauc/system.conf" "${_RAUC_RSLOT_A}" \
+                "system.conf has rootfs slot A"
+            assert_contains "${RAUC_MNT}/etc/rauc/system.conf" "${_RAUC_KSLOT_B}" \
+                "system.conf has kernel slot B"
+            assert_contains "${RAUC_MNT}/etc/rauc/system.conf" "${_RAUC_RSLOT_B}" \
+                "system.conf has rootfs slot B"
             assert_contains "${RAUC_MNT}/etc/rauc/system.conf" "bootname=A" \
                 "system.conf has bootname=A"
             assert_contains "${RAUC_MNT}/etc/rauc/system.conf" "bootname=B" \
@@ -604,8 +626,8 @@ if [[ -f "${ROOTFS}" ]] && command -v mount &>/dev/null; then
         fi
 
         if [[ -f "${RAUC_MNT}/etc/fw_env.config" ]]; then
-            assert_contains "${RAUC_MNT}/etc/fw_env.config" "mmcblk0p9" \
-                "fw_env.config points at bootstate partition (p9)"
+            assert_contains "${RAUC_MNT}/etc/fw_env.config" "${_RAUC_BOOTSTATE}" \
+                "fw_env.config points at bootstate partition"
             assert_contains "${RAUC_MNT}/etc/fw_env.config" "0x4000" \
                 "fw_env.config has correct env size (16KB)"
         fi
@@ -692,10 +714,7 @@ if [[ -f "${ROOTFS}" ]] && command -v mount &>/dev/null; then
         assert_file "${DISCO_MNT}/usr/lib/libnss_disco.so.2" "libnss_disco.so.2 NSS module"
         assert_file "${DISCO_MNT}/etc/disco/config.yaml" "default config.yaml"
         assert_file "${DISCO_MNT}/etc/systemd/system/disco-daemon.service" "disco-daemon.service unit"
-        assert_file "${DISCO_MNT}/etc/systemd/system/provision-disco.service" "provision-disco.service unit"
-        assert_exec "${DISCO_MNT}/usr/local/bin/init-provision-disco" "provision-disco script"
         assert_link "${DISCO_MNT}/etc/systemd/system/multi-user.target.wants/disco-daemon.service" "disco-daemon enabled"
-        assert_link "${DISCO_MNT}/etc/systemd/system/multi-user.target.wants/provision-disco.service" "provision-disco enabled"
 
         assert_contains "${DISCO_MNT}/etc/systemd/system/disco-daemon.service" "CAP_NET_RAW" "disco-daemon: CAP_NET_RAW"
         assert_contains "${DISCO_MNT}/etc/systemd/system/disco-daemon.service" "CAP_SYS_TIME" "disco-daemon: CAP_SYS_TIME"
@@ -780,6 +799,7 @@ if [[ -f "${ROOTFS}" ]] && command -v mount &>/dev/null; then
         assert_file "${PORT_MNT}/usr/bin/portablectl" "portablectl binary"
         assert_file "${PORT_MNT}/usr/bin/systemd-sysext" "systemd-sysext binary"
         assert_file "${PORT_MNT}/usr/bin/systemd-confext" "systemd-confext binary"
+        assert_file "${PORT_MNT}/usr/bin/systemd-sysusers" "systemd-sysusers binary"
 
         # Symlinks to /data
         if [[ -L "${PORT_MNT}/var/lib/portables" ]]; then
@@ -793,27 +813,34 @@ if [[ -f "${ROOTFS}" ]] && command -v mount &>/dev/null; then
             fail "/var/lib/portables is not a symlink"
         fi
 
-        if [[ -L "${PORT_MNT}/var/lib/extensions" ]]; then
-            target="$(readlink "${PORT_MNT}/var/lib/extensions")"
-            if [[ "${target}" == "/data/extensions" ]]; then
-                pass "/var/lib/extensions → /data/extensions"
-            else
-                fail "/var/lib/extensions points to ${target}, expected /data/extensions"
-            fi
+        # sysext/confext mount points — plain dirs on rootfs; bind-mounted at runtime from /data
+        if [[ -d "${PORT_MNT}/var/lib/extensions" ]] && [[ ! -L "${PORT_MNT}/var/lib/extensions" ]]; then
+            pass "/var/lib/extensions exists as directory (sysext bind-mount target)"
         else
-            fail "/var/lib/extensions is not a symlink"
+            fail "/var/lib/extensions missing or is a symlink (expected plain directory)"
         fi
 
-        if [[ -L "${PORT_MNT}/var/lib/confexts" ]]; then
-            target="$(readlink "${PORT_MNT}/var/lib/confexts")"
-            if [[ "${target}" == "/data/confexts" ]]; then
-                pass "/var/lib/confexts → /data/confexts"
-            else
-                fail "/var/lib/confexts points to ${target}, expected /data/confexts"
-            fi
+        if [[ -d "${PORT_MNT}/etc/extensions" ]] && [[ ! -L "${PORT_MNT}/etc/extensions" ]]; then
+            pass "/etc/extensions exists as directory (confext bind-mount target)"
         else
-            fail "/var/lib/confexts is not a symlink"
+            fail "/etc/extensions missing or is a symlink (expected plain directory)"
         fi
+
+        # sysext/confext bind-mount units installed and enabled
+        assert_file "${PORT_MNT}/etc/systemd/system/var-lib-extensions.mount" \
+            "var-lib-extensions.mount installed"
+        assert_file "${PORT_MNT}/etc/systemd/system/etc-extensions.mount" \
+            "etc-extensions.mount installed"
+        assert_link "${PORT_MNT}/etc/systemd/system/sysinit.target.wants/var-lib-extensions.mount" \
+            "var-lib-extensions.mount enabled"
+        assert_link "${PORT_MNT}/etc/systemd/system/sysinit.target.wants/etc-extensions.mount" \
+            "etc-extensions.mount enabled"
+
+        # systemd-sysext and systemd-confext enabled at sysinit
+        assert_link "${PORT_MNT}/etc/systemd/system/sysinit.target.wants/systemd-sysext.service" \
+            "systemd-sysext.service enabled"
+        assert_link "${PORT_MNT}/etc/systemd/system/sysinit.target.wants/systemd-confext.service" \
+            "systemd-confext.service enabled"
 
         # modules-load.d
         if [[ -f "${PORT_MNT}/etc/modules-load.d/99-offlinelab-portable.conf" ]]; then
@@ -827,8 +854,8 @@ if [[ -f "${ROOTFS}" ]] && command -v mount &>/dev/null; then
         fi
 
         # portabled service unit
-        if [[ -f "${PORT_MNT}/usr/lib/systemd/system/systemd-portabled.service" ]] \
-            || [[ -f "${PORT_MNT}/lib/systemd/system/systemd-portabled.service" ]]; then
+        if [[ -f "${PORT_MNT}/usr/lib/systemd/system/systemd-portabled.service" ]] ||
+            [[ -f "${PORT_MNT}/lib/systemd/system/systemd-portabled.service" ]]; then
             pass "systemd-portabled.service unit exists"
         else
             fail "systemd-portabled.service unit missing"

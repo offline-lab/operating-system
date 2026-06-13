@@ -1,0 +1,47 @@
+#
+# Bootconf configuration for QEMU testing — no WiFi (virtio-net only).
+#
+
+bootconf:
+  enabled: true
+  directory: /data/config/bootconf
+
+wifi:
+  enabled: false
+
+system:
+  enabled: true
+  timezone: Europe/Amsterdam
+  hostname: offlinelab
+
+ssh:
+  enabled: true
+  directory: /data/config/ssh
+  keytype: ed25519
+  generate_host_keys: true
+  daemon: dropbear
+
+services:
+  enabled: true
+  directory: /data/config/services
+  services:
+  - name: disco
+    unit: disco-daemon
+    enabled: true
+    sentinel: true
+    default_config:
+      copy: false
+      source: /etc/disco/config.yaml
+      destination: /data/config/disco/config.yaml
+
+users:
+  enabled: true
+  directory: /data/config/users
+  users:
+  - name: app
+    enabled: true
+    sudo: true
+    home: /data/home/app
+    authorized_keys:
+    - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFgvmVCzpEWeir0DAEeoqlXHj095JqaEqqY5BrZv8JQU flip@bigmac.local"
+    - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAdC6YkMF9jPXpanXbbt1G045p8mzOIUngIYXSswogCz builder"

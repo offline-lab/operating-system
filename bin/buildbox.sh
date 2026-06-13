@@ -286,16 +286,23 @@ function cmd_sync() {
         bb_scp "${BASEDIR}/.config" "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_WORK}/.config"
     fi
 
+    if [[ -f "${BASEDIR}/.ssh/builder.pub" ]]; then
+        bb_ssh "mkdir -p ${REMOTE_WORK}/.ssh"
+        bb_scp "${BASEDIR}/.ssh/builder.pub" "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_WORK}/.ssh/builder.pub"
+    fi
+
     if [[ -d "${BASEDIR}/.rauc" ]]; then
         bb_rsync \
             "${BASEDIR}/.rauc/" \
             "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_WORK}/.rauc/"
     fi
 
-    bb_rsync \
-        --exclude '.git' \
-        "${BASEDIR}/framework/" \
-        "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_WORK}/framework/"
+    if [[ -d "${BASEDIR}/framework" ]]; then
+        bb_rsync \
+            --exclude '.git' \
+            "${BASEDIR}/framework/" \
+            "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_WORK}/framework/"
+    fi
 
     log "Sync complete"
 }
@@ -306,6 +313,8 @@ function cmd_sync() {
 
 function cmd_build() {
     local board="${1:-pi-zero-2w}"
+    local prod_flag=""
+    [[ "${PRODUCTION}" -eq 1 ]] && prod_flag="--production"
     resolve_host
     cmd_sync
 
@@ -313,9 +322,12 @@ function cmd_build() {
     local start_time
     start_time="$(date +%s)"
 
-    if ! bb_ssh "bash ${REMOTE_WORK}/bin/build-image.sh ${board}" 2>&1 | while IFS= read -r line; do
+    # shellcheck disable=SC2086
+    if ! bb_ssh "bash ${REMOTE_WORK}/bin/build-image.sh ${prod_flag} ${board}" 2>&1 | while IFS= read -r line; do
         if [[ "${line}" == *">>>"* ]]; then
             log_dim "${line}"
+        else
+            printf '%s\n' "${line}"
         fi
     done; then
         log_err "${board} build failed"
@@ -365,6 +377,7 @@ function cmd_fetch() {
         --include='*.bin' \
         --include='*.dtb' \
         --include='*.raucb' \
+        --include='*.cdx.json' \
         --include='Image' \
         --include='initramfs.cpio.gz' \
         --include='boot.scr' \
@@ -375,6 +388,20 @@ function cmd_fetch() {
 
     log "Artifacts saved to ${local_artifacts}/"
     ls -lh "${local_artifacts}/"*.img.gz 2>/dev/null || true
+
+    # Decompress the latest .img.gz to a fixed name so bin/run.sh and the test
+    # suite can reference it without timestamp-based glob matching.
+    local latest_gz
+    latest_gz="$(ls -t "${local_artifacts}/"*.img.gz 2>/dev/null | head -1)"
+    if [[ -n "${latest_gz}" ]]; then
+        local img_name
+        img_name="$(basename "${latest_gz%.gz}")"
+        # Strip the timestamp suffix to produce the canonical name (e.g. offlinelab-qemu-arm64.img)
+        img_name="${img_name%-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9].img}.img"
+        log "Decompressing $(basename "${latest_gz}") → ${img_name}..."
+        gunzip -c "${latest_gz}" >"${local_artifacts}/${img_name}"
+        log "Ready: ${local_artifacts}/${img_name}"
+    fi
 }
 
 ################################################################################
@@ -458,6 +485,7 @@ function cmd_all() {
         board="${board#offlinelab_}"
         board="${board%_defconfig}"
         board="${board//_/-}"
+        [[ "${board}" == "common" ]] && continue
         boards+=("${board}")
     done
 
@@ -471,14 +499,14 @@ function cmd_all() {
         start_time="$(date +%s)"
         log "=== Starting ${board} ==="
         if cmd_build "${board}" && cmd_verify "${board}" && cmd_fetch "${board}"; then
-            log "=== ${board} done in $(( ($(date +%s) - start_time) / 60 ))m ==="
+            log "=== ${board} done in $((($(date +%s) - start_time) / 60))m ==="
         else
             log_err "=== ${board} FAILED ==="
             failed+=("${board}")
         fi
     done
 
-    local elapsed=$(( $(date +%s) - total_start ))
+    local elapsed=$(($(date +%s) - total_start))
     if [[ ${#failed[@]} -gt 0 ]]; then
         log_err "=== All boards done in $((elapsed / 60))m — FAILED: ${failed[*]} ==="
         return 1
@@ -496,22 +524,26 @@ function cmd_usage() {
   Buildbox — non-interactive build pipeline for Offline Lab OS
 
   Usage:
-    bin/buildbox.sh [board]             Full pipeline: sync + build + verify + fetch
-    bin/buildbox.sh all                 Build all boards sequentially, fetch all artifacts
-    bin/buildbox.sh create              Create and provision a new buildbox VM
-    bin/buildbox.sh sync                Sync code to buildbox
-    bin/buildbox.sh build [board]       Sync + build (default: pi-zero-2w)
-    bin/buildbox.sh verify [board]      Run verification on remote artifacts
-    bin/buildbox.sh fetch [board]       Download artifacts from buildbox
-    bin/buildbox.sh tail [board]        Tail the build log (default: pi-zero-2w)
-    bin/buildbox.sh clean-artifacts     Remove all artifacts from buildbox
-    bin/buildbox.sh ssh [cmd]           SSH into buildbox
-    bin/buildbox.sh destroy             Delete the buildbox VM
+    bin/buildbox.sh [--production] [board]    Full pipeline (default: pi-zero-2w)
+    bin/buildbox.sh all [--production]        Build all boards sequentially
+    bin/buildbox.sh create                    Create and provision a new buildbox VM
+    bin/buildbox.sh sync                      Sync code to buildbox
+    bin/buildbox.sh build [--production] [board]   Sync + build
+    bin/buildbox.sh verify [board]            Run verification on remote artifacts
+    bin/buildbox.sh fetch [board]             Download artifacts from buildbox
+    bin/buildbox.sh tail [board]              Tail the build log
+    bin/buildbox.sh clean-artifacts           Remove all artifacts from buildbox
+    bin/buildbox.sh ssh [cmd]                 SSH into buildbox
+    bin/buildbox.sh destroy                   Delete the buildbox VM
+
+  Flags:
+    --production    Build without offlinelab-testing (no test users, no bootconf.yaml)
+                    Default builds include testing for lab/CI use.
 
   Board examples:
     bin/buildbox.sh build pi-zero-2w
+    bin/buildbox.sh --production build pi-zero-2w
     bin/buildbox.sh build qemu-arm64
-    bin/buildbox.sh fetch qemu-arm64
 
   Environment:
     BUILDBOX_HOST=<ip>:<port>           Override buildbox SSH endpoint
@@ -535,21 +567,63 @@ if [[ ! -f "${SSH_KEY}" ]]; then
     exit 1
 fi
 
+# Extract --production flag before command dispatch; applies to all build commands
+PRODUCTION=0
+_remaining_args=()
+for _arg in "${@}"; do
+    if [[ "${_arg}" == "--production" ]]; then
+        PRODUCTION=1
+    else
+        _remaining_args+=("${_arg}")
+    fi
+done
+set -- "${_remaining_args[@]}"
+
 case "${1:-}" in
-    all)            shift; cmd_all "${@}" ;;
-    create)         shift; cmd_create "${@}" ;;
-    sync)           shift; cmd_sync "${@}" ;;
-    build)          shift; cmd_build "${@}" ;;
-    verify)         shift; cmd_verify "${@}" ;;
-    fetch)          shift; cmd_fetch "${@}" ;;
-    tail)           shift; cmd_tail "${@}" ;;
-    ssh)            shift; cmd_ssh "${@}" ;;
-    clean-artifacts) shift; cmd_clean_artifacts "${@}" ;;
-    destroy)        shift; cmd_destroy "${@}" ;;
-    -h | --help | help) cmd_usage ;;
-    "") cmd_pipeline ;;
-    *)
-        log_err "Unknown command: ${1}"
-        cmd_usage
-        ;;
+all)
+    shift
+    cmd_all "${@}"
+    ;;
+create)
+    shift
+    cmd_create "${@}"
+    ;;
+sync)
+    shift
+    cmd_sync "${@}"
+    ;;
+build)
+    shift
+    cmd_build "${@}"
+    ;;
+verify)
+    shift
+    cmd_verify "${@}"
+    ;;
+fetch)
+    shift
+    cmd_fetch "${@}"
+    ;;
+tail)
+    shift
+    cmd_tail "${@}"
+    ;;
+ssh)
+    shift
+    cmd_ssh "${@}"
+    ;;
+clean-artifacts)
+    shift
+    cmd_clean_artifacts "${@}"
+    ;;
+destroy)
+    shift
+    cmd_destroy "${@}"
+    ;;
+-h | --help | help) cmd_usage ;;
+"") cmd_pipeline ;;
+*)
+    log_err "Unknown command: ${1}"
+    cmd_usage
+    ;;
 esac

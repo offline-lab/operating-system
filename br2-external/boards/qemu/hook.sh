@@ -1,4 +1,16 @@
 #!/usr/bin/env bash
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#      SPDX-License-Identifier: AGPL-3.0-only                                  #
+################################################################################
+
 # vi: ft=bash
 # shellcheck shell=bash disable=SC2154,SC2312
 # SC2154: BOARD_DIR, TARGET_DIR, BINARIES_DIR, COMMON_DIR, BOARD_IMAGE_NAME are set by post-image.sh
@@ -33,7 +45,7 @@ EOF
 
     # Patch fw_env.config for virtio block bootstate partition
     if [[ -f "${TARGET_DIR}/etc/fw_env.config" ]]; then
-        sed -i 's|/dev/mmcblk0p9|/dev/vda9|g' "${TARGET_DIR}/etc/fw_env.config"
+        sed -i 's|/dev/mmcblk0p6|/dev/vda6|g' "${TARGET_DIR}/etc/fw_env.config"
     fi
 }
 
@@ -42,8 +54,8 @@ function gen_config() {
     # Boot partition for QEMU: boot.scr + initramfs only.
     # u-boot.bin is passed directly to QEMU via -bios, not stored on disk.
     local -a files=("boot.scr" "initramfs.cpio.gz")
-    if [[ -d "${BINARIES_DIR}/config" ]] && [[ -n "$(ls -A "${BINARIES_DIR}/config" 2>/dev/null)" ]]; then
-        files+=("config")
+    if [[ -f "${BINARIES_DIR}/bootconf.yaml.example" ]]; then
+        files+=("bootconf.yaml.example")
     fi
     local boot_files
     boot_files="$(printf '\\t\\t\\t"%s",\\n' "${files[@]}")"

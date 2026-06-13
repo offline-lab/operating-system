@@ -10,4 +10,4 @@
 #      SPDX-License-Identifier: AGPL-3.0-only                                  #
 ################################################################################
 
-tmpfs  /tmp  tmpfs  defaults,nosuid,nodev,size=64M  0  0
+# All mounts are managed by systemd mount units.

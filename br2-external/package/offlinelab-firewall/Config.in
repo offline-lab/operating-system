@@ -14,11 +14,11 @@ config BR2_PACKAGE_OFFLINELAB_FIREWALL
 	bool "offlinelab-firewall"
 	default y
 	depends on BR2_INIT_SYSTEMD
-	select BR2_PACKAGE_IPTABLES
+	select BR2_PACKAGE_NFTABLES
 	help
-	  iptables-based firewall loaded at boot via systemd.
+	  nftables-based firewall loaded at boot via systemd.
 	  Static rules (SSH, ICMP, established) live on the readonly rootfs at
-	  /etc/iptables/rules.v4 and rules.v6.
+	  /etc/firewall/rules.fw (inet family, covers IPv4 and IPv6).
 	  Per-app dynamic rules are persisted as fragments under
 	  /data/config/firewall/rules.d/<app>.rules and replayed on boot.
 	  Managed at runtime via fw.sh framework module.

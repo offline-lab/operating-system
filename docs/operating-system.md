@@ -20,7 +20,7 @@ The [builder repository](https://github.com/offline-lab/builder) contains the Bu
 
 ## Kernel
 
-**RPi boards** use the Raspberry Pi foundation kernel (`raspberrypi/linux`, `rpi-6.12.y`) for hardware support: WiFi, Bluetooth, HDMI, and USB device tree overlays. The kernel config is trimmed from `bcm2711_defconfig` — this reduced the module directory from ~100 MB to ~17 MB and cut build time significantly.
+**RPi boards** use the Raspberry Pi foundation kernel (`raspberrypi/linux`, `rpi-6.12.y`) for hardware support: WiFi, Bluetooth, HDMI, and USB device tree overlays. The kernel config is trimmed from `bcm2711_defconfig`, reducing the module directory from ~100 MB to ~17 MB and cutting build time significantly.
 
 **QEMU** uses the mainline kernel (`arm64 defconfig`) with a small hardware fragment enabling virtio block, virtio net, and the PL011 UART.
 
@@ -30,20 +30,24 @@ Key built-in options on all boards: overlayfs, initramfs, zram.
 
 The SD card uses MBR partitioning with an extended partition to hold logical volumes:
 
-```
-Primary:
-  p1  boot       FAT32   32MB    firmware, U-Boot, initramfs, boot.scr
-  p2  (extended)                 container for logical partitions
-  p3  overlay    ext4    96MB    per-slot overlayfs upper+work dirs
-  p4  data       ext4   64MB+   persistent storage (expanded on first boot)
+**Primary partitions**
 
-Logical (inside p2):
-  p5  kernel-a   sqfs   24MB    kernel Image (slot A)
-  p6  rootfs-a   ext4  512MB    root filesystem (slot A)
-  p7  kernel-b   sqfs   24MB    kernel Image (slot B)
-  p8  rootfs-b   ext4  512MB    root filesystem (slot B)
-  p9  bootstate  raw     8MB    U-Boot env: slot order, boot counters
-```
+| # | Name | Type | Size | Contents |
+|---|------|------|------|----------|
+| p1 | boot | FAT32 | 32 MB | firmware, U-Boot, initramfs, boot.scr |
+| p2 | *(extended)* | — | — | container for logical partitions |
+| p3 | overlay | ext4 | 96 MB | per-slot overlayfs upper+work dirs |
+| p4 | data | ext4 | 64 MB+ | persistent storage (expanded on first boot) |
+
+**Logical partitions (inside p2)**
+
+| # | Name | Type | Size | Contents |
+|---|------|------|------|----------|
+| p5 | kernel-a | sqfs | 24 MB | kernel Image (slot A) |
+| p6 | rootfs-a | ext4 | 512 MB | root filesystem (slot A) |
+| p7 | kernel-b | sqfs | 24 MB | kernel Image (slot B) |
+| p8 | rootfs-b | ext4 | 512 MB | root filesystem (slot B) |
+| p9 | bootstate | raw | 8 MB | U-Boot env: slot order, boot counters |
 
 See [Boot](boot.md) for a detailed walkthrough of the boot sequence and A/B mechanics.
 
@@ -58,7 +62,7 @@ From systemd's perspective the root appears writable, but all writes land on the
 
 The overlay partition is separate from `/data` to keep user data isolated from OS state, and to allow each A/B slot to have its own overlay. A kernel or rootfs update doesn't carry stale overlay state from the previous slot.
 
-tmpfs is not used as the overlay upper — that would consume RAM on a 512MB device.
+tmpfs is not used as the overlay upper; on a 512MB device that would consume RAM better spent on services.
 
 ## A/B updates
 
@@ -68,15 +72,15 @@ U-Boot reads a boot counter from the bootstate partition. If the new slot fails 
 
 ## First boot
 
-On first boot, the data partition is resized to fill the remaining SD card space and formatted. This is automatic: if the partition can't be mounted because there's no filesystem, resize and format run before systemd continues.
+On first boot, the data partition is resized to fill the remaining SD card space and formatted. This is automatic and runs via `expand-data.service` before `bootconf.service` or any other services start.
 
-Other first-boot setup: machine-id generation, SSH host key generation, config file provisioning from the boot partition. Each is idempotent: if the expected file already exists in `/data`, the setup step is skipped.
+Config provisioning happens even earlier: the initramfs copies `/boot/firmware/config/` into `/data/config/` before `switch_root`. On first boot, this is how `bootconf.yaml` and any other config files get onto the device. Each is idempotent: placing a file in `config/` always overwrites the `/data/config/` copy.
 
 ## WiFi
 
-Credentials are read from a `wpa_supplicant.conf` file placed in the `config/` subdirectory on the boot partition. Users configure WiFi by mounting the SD card on any computer and editing the file. No serial console or screen needed.
+WiFi is configured via `bootconf.yaml`. Place it at `config/bootconf.yaml` on the FAT32 boot partition. The initramfs moves it to `/data/config/bootconf.yaml` on the next boot, and `bootconf.service` applies it. No serial console or screen needed.
 
-The file is copied to `/data/config/wifi/wpa_supplicant.conf` on first boot and not overwritten afterward. See [Configuration](configuration.md) for details.
+To change WiFi credentials after first boot, place an updated `bootconf.yaml` (or just `wifi/wpa_supplicant.conf`) in the `config/` directory on the boot partition and reboot. See [Configuration](configuration.md) for the full reference.
 
 ## Systemd usage
 
@@ -85,6 +89,6 @@ The OS uses systemd for:
 - Init and service management
 - Network configuration (systemd-networkd)
 - Mount management (overlayfs, data partition, boot partition)
-- Timer-based tasks (fake-hwclock save)
+- Boot-time configuration (`bootconf`)
 - Boot success signaling for A/B updates
 - Portable service hosting

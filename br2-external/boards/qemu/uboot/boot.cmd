@@ -12,15 +12,14 @@
 
 # Offline Lab OS — QEMU arm64 A/B boot script
 # Partition layout (virtio block → /dev/vda):
-#   p1=boot(FAT) p2=extended p3=overlay p4=data
-#   p5=kernel-a p6=rootfs-a p7=kernel-b p8=rootfs-b p9=bootstate
+#   p1=boot(FAT) p2=kernel-a p3=rootfs-a p4=kernel-b p5=rootfs-b p6=bootstate p7=overlay p8=data
 
 # virtio block device — always virtio 0 on QEMU virt machine
 setenv devtype virtio
 setenv devnum 0
 
-# Read bootstate from p9 (raw block read/write, 32 sectors = 16KB)
-part start ${devtype} ${devnum} 9 dev_env
+# Read bootstate from p6 (raw block read/write, 32 sectors = 16KB)
+part start ${devtype} ${devnum} 6 dev_env
 
 setenv loadbootstate " \
     echo 'Loading bootstate...'; \
@@ -58,16 +57,16 @@ for BOOT_SLOT in "${BOOT_ORDER}"; do
     if test ${BOOT_A_LEFT} -gt 0; then
       setexpr BOOT_A_LEFT ${BOOT_A_LEFT} - 1
       echo "Trying slot A, ${BOOT_A_LEFT} attempts remaining..."
-      if load ${devtype} ${devnum}:5 ${kernel_addr_r} Image; then
-          setenv bootargs "${bootargs_ol} root=/dev/vda6 rootfstype=ext4 rauc.slot=A"
+      if load ${devtype} ${devnum}:2 ${kernel_addr_r} Image; then
+          setenv bootargs "${bootargs_ol} root=/dev/vda3 rootfstype=ext4 rauc.slot=A"
       fi
     fi
   elif test "x${BOOT_SLOT}" = "xB"; then
     if test ${BOOT_B_LEFT} -gt 0; then
       setexpr BOOT_B_LEFT ${BOOT_B_LEFT} - 1
       echo "Trying slot B, ${BOOT_B_LEFT} attempts remaining..."
-      if load ${devtype} ${devnum}:7 ${kernel_addr_r} Image; then
-          setenv bootargs "${bootargs_ol} root=/dev/vda8 rootfstype=ext4 rauc.slot=B"
+      if load ${devtype} ${devnum}:4 ${kernel_addr_r} Image; then
+          setenv bootargs "${bootargs_ol} root=/dev/vda5 rootfstype=ext4 rauc.slot=B"
       fi
     fi
   fi

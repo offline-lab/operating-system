@@ -19,19 +19,20 @@ echo "offlinelab: initramfs starting"
 
 # Parse slot from kernel cmdline (default: A)
 SLOT="a"
+
 for arg in $(cat /proc/cmdline); do
     case "${arg}" in
-        rauc.slot=A) SLOT="a" ;;
-        rauc.slot=B) SLOT="b" ;;
+    rauc.slot=A) SLOT="a" ;;
+    rauc.slot=B) SLOT="b" ;;
+    *) ;;
     esac
 done
 
 # Detect block device at runtime — wait up to 10s for MMC to initialize
-# Partition layout (MBR extended): p1=boot p3=overlay p4=data
-#   p5=kernel-a p6=rootfs-a p7=kernel-b p8=rootfs-b p9=bootstate
+# Partition layout (GPT): p1=boot p2=kernel-a p3=rootfs-a p4=kernel-b p5=rootfs-b p6=bootstate p7=overlay p8=data
 i=0
 while [ $i -lt 10 ]; do
-    [ -b /dev/vda ]      && break
+    [ -b /dev/vda ] && break
     [ -b /dev/mmcblk0 ] && break
     i=$((i + 1))
     sleep 1
@@ -42,59 +43,115 @@ if [ -b /dev/vda ]; then
 elif [ -b /dev/mmcblk0 ]; then
     P="/dev/mmcblk0p"
 else
-    echo "offlinelab: FATAL - no block device found"
+    echo "************************************************************"
+    echo "** FATAL - No block device found"
+    echo "************************************************************"
+    echo
     cat /proc/partitions
     exec sh
 fi
 
 case "${SLOT}" in
-    a) ROOTFS_DEV="${P}6" ;;
-    b) ROOTFS_DEV="${P}8" ;;
+a) ROOTFS_DEV="${P}3" ;;
+b) ROOTFS_DEV="${P}5" ;;
+*) ;;
 esac
-OVERLAY_DEV="${P}3"
-DATA_DEV="${P}4"
 
-echo "offlinelab: slot=${SLOT} rootfs=${ROOTFS_DEV}"
+BOOT_DEV="${P}1"
+OVERLAY_DEV="${P}7"
+DATA_DEV="${P}8"
+
+echo "offline-lab: slot=${SLOT} rootfs=${ROOTFS_DEV}"
 
 # Wait for rootfs device
 i=0
-while [ ! -b "${ROOTFS_DEV}" ] && [ "$i" -lt 50 ]; do
+while [ ! -b "${ROOTFS_DEV}" ] && [ "${i}" -lt 50 ]; do
     i=$((i + 1))
     sleep 0.1
 done
 
 if [ ! -b "${ROOTFS_DEV}" ]; then
-    echo "offlinelab: FATAL - ${ROOTFS_DEV} not found"
+    echo "************************************************************"
+    echo "** FATAL - Root device ${ROOTFS_DEV} not found"
+    echo "************************************************************"
     cat /proc/partitions
     exec sh
 fi
 
 # Mount rootfs read-only
-mount -t ext4 -o ro,noatime "${ROOTFS_DEV}" /mnt
+mount -t squashfs -o ro "${ROOTFS_DEV}" /mnt
 
-# Mount overlay partition, create per-slot dirs
+# Mount data partition early — needed to restore persistent files before overlayfs setup
+mount -t ext4 -o rw,noatime "${DATA_DEV}" /data
+
+# Ensure sysext/confext storage dirs exist — systemd-sysext.service runs Before=sysinit.target,
+# which is before tmpfiles, so these must exist before switch_root.
+mkdir -p /data/extensions/sysext /data/extensions/confext
+# bootconf checks writability of its status directory before running. The directory is
+# created by status.Write *after* modules run, so on first boot (fresh /data) it doesn't
+# exist yet. Pre-create it here so the isWritable probe file write succeeds.
+mkdir -p /data/config/bootconf
+
+# Provision /data/config from /boot/firmware/config if present.
+# Files are copied then deleted — presence in /boot/firmware/config is an explicit
+# provisioning intent that always overwrites whatever is already in /data/config.
+# This runs every boot so dropping a file onto the SD card from another machine
+# is sufficient to re-provision (WiFi, bootconf.yaml, etc.).
+mkdir -p /boot/firmware
+mount -t vfat -o rw,noatime "${BOOT_DEV}" /boot/firmware
+if [ -d /boot/firmware/config ]; then
+    echo "offlinelab: provisioning /data/config from /boot/firmware/config"
+    mkdir -p /data/config
+    cp -r /boot/firmware/config/. /data/config/
+    rm -rf /boot/firmware/config
+fi
+mount -o remount,ro /boot/firmware
+
+# Mount overlay partition
 mount -t ext4 -o rw,noatime "${OVERLAY_DEV}" /overlay
+
+# Clear the entire slot dir on every boot for a clean /etc state.
+# Clearing both upper AND work prevents stale OverlayFS inode-index entries
+# (work/index stores inode references to the lower squashfs; when the squashfs
+# is rebuilt between boots those references go stale, causing ESTALE on mount).
+rm -rf "/overlay/${SLOT}"
 mkdir -p "/overlay/${SLOT}/upper" "/overlay/${SLOT}/work"
 
-# Mount overlayfs (rootfs + per-slot upper)
-mount -t overlay overlay \
-    -o "lowerdir=/mnt,upperdir=/overlay/${SLOT}/upper,workdir=/overlay/${SLOT}/work" \
-    /newroot
+# Restore machine-id from /data so it is stable across slot switches
+if [ -f "/data/config/system/machine-id" ]; then
+    mkdir -p "/overlay/${SLOT}/upper/etc"
+    cp "/data/config/system/machine-id" "/overlay/${SLOT}/upper/etc/machine-id"
+    chmod 444 "/overlay/${SLOT}/upper/etc/machine-id"
+    echo "offlinelab: restored machine-id from /data"
+fi
+
+# Mount overlayfs (rootfs + per-slot upper).
+# index=off: we clear upper on every boot so the inode index adds no value
+# and only creates stale-xattr failures when the lower squashfs is rebuilt.
+if ! mount -t overlay overlay \
+    -o "lowerdir=/mnt,upperdir=/overlay/${SLOT}/upper,workdir=/overlay/${SLOT}/work,index=off" \
+    /newroot; then
+    echo "************************************************************"
+    echo "** FATAL - overlayfs mount failed"
+    echo "************************************************************"
+    cat /proc/mounts
+    exec sh
+fi
 
 # Keep overlay partition accessible after switch_root
 mkdir -p /newroot/mnt/overlay
 mount --move /overlay /newroot/mnt/overlay
 
-# Mount data partition
-mount -t ext4 -o rw,noatime "${DATA_DEV}" /data
+# Make data accessible from newroot (already mounted at /data above)
 mkdir -p /newroot/data
 mount --bind /data /newroot/data
 
-# Move virtual filesystems
-mkdir -p /newroot/proc /newroot/sys /newroot/dev
+# Move virtual filesystems and boot partition
+mkdir -p /newroot/proc /newroot/sys /newroot/dev /newroot/boot/firmware
 mount --move /proc /newroot/proc
 mount --move /sys /newroot/sys
 mount --move /dev /newroot/dev
+mount --move /boot/firmware /newroot/boot/firmware
 
 echo "offlinelab: switching to rootfs (slot ${SLOT})"
 exec switch_root /newroot /sbin/init

@@ -17,7 +17,7 @@ This page assumes you already have a built image in `artifacts/`. If you don't h
 diskutil list
 ```
 
-Look for a disk matching your SD card's size. The device name will be something like `/dev/disk4`. Note it down — you'll use it in the `dd` command.
+Look for a disk matching your SD card's size. The device name will be something like `/dev/disk4`. Note it down; you'll need it in the `dd` command.
 
 Unmount the disk before writing:
 
@@ -71,8 +71,8 @@ Insert the SD card into the Pi Zero 2W and connect power. The first boot takes s
 
 ## Troubleshooting
 
-**`dd: /dev/diskN: Resource busy`** — the disk has mounted partitions. Run `diskutil unmountDisk /dev/diskN` (macOS) or unmount each partition manually (Linux).
+**`dd: /dev/diskN: Resource busy`**: the disk has mounted partitions. Run `diskutil unmountDisk /dev/diskN` (macOS) or unmount each partition manually (Linux).
 
-**Write speed is very slow** — write speed depends heavily on the SD card. Cheap cards can be significantly slower than rated speeds. Use a name-brand A1- or A2-rated card for best results.
+**Write speed is very slow**: write speed depends on the SD card. Cheap cards can be significantly slower than rated speeds. Use a name-brand A1- or A2-rated card.
 
-**Device doesn't boot** — verify the image was written to the correct device and that it wasn't corrupted during the gunzip step. Compare the uncompressed image size against the SD card capacity.
+**Device doesn't boot**: verify the image was written to the correct device and wasn't corrupted during the gunzip step. Compare the uncompressed image size against the SD card capacity.

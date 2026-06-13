@@ -10,35 +10,9 @@ OS-level packages are documented in [Packages](packages.md).
 
 Services on Offline Lab are packaged as squashfs images and run as systemd portable services. The base OS provides the foundation. Services provide the functionality.
 
-Each service image contains everything it needs. Images are placed on `/data/portable` and attached using systemd's portable service mechanism.
+Each service image contains everything it needs. Images are placed on `/data/apps` and attached using systemd's portable service mechanism.
 
 User data stays on `/data`, separate from the service image. Updating a service means replacing its image without losing data.
-
-## Planned packages
-
-### Knowledge
-
-Wikipedia and reference content via Kiwix, medical information, programming references (Stack Overflow archives), and offline street maps.
-
-### Communication
-
-Local messaging and real-time chat between users on the network. LoRa and Meshtastic integration for long-range communication between communities.
-
-### Personal tools
-
-Notes and document editing, contact management, personal storage and backups, e-reader library with sync.
-
-### Media
-
-Video and music collections with HTTP and Bluetooth playback, photo gallery.
-
-### Gaming
-
-Retro gaming package optimised for offline usage.
-
-### Infrastructure
-
-DNS for the local domain, DHCP (via travel router or on-device), Debian package mirror for development, and data sync tooling.
 
 ## Offline concessions
 

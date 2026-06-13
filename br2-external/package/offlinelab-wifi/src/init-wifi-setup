@@ -14,6 +14,8 @@
 # shellcheck shell=bash disable=SC1091,SC2312
 set -euo pipefail
 
+source framework || exit 1
+
 readonly WIFI_CONFIG="/data/config/wifi/wpa_supplicant.conf"
 readonly CTRL_DIR="/run/wpa-supplicant"
 
@@ -23,17 +25,17 @@ readonly CTRL_DIR="/run/wpa-supplicant"
 function wifi_setup::on_event() {
     local event="${2:-}"
     case "${event}" in
-        CONNECTED)
-            systemd-notify --ready --status="wlan0 connected"
-            ;;
-        DISCONNECTED)
-            systemd-notify --status="wlan0 disconnected"
-            ;;
+    CONNECTED)
+        systemd-notify --ready --status="wlan0 connected"
+        ;;
+    DISCONNECTED)
+        systemd-notify --status="wlan0 disconnected"
+        ;;
+    *) ;;
     esac
 }
 
 function wifi_setup::main() {
-    source framework || exit 1
     log::trace "${FUNCNAME[0]}: starting wpa_supplicant"
 
     if ! fs::is_file "${WIFI_CONFIG}"; then

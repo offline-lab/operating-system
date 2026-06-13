@@ -1,4 +1,16 @@
 #!/usr/bin/env bash
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#      SPDX-License-Identifier: AGPL-3.0-only                                  #
+################################################################################
+
 # vi: ft=bash
 # shellcheck shell=bash disable=SC2154,SC2155,SC2312
 # SC2154: variables (TARGET_DIR, HOST_DIR, etc.) are exported by post-image.sh before sourcing this lib
@@ -18,52 +30,79 @@ function build_initramfs() {
     cp "${TARGET_DIR}/bin/busybox" "${tmpdir}/bin/busybox"
     chmod 755 "${tmpdir}/bin/busybox"
 
-    for cmd in sh mount umount mkdir switch_root cat echo sleep; do
+    for cmd in sh mount umount mkdir rm cp chmod switch_root cat echo sleep; do
         ln -s busybox "${tmpdir}/bin/${cmd}"
     done
 
     cp "${COMMON_DIR}/initramfs/init" "${tmpdir}/init"
+
     chmod 755 "${tmpdir}/init"
 
-    (cd "${tmpdir}" && find . | cpio -o -H newc 2>/dev/null | gzip -9 \
-        > "${BINARIES_DIR}/initramfs.cpio.gz")
+    (
+        cd "${tmpdir}" && find . | cpio -o -H newc 2>/dev/null | gzip -9 \
+            >"${BINARIES_DIR}/initramfs.cpio.gz"
+    )
 }
 
 function build_boot_scr() {
-    "${HOST_DIR}/bin/mkimage" -C none -A arm64 -T script \
+    "${HOST_DIR}/bin/mkimage" \
+        -C none \
+        -A arm64 \
+        -T script \
         -d "${BOOT_CMD_FILE}" "${BINARIES_DIR}/boot.scr"
 }
 
 function build_kernel_squashfs() {
     local tmpdir="$(mktemp -d)"
+
     cp "${BINARIES_DIR}/Image" "${tmpdir}/Image"
+
     "${HOST_DIR}/bin/mksquashfs" "${tmpdir}" "${BINARIES_DIR}/kernel-a.img" \
         -noappend -comp lzo -b 131072 -quiet
+
     rm -rf "${tmpdir}"
 }
 
 function create_overlay() {
     local tmpdir="$(mktemp -d)"
+
     mkdir -p "${tmpdir}/a/upper" "${tmpdir}/a/work"
     mkdir -p "${tmpdir}/b/upper" "${tmpdir}/b/work"
+
     mkfs.ext4 -F -d "${tmpdir}" -L "overlay" "${BINARIES_DIR}/overlay.ext4" 96M
+
     rm -rf "${tmpdir}"
 }
 
 function create_data() {
     local tmpdir="$(mktemp -d)"
+
     trap 'rm -rf "${tmpdir}"' RETURN
 
-    mkdir -p "${tmpdir}/home/admin/.ssh"
-    mkdir -p "${tmpdir}/apps" "${tmpdir}/extensions" "${tmpdir}/confexts" "${tmpdir}/config"
+    mkdir -p "${tmpdir}/apps"
+    mkdir -p "${tmpdir}/extensions/sysext"
+    mkdir -p "${tmpdir}/extensions/confext"
+    mkdir -p "${tmpdir}/config/bootconf"
+    mkdir -p "${tmpdir}/config/sudo"
+    mkdir -p "${tmpdir}/config/users"
+    mkdir -p "${tmpdir}/config/services"
+    mkdir -p "${tmpdir}/config/ssh"
+    mkdir -p "${tmpdir}/config/wifi"
+    mkdir -p "${tmpdir}/config/disco"
+    chmod 750 "${tmpdir}/config/sudo"
 
-    if [[ -f "${BINARIES_DIR}/portable/hello-portable.raw" ]]; then
-        cp "${BINARIES_DIR}/portable/hello-portable.raw" "${tmpdir}/apps/"
+    if [[ -f "${BINARIES_DIR}/disco/config.yaml" ]]; then
+        cp "${BINARIES_DIR}/disco/config.yaml" "${tmpdir}/config/disco/config.yaml"
     fi
 
-    chown -R 1000:1000 "${tmpdir}/home/admin"
-    chmod 750 "${tmpdir}/home/admin"
-    chmod 700 "${tmpdir}/home/admin/.ssh"
+    # Bake the testing bootconf.yaml into the data partition at the path bootconf.service reads.
+    # This is only present for test builds (offlinelab-testing generates it).
+    # production images have an empty data partition and the user provisions
+    # via /boot/firmware/config/ instead.
+    #
+    if [[ -f "${BINARIES_DIR}/bootconf.yaml" ]]; then
+        cp "${BINARIES_DIR}/bootconf.yaml" "${tmpdir}/config/bootconf.yaml"
+    fi
 
     mkfs.ext4 -F -d "${tmpdir}" -L "data" "${BINARIES_DIR}/data.ext4" 64M
 }
@@ -82,9 +121,9 @@ function build_rauc_bundle() {
     fi
 
     cp "${BINARIES_DIR}/kernel-a.img" "${tmpdir}/kernel.img"
-    cp "${BINARIES_DIR}/rootfs.ext4" "${tmpdir}/rootfs.img"
+    cp "${BINARIES_DIR}/rootfs.squashfs" "${tmpdir}/rootfs.img"
 
-    cat > "${tmpdir}/manifest.raucm" <<EOF
+    cat >"${tmpdir}/manifest.raucm" <<EOF
 [update]
 compatible=${BOARD_COMPATIBLE}
 version=$(date +%Y%m%d)

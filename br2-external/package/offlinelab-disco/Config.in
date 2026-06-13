@@ -27,7 +27,7 @@ if BR2_PACKAGE_OFFLINELAB_DISCO
 
 config BR2_PACKAGE_OFFLINELAB_DISCO_VERSION
 	string "disco version (git tag or commit)"
-	default "v0.20260605.1"
+	default "v0.20260613.1"
 	help
 	  Git ref to build. Use a tag (e.g. "v0.20260528.1") for
 	  reproducible builds.

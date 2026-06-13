@@ -13,6 +13,7 @@
 # Build configuration (user-specific credentials)
 .config
 .config.*
+!.config.example
 .env
 
 # SSH keys
@@ -20,6 +21,9 @@
 
 # Build artifacts
 artifacts/
+
+# Infra test output
+tests/reports/
 
 # Temporary files
 tmp/
@@ -41,6 +45,9 @@ tmp/
 docs/public/docs/
 docs/public/images/
 docs/site/
+
+# Framework lives in its own repo — clone it here for local dev, never commit it
+framework/
 
 __pycache__/
 .venv/

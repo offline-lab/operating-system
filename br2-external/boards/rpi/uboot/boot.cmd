@@ -11,10 +11,10 @@
 ################################################################################
 
 # Offline Lab OS — A/B boot script
-# Reads bootstate from raw partition 9, selects slot, boots kernel+initramfs
+# Reads bootstate from raw partition 6, selects slot, boots kernel+initramfs
 
-# Locate bootstate partition (p9) and set up read/write commands
-part start ${devtype} ${devnum} 9 dev_env
+# Locate bootstate partition (p6) and set up read/write commands
+part start ${devtype} ${devnum} 6 dev_env
 ${devtype} dev ${devnum}
 
 setenv loadbootstate " \
@@ -47,7 +47,7 @@ setenv fdt_org ${fdt_addr_r}
 
 setenv bootargs_ol "rootwait systemd.machine_id=${MACHINE_ID} ${BOOT_CONDITION}"
 
-# Slot partition mapping: A=p5(kernel)/p6(rootfs), B=p7(kernel)/p8(rootfs)
+# Slot partition mapping: A=p2(kernel)/p3(rootfs), B=p4(kernel)/p5(rootfs)
 setenv bootargs
 for BOOT_SLOT in "${BOOT_ORDER}"; do
   if test "x${bootargs}" != "x"; then
@@ -56,16 +56,16 @@ for BOOT_SLOT in "${BOOT_ORDER}"; do
     if test ${BOOT_A_LEFT} -gt 0; then
       setexpr BOOT_A_LEFT ${BOOT_A_LEFT} - 1
       echo "Trying slot A, ${BOOT_A_LEFT} attempts remaining..."
-      if load ${devtype} ${devnum}:5 ${kernel_addr_r} Image; then
-          setenv bootargs "${bootargs_rpi} ${bootargs_ol} root=/dev/mmcblk0p6 rootfstype=ext4 rauc.slot=A"
+      if load ${devtype} ${devnum}:2 ${kernel_addr_r} Image; then
+          setenv bootargs "${bootargs_rpi} ${bootargs_ol} root=/dev/mmcblk0p3 rootfstype=ext4 rauc.slot=A"
       fi
     fi
   elif test "x${BOOT_SLOT}" = "xB"; then
     if test ${BOOT_B_LEFT} -gt 0; then
       setexpr BOOT_B_LEFT ${BOOT_B_LEFT} - 1
       echo "Trying slot B, ${BOOT_B_LEFT} attempts remaining..."
-      if load ${devtype} ${devnum}:7 ${kernel_addr_r} Image; then
-          setenv bootargs "${bootargs_rpi} ${bootargs_ol} root=/dev/mmcblk0p8 rootfstype=ext4 rauc.slot=B"
+      if load ${devtype} ${devnum}:4 ${kernel_addr_r} Image; then
+          setenv bootargs "${bootargs_rpi} ${bootargs_ol} root=/dev/mmcblk0p5 rootfstype=ext4 rauc.slot=B"
       fi
     fi
   fi

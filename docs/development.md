@@ -6,76 +6,7 @@ A guide for contributors working on the OS image, framework, and packages.
 
 For build environment setup (Docker or Buildbox), see [Build the OS image](build-image.md).
 
-This page covers the development workflow after your build environment is working: making changes, coding conventions, and common pitfalls.
-
-## Repository structure
-
-```
-builder/
-├── bin/
-│   ├── builder.sh              # Docker build environment wrapper
-│   ├── buildbox.sh             # Lima VM management and build pipeline
-│   ├── build.sh                # build script (runs inside Docker)
-│   ├── build-image.sh          # per-board build script (runs on buildbox)
-│   ├── clean.sh                # buildroot distclean
-│   ├── verify.sh               # automated artifact inspection (200+ checks)
-│   ├── run-qemu                # run a built QEMU image locally
-│   ├── test-qemu-ota           # end-to-end OTA test in QEMU
-│   ├── test-framework          # framework lint and unit tests
-│   ├── generate-framework-docs # rebuild docs/framework/ from source
-│   ├── lib/                    # shared bash library for bin/ scripts
-│   └── buildbox/
-│       └── cloud-init/         # cloud-init for the Lima buildbox VM
-├── br2-external/
-│   ├── boards/
-│   │   ├── common/             # shared across all boards
-│   │   │   ├── fragments/      # busybox.config, linux-kernel.config
-│   │   │   ├── genimage.cfg.in # partition layout template
-│   │   │   ├── initramfs/      # initramfs init script
-│   │   │   └── splash.{png,svg} # psplash boot image
-│   │   ├── rpi/                # RPi family shared files
-│   │   │   ├── fragments/      # linux-hardware.config
-│   │   │   ├── hook.sh         # post-image hook (all RPi boards)
-│   │   │   ├── uboot/boot.cmd  # U-Boot A/B boot script
-│   │   │   ├── pi-zero-2w/     # Pi Zero 2W board
-│   │   │   │   ├── fragments/  # uboot-fragment.config
-│   │   │   │   ├── meta        # board identity (image name, compatible string)
-│   │   │   │   ├── cmdline.txt
-│   │   │   │   └── config.txt  # RPi firmware config
-│   │   │   ├── rpi3/           # Raspberry Pi 3
-│   │   │   └── rpi4/           # Raspberry Pi 4
-│   │   ├── qemu/               # QEMU family shared files
-│   │   │   ├── hook.sh         # post-image hook (all QEMU boards)
-│   │   │   ├── uboot/boot.cmd  # U-Boot A/B boot script
-│   │   │   └── arm64/          # QEMU arm64 board
-│   │   │       ├── fragments/  # linux-hardware.config, uboot-fragment.config
-│   │   │       └── meta        # board identity
-│   │   └── scripts/            # shared post-build/post-image scripts
-│   │       ├── post-build.sh
-│   │       ├── post-image-lib.sh
-│   │       └── post-image.sh
-│   ├── configs/                # one defconfig per board
-│   │   ├── offlinelab_pi_zero_2w_defconfig
-│   │   ├── offlinelab_rpi3_defconfig
-│   │   ├── offlinelab_rpi4_defconfig
-│   │   └── offlinelab_qemu_arm64_defconfig
-│   ├── package/
-│   │   └── offlinelab-*/       # OS packages
-│   ├── rootfs_overlay/         # static files merged into rootfs
-│   ├── skeleton/               # custom rootfs directory skeleton
-│   ├── Config.in               # top-level Kconfig
-│   ├── external.desc
-│   ├── external.mk
-│   ├── users.txt               # user accounts
-│   └── devices.txt             # device nodes
-├── framework/                  # first-party Bash utility library and boxctl CLI
-├── docs/                       # documentation site (Zensical)
-├── Dockerfile
-├── config.example              # build-time config template
-└── env.example                 # environment template
-```
-
-No binaries, pre-built images, or third-party source code is stored in git. Build artifacts go to `artifacts/` (gitignored). External dependencies are fetched at build time.
+This page covers the development workflow after your build environment is working: making changes and common pitfalls. See the [Style guide](styleguide.md) for coding conventions.
 
 ## Making changes
 
@@ -91,40 +22,23 @@ Then rebuild. Without this, your changes won't appear in the image. This is the 
 
 ### Framework development
 
-The framework (`framework/`) is first-party source — edit it directly in this repo, then rebuild:
+The framework lives in its own repository at [github.com/offline-lab/framework](https://github.com/offline-lab/framework). Edit it there. The builder's `.mk` file points at the sibling `../framework` directory via `SITE_METHOD = local` for local development.
+
+After editing framework source, rebuild:
 
 ```bash
 make offlinelab-framework-dirclean && make offlinelab-framework
 ```
 
-For framework development without full OS rebuilds, use the framework's dev setup:
-
-```bash
-source framework/bin/dev-setup
-bin/test-framework --lint
-```
-
-See `framework/.claude/CLAUDE.md` for the full framework development guide including function conventions, variable namespace, and module structure.
-
-## Coding conventions
-
-- **Shell scripts:** POSIX sh where possible, bash only when needed. No unofficial bash-isms.
-- **Systemd units:** explicit `After=`, `Requires=`, `WantedBy=`. Don't rely on implicit ordering.
-- **Config files:** match the style of the file you're editing.
-- **No binaries in git.** Everything fetched at build time.
-- **Framework scripts** must follow the conventions in `framework/.claude/CLAUDE.md`: `namespace::function_name` naming, `log::trace` as first line, return codes 0/1/2.
-- **Use the framework library** for common operations (logging, config reads, network checks, privilege escalation) rather than reimplementing them in package scripts.
-- **Busybox compatibility:** `grep -E` not `grep -P`, `date -u` not `date --universal`, `mktemp -t prefix-XXXX` not `mktemp --suffix`. No gawk-specific features.
-- Run `bin/test-framework --lint` before submitting changes to framework code.
-- Read the `.claude/` and `AGENTS.md` files — they contain project-specific rules that apply to all contributions.
+See [framework.offline-lab.com](https://framework.offline-lab.com) for the full library and boxctl CLI reference.
 
 ## Critical gotchas
 
-### Config provisioning is first-boot-only
+### Config provisioning is idempotent
 
-The provisioning services (`provision-wifi`, `provision-ssh`) run once. If the destination file already exists in `/data`, they exit without doing anything.
+Boot-time configuration is applied by `bootconf` reading `/boot/firmware/bootconf.yaml` at every boot. If the target file already exists in `/data`, `bootconf` leaves it unchanged.
 
-To re-provision a running device: delete the live file from `/data` and reboot.
+To re-provision a setting: delete the live file from `/data` and reboot.
 
 To re-provision a flashed card: delete the file from `/data` (requires booting the device first), or reflash.
 
@@ -140,11 +54,13 @@ The overlayfs upper directory is `/overlay/a/upper` or `/overlay/b/upper` on the
 
 If you see unexpected state persisting across rootfs updates, check the overlay partition, not `/data`.
 
-### machine-id lives in bootstate
+### machine-id persists via /data
 
-The machine-id is stored in the U-Boot environment on the bootstate partition (`p9`), not on `/data` or in `/etc/machine-id` on the rootfs. It persists across A/B slot switches and is the same regardless of which slot is active.
+On every boot the initramfs clears the overlay upper directory and restores `/etc/machine-id` from `/data/config/system/machine-id`. On first boot, `persist-machine-id.service` writes the machine-id to `/data` so it survives subsequent slot switches and overlay resets. The framework function `machine_id::persist` (in `system.sh`) handles the persistence logic.
 
 ## Verification
+
+### Static checks
 
 `bin/verify.sh` runs 200+ checks against the build artifacts without requiring hardware:
 
@@ -164,12 +80,87 @@ Checks include:
 
 Add new checks to `bin/verify.sh` when adding new packages or changing the image structure.
 
+### End-to-end tests (QEMU)
+
+`bin/test-qemu` boots the QEMU arm64 image and runs the full pytest-testinfra test suite against it over SSH. This catches runtime issues that static checks cannot: service failures, user creation, firewall rules, filesystem mounts, and package-level integration.
+
+#### Prerequisites
+
+```bash
+brew install qemu          # QEMU for macOS
+cd tests && uv sync        # install Python test dependencies
+```
+
+#### SSH key setup
+
+The test runner connects to the image as `testuser` using `.ssh/builder`. You must generate a dedicated key pair and bake the public half into the image at build time:
+
+```bash
+# Generate a dedicated ed25519 key pair (do this once)
+mkdir -p .ssh
+ssh-keygen -t ed25519 -f .ssh/builder -N "" -C "builder"
+```
+
+Then set the public key in `.config` so it gets installed in `testuser`'s `authorized_keys` at build time:
+
+```
+BR2_PACKAGE_OFFLINELAB_TESTING_TESTUSER_PUBKEY="ssh-ed25519 AAAA... builder"
+```
+
+Also set the `admin` user's authorized key (for interactive SSH access during development):
+
+```
+BR2_PACKAGE_OFFLINELAB_TESTING_ADMIN_PUBKEY="ssh-ed25519 AAAA... you@host"
+```
+
+**Key rules:**
+- Always use **ed25519** keys. The image's Dropbear may be compiled without ECDSA support.
+- `.ssh/builder` is the test runner key (used by `bin/test-qemu` and `bin/buildbox.sh`). It does **not** have to be your personal key.
+- Your personal key goes in `BR2_PACKAGE_OFFLINELAB_TESTING_ADMIN_PUBKEY` so you can SSH as `admin` interactively.
+- Both keys are gitignored. **Never commit keys or their values to the defconfig** — production builds must not contain developer keys.
+
+#### Running the tests
+
+```bash
+bin/test-qemu                  # run full suite against existing artifacts
+bin/test-qemu --build          # build and fetch artifacts first, then test
+bin/test-qemu -k firewall      # run only tests matching 'firewall'
+bin/test-qemu -x               # stop on first failure
+```
+
+Reports are written to `tests/reports/report.html` and `tests/reports/junit.xml`.
+
+#### Against a real device or manually-started QEMU
+
+```bash
+cd tests
+bin/run-tests --host ssh://testuser@<device-ip>
+bin/run-tests --host ssh://testuser@localhost:2222   # bin/run-qemu uses port 2222
+```
+
+#### Test structure
+
+Tests live in `tests/tests/` and are grouped by package:
+
+| File | Covers |
+|---|---|
+| `test_boot.py` | Systemd target, failed units, mounts, kernel |
+| `test_base.py` | Users, groups, services, sudoers, framework |
+| `test_firewall.py` | nftables rules, service state |
+| `test_bootconf.py` | bootconf binary, service, sysusers, provisioned users |
+| `test_resources.py` | offlinelab-resources oneshot service |
+| `test_portable.py` | portablectl, sysext, AppArmor, /var/lib/portables symlink |
+| `test_disco.py` | disco-daemon binary, service, NSS, capabilities |
+| `test_testing.py` | admin/testuser accounts (offlinelab-testing package only) |
+
+The `offlinelab-testing` package (enabled via `BR2_PACKAGE_OFFLINELAB_TESTING=y`) is required for the test suite to run. It creates `testuser` (uid 1001) with NOPASSWD sudo and installs the test SSH key. It must never be included in production builds.
+
 ## Adding a package
 
 1. Create `br2-external/package/offlinelab-<name>/`:
-   - `Config.in` — Buildroot Kconfig options
-   - `offlinelab-<name>.mk` — install rules
-   - `src/` — source files (scripts, systemd units, config)
+   - `Config.in`: Buildroot Kconfig options
+   - `offlinelab-<name>.mk`: install rules
+   - `src/`: source files (scripts, systemd units, config)
 
 2. Register in `br2-external/Config.in`:
    ```
@@ -183,4 +174,4 @@ Add new checks to `bin/verify.sh` when adding new packages or changing the image
 
 4. Add verification checks to `bin/verify.sh`.
 
-Follow the pattern of an existing package. Keep each package focused on one concern. Use the provisioning pattern for any config that users might need to change (boot partition → `/data`).
+Follow the pattern of an existing package. Keep each package focused on one concern. Use the provisioning pattern for any config that users might need to change (boot partition to `/data`).

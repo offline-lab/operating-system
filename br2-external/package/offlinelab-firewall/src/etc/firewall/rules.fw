@@ -1,0 +1,30 @@
+table inet filter {
+    chain input {
+        type filter hook input priority 0
+        policy drop
+
+        # Loopback
+        iif lo accept
+
+        # Established / related connections
+        ct state { established, related } accept
+
+        # SSH — IPv4 unrestricted; IPv6 on usb0 only
+        meta nfproto ipv4 tcp dport 22 accept
+        meta nfproto ipv6 tcp dport 22 iifname "usb0" accept
+
+        # ICMP ping (IPv4) and all ICMPv6 (required for NDP)
+        icmp type echo-request accept
+        meta l4proto ipv6-icmp accept
+    }
+
+    chain forward {
+        type filter hook forward priority 0
+        policy drop
+    }
+
+    chain output {
+        type filter hook output priority 0
+        policy accept
+    }
+}

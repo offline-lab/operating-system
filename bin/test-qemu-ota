@@ -49,6 +49,7 @@ SSH_ADMIN=(
     -p "${SSH_PORT}"
     admin@localhost
 )
+
 QEMU_PID_FILE="${TEST_DIR}/qemu.pid"
 QEMU_LOG="${TEST_DIR}/qemu.log"
 PASS=0
@@ -142,6 +143,7 @@ TEST="${HOME}/work-ota-test"
 mkdir -p "${TEST}"
 
 # ── 1. Verify RAUC bundle exists ───────────────────────────────────────────────
+#
 if [[ ! -f "${ARTIFACTS}/offlinelab-update.raucb" ]]; then
     echo "ERROR: ${ARTIFACTS}/offlinelab-update.raucb not found" >&2
     echo "       Ensure .rauc/signing.key exists and rebuild with --build" >&2
@@ -149,6 +151,7 @@ if [[ ! -f "${ARTIFACTS}/offlinelab-update.raucb" ]]; then
 fi
 
 # ── 2. Create update drive image (ext4 with the RAUC bundle) ───────────────────
+#
 BUNDLE_DIR=$(mktemp -d)
 cp "${ARTIFACTS}/offlinelab-update.raucb" "${BUNDLE_DIR}/"
 
@@ -174,6 +177,16 @@ REMOTE
 ################################################################################
 
 function start_qemu() {
+    local qemu_img="${ARTIFACTS}/offlinelab-qemu-arm64.img"
+    if [[ ! -f "${qemu_img}" ]]; then
+        log_err "QEMU disk image not found: ${qemu_img}"
+        exit 1
+    fi
+
+    # Copy so RAUC A/B installs don't modify the original artifact
+    log "Copying disk image to test directory..."
+    cp "${qemu_img}" "${TEST_DIR}/disk.img"
+
     log "Starting QEMU (serial log: ${QEMU_LOG})..."
     qemu-system-aarch64 \
         -machine virt \
@@ -181,7 +194,7 @@ function start_qemu() {
         -m 512M \
         -smp 4 \
         -bios "${ARTIFACTS}/u-boot.bin" \
-        -drive "file=${ARTIFACTS}/qemu.img,format=raw,if=virtio,id=hd0" \
+        -drive "file=${TEST_DIR}/disk.img,format=raw,if=virtio,id=hd0" \
         -drive "file=${TEST_DIR}/update-drive.img,format=raw,if=virtio,id=hd1,read-only=on" \
         -netdev "user,id=net0,hostfwd=tcp::${SSH_PORT}-:22" \
         -device "virtio-net-pci,netdev=net0" \
@@ -191,8 +204,8 @@ function start_qemu() {
         -display none \
         >/dev/null 2>&1 &
 
-    echo "${!}" >"${QEMU_PID_FILE}"
-    local qemu_pid="${!}"
+    echo "$!" >"${QEMU_PID_FILE}"
+    local qemu_pid="$!"
     log "QEMU PID: ${qemu_pid}"
 }
 
@@ -349,7 +362,7 @@ function main() {
         "${BASEDIR}/bin/buildbox.sh" fetch qemu-arm64
     fi
 
-    if [[ ! -f "${ARTIFACTS}/u-boot.bin" ]] || [[ ! -f "${ARTIFACTS}/qemu.img" ]]; then
+    if [[ ! -f "${ARTIFACTS}/u-boot.bin" ]]; then
         log_err "QEMU artifacts not found at ${ARTIFACTS}/"
         log_err "Run: bin/buildbox.sh build qemu-arm64 && bin/buildbox.sh fetch qemu-arm64"
         log_err "Or:  bin/test-qemu-ota --build"

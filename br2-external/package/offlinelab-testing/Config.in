@@ -1,0 +1,76 @@
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ `/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#      SPDX-License-Identifier: AGPL-3.0-only                                  #
+################################################################################
+
+config BR2_PACKAGE_OFFLINELAB_TESTING
+	bool "offlinelab-testing (dev/test users and credentials)"
+	depends on BR2_INIT_SYSTEMD
+	depends on BR2_PACKAGE_OFFLINELAB_BASE
+	default n
+	help
+	  Installs development and test user credentials into the image:
+
+	    admin (uid 1000)    — SSH key, sudo, home dir, admin-bin PATH
+	    testuser (uid 1001) — SSH key, passwordless sudo, home dir
+
+	  Both users share the same authorized SSH key. testuser is
+	  intended for the operating-system-infra-test suite.
+
+	  Do NOT enable on production builds.
+
+if BR2_PACKAGE_OFFLINELAB_TESTING
+
+config BR2_PACKAGE_OFFLINELAB_TESTING_BOARD
+	string "Board name for bootconf template selection"
+	default ""
+	help
+	  Used to select a board-specific bootconf template from the testing
+	  package source: bootconf-<board>.yaml. Falls back to bootconf.yaml
+	  if no board-specific template exists.
+	  Set this in the board defconfig, e.g. "qemu-arm64".
+
+config BR2_PACKAGE_OFFLINELAB_TESTING_ADMIN_PUBKEY
+	string "SSH authorized public key for admin user"
+	default ""
+	help
+	  Installed to /home/admin/.ssh/authorized_keys at build time.
+	  Set this in .config (gitignored) — do not commit personal keys.
+
+config BR2_PACKAGE_OFFLINELAB_TESTING_TESTUSER_PUBKEY
+	string "SSH authorized public key for testuser"
+	default ""
+	help
+	  Installed to /home/testuser/.ssh/authorized_keys at build time.
+	  Also substituted into bootconf-<board>.yaml as @@TESTUSER_PUBKEY@@.
+	  Set this in .config (gitignored) — do not commit personal keys.
+
+config BR2_PACKAGE_OFFLINELAB_TESTING_WIFI_SSID
+	string "WiFi SSID (baked into bootconf.yaml)"
+	default ""
+	help
+	  Pre-fills the WiFi SSID in bootconf.yaml placed on /boot/firmware.
+	  When set, wifi.enabled is set to true in bootconf.yaml automatically.
+	  Set this in .config (gitignored) — do not commit network credentials.
+
+config BR2_PACKAGE_OFFLINELAB_TESTING_WIFI_PASSWORD_HASH
+	string "WiFi password hash (from wpa_passphrase)"
+	default ""
+	help
+	  PSK hash from wpa_passphrase output, not the plaintext password.
+	  Example: wpa_passphrase MyNetwork MyPassphrase | grep psk=
+
+config BR2_PACKAGE_OFFLINELAB_TESTING_WIFI_COUNTRY
+	string "WiFi regulatory country code"
+	default "NL"
+	help
+	  ISO 3166-1 alpha-2 country code (e.g. NL, US, GB, DE).
+
+endif

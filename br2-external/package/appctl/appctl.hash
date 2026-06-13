@@ -1,0 +1,16 @@
+# Hashes for appctl.
+# Source: https://github.com/offline-lab/appctl/releases
+#
+# The tarball name is: appctl-<version without leading 'v'>.tar.gz
+# GitHub generates these from the tag; they are stable once the tag is pushed.
+#
+# How to update:
+#   wget https://github.com/offline-lab/appctl/archive/refs/tags/<VERSION>.tar.gz
+#   sha256sum <VERSION>.tar.gz
+#   sha256sum LICENSE  (from inside the extracted tarball)
+#
+# Add one sha256 line per version you build. The version in BR2_PACKAGE_APPCTL_VERSION
+# must match an entry here or the build will be rejected.
+#
+# sha256  <hash>  appctl-0.1.0.tar.gz
+# sha256  <hash>  LICENSE

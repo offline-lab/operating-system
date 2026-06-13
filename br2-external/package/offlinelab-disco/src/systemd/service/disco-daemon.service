@@ -13,8 +13,8 @@
 [Unit]
 Description=Disco - Service Discovery Daemon for offline networks
 Documentation=https://github.com/offline-lab/disco
-After=network-online.target provision-disco.service
-Wants=network-online.target provision-disco.service
+After=offlinelab-sysusers.service systemd-networkd.service
+ConditionPathExists=/data/config/services/disco
 
 [Service]
 Type=notify
@@ -27,7 +27,7 @@ LimitNOFILE=65536
 RuntimeDirectory=disco
 RuntimeDirectoryMode=0750
 ConfigurationDirectory=disco
-ConfigurationDirectoryMode=0750
+ConfigurationDirectoryMode=0755
 StateDirectory=disco
 StateDirectoryMode=0750
 CapabilityBoundingSet=CAP_NET_RAW CAP_NET_BIND_SERVICE CAP_SYS_TIME

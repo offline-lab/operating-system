@@ -1,0 +1,28 @@
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#      SPDX-License-Identifier: AGPL-3.0-only                                  #
+################################################################################
+
+[Unit]
+Description=Apply bootconf-generated user accounts
+Documentation=https://github.com/offline-lab/bootconf
+After=bootconf.service
+Wants=bootconf.service
+ConditionPathIsDirectory=/data/config/users
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/sh -c 'systemd-sysusers /data/config/users/*.conf'
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

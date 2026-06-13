@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Source this file to configure a local dev environment.
+# Usage: source bin/dev-setup
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/framework"
+
+export FRAMEWORK_LIB_PATH="${SCRIPT_DIR}/../framework/library"
+export PATH="${SCRIPT_DIR}:${PATH}"

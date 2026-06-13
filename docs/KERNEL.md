@@ -16,7 +16,7 @@ and includes support for a huge range of peripherals. The resulting kernel has:
 - **126 crypto algorithms** (most unused)
 - **Pi 4/5 specific hardware** (PCIe, BCM2711 thermal, BCM2712 IOMMU, V3D, GENET)
 - **Unused buses** (CAN, ATA/SATA, NFC, SCSI, Gameport)
-- **All wireless vendors** (Atheros, Intel, MediaTek, Realtek, Marvell — we only need Broadcom)
+- **All wireless vendors** (Atheros, Intel, MediaTek, Realtek, Marvell; only Broadcom is needed)
 - **Enterprise storage** (NFS, CIFS, CEPH, GFS2, OCFS2, Btrfs, ReiserFS, JFS, XFS)
 
 On a Pi Zero 2W with 512MB RAM, every unnecessary module wastes build time, image space,
@@ -50,7 +50,7 @@ and kernel memory for metadata. The full module tree is ~100MB+ uncompressed.
 ### Audio (module)
 - `SND_BCM2835` (HDMI + headphone jack audio via VCHIQ)
 - `SND_SOC` + `SND_BCM2835_SOC_I2S` (if I2S DAC hats needed later)
-- `SND_USB_AUDIO` (USB speakers/DACs — keep for portable service use cases)
+- `SND_USB_AUDIO` (USB speakers/DACs; keep for portable service use cases)
 - Drop all 30+ HiFiBerry/IQAudio/JustBoom board-specific codec drivers
 
 ### GPU/Display (module)
@@ -125,7 +125,7 @@ Candidates for power-saving:
 - `CONFIG_CPU_IDLE` + `CONFIG_ARM_CPUIDLE` (C-states for Cortex-A53)
 - `CONFIG_SUSPEND` + `CONFIG_PM` for system suspend-to-RAM
 - USB autosuspend for when gadget is not connected
-- WiFi power save (`CONFIG_CFG80211_DEFAULT_PS=y` — already enabled)
+- WiFi power save (`CONFIG_CFG80211_DEFAULT_PS=y`, already enabled)
 - Runtime PM for unused peripherals (HDMI, I2C buses, SPI)
 - Disable kernel features that consume power: `CONFIG_NO_HZ_FULL`, tickless idle
 
@@ -152,8 +152,7 @@ Patch location: `br2-external/boards/rpi/pi-zero-2w/patches/linux/`
 | Full custom defconf | ~1200   | ~15MB       | -50-60%    | ~15-20MB    |
 | Tiny + addback      | ~800    | ~8MB        | -70%       | ~20-25MB    |
 
-On 512MB RAM, 15-25MB saved by the kernel is significant — that's 3-5% of total RAM
-freed up for portable services.
+On 512MB RAM, 15–25MB saved by the kernel is significant. That is 3–5% of total RAM freed for portable services.
 
 ## Decision log
 

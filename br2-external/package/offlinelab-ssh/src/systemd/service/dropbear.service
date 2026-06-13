@@ -12,12 +12,13 @@
 
 [Unit]
 Description=Dropbear SSH server
-After=provision-ssh.service systemd-networkd.service
-Requires=provision-ssh.service
+After=bootconf.service offlinelab-sysusers.service systemd-networkd.service
+Wants=bootconf.service
+ConditionPathExists=/data/config/services/ssh
 
 [Service]
 Type=simple
-ExecStart=/usr/sbin/dropbear -F -E -s -g -p 22 -r /data/config/ssh/dropbear/dropbear_ed25519_host_key -b /etc/issue.net
+ExecStart=/usr/sbin/dropbear -F -E -s -g -p 22 -r /data/config/ssh/hostkey -b /etc/issue.net
 Restart=on-failure
 RestartSec=5
 

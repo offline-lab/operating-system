@@ -4,20 +4,18 @@ Automatic service discovery and name resolution for offline networks.
 
 ## What it does
 
-Disco solves a basic problem in an offline network: nodes need to find each other by name without DNS servers, without manual configuration, and without internet. When a Raspberry Pi boots in the field, other nodes should discover it and its services automatically.
-
-The daemon broadcasts its identity (hostname, IP addresses, running services) over UDP. Every other node running disco receives these broadcasts and builds a local cache. Name resolution is wired into the operating system through a custom NSS module, so standard tools like `ssh`, `curl`, and `ping` resolve discovered hosts without any extra configuration.
+Each node runs a daemon that broadcasts its identity (hostname, IP addresses, running services) over UDP. Other nodes receive these broadcasts and build a local cache. A custom NSS module wires name resolution into the OS, so standard tools like `ssh`, `curl`, and `ping` resolve discovered hosts without extra configuration.
 
 ## Why it exists
 
-Offline Lab nodes run on a local WiFi network with no internet. There is no external DNS to resolve hostnames. Hardcoding IPs doesn't scale and breaks when nodes change. Disco fills this gap with zero-configuration service discovery designed for resource-constrained devices.
+Offline Lab nodes run on a local WiFi network with no internet and no external DNS. Hardcoding IPs doesn't scale and breaks when nodes change. Disco fills this gap with zero-configuration discovery designed for resource-constrained devices.
 
 Design priorities:
 
-- **Minimal footprint** - under 10 MB RAM, designed for Raspberry Pi Zero 2W
-- **Zero configuration** - nodes discover each other on first broadcast
-- **Native integration** - NSS module means standard tools work out of the box
-- **Offline-first** - no dependencies on external services
+- **Minimal footprint**: under 10 MB RAM, designed for Raspberry Pi Zero 2W
+- **Zero configuration**: nodes discover each other on first broadcast
+- **Native integration**: NSS module means standard tools work without extra setup
+- **Offline-first**: no dependencies on external services
 
 ## How it works
 
@@ -34,8 +32,8 @@ Node A                          Node B
   |                               |
   |-- UDP broadcast (announce) -->|
   |   hostname: web1              |
-  |   addresses: [10.0.0.1]      |
-  |   services: {www: 80}        |
+  |   addresses: [10.0.0.1]       |
+  |   services: {www: 80}         |
   |                               |
   |<-- UDP broadcast (announce) --|
   |        from Node B            |

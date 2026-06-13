@@ -1,7 +1,5 @@
 # Boot
 
-This page describes how the system boots, how the A/B slot mechanism works, and what happens on first boot.
-
 ## Boot chain
 
 ```
@@ -12,9 +10,12 @@ RPi firmware (bootcode.bin → start.elf)
                  └─ loads kernel from kernel-a or kernel-b (squashfs)
                       └─ loads initramfs from boot partition
                            └─ mounts rootfs read-only
-                                └─ mounts overlayfs (upper on overlay partition)
-                                     └─ mounts data partition
-                                          └─ switch_root → systemd
+                                └─ mounts data partition (/data)
+                                     └─ mounts boot partition (/boot/firmware)
+                                          └─ provisions /data/config from /boot/firmware/config/
+                                               └─ mounts overlayfs (upper on overlay partition)
+                                                    └─ restores machine-id into overlay upper
+                                                         └─ switch_root → systemd
 ```
 
 No U-Boot shell, no GRUB, no splash screen at this stage. The terminal shows U-Boot output followed by kernel boot messages until systemd takes over.
@@ -59,16 +60,36 @@ If the system crashes or panics before reaching multi-user.target, the counter s
 The initramfs is a small static busybox environment. The `init` script:
 
 1. Mounts `proc`, `sys`, `dev`.
-2. Waits for the MMC device to appear.
-3. Reads `rauc.slot` from `/proc/cmdline` to determine which slot to boot.
-4. Mounts the selected rootfs read-only.
-5. Mounts the overlay partition (`/dev/mmcblk0p3`).
-6. Creates per-slot upper/work directories on the overlay partition if they don't exist (`/overlay/a/upper`, `/overlay/a/work`).
-7. Sets up overlayfs with lower=rootfs, upper and work from the overlay partition.
-8. Mounts the data partition (`/dev/mmcblk0p4`) at `/data` inside the new root.
-9. Runs `switch_root` to hand off to systemd.
+2. Reads `rauc.slot` from `/proc/cmdline` to determine which slot to boot (default: A).
+3. Waits for the block device to appear (MMC or virtio, up to 10 s at 1 s intervals).
+4. Waits for the selected rootfs partition to appear (up to 5 s at 0.1 s intervals).
+5. Mounts the selected rootfs read-only at `/mnt`.
+6. Mounts the data partition (`p4`) at `/data`.
+7. Mounts the boot partition (`p1`, FAT32) at `/boot/firmware` read-write.
+8. If `/boot/firmware/config/` exists: copies its contents into `/data/config/`, then deletes the directory. This is the provisioning step — see [Provisioning](#provisioning) below.
+9. Remounts `/boot/firmware` read-only.
+10. Mounts the overlay partition (`p3`) at `/overlay`.
+11. Wipes and recreates the per-slot upper/work directories for a clean `/etc` on every boot.
+12. Restores `machine-id` from `/data/config/system/machine-id` into the overlay upper (if present).
+13. Sets up overlayfs with lower=`/mnt`, upper and work from the overlay partition, merged at `/newroot`.
+14. Moves `/overlay` to `/newroot/mnt/overlay` (keeps the overlay partition accessible after switch_root).
+15. Bind-mounts `/data` at `/newroot/data`.
+16. Moves `proc`, `sys`, `dev`, and `/boot/firmware` into `/newroot`.
+17. Runs `switch_root /newroot /sbin/init` to hand off to systemd.
 
 The static busybox binary is embedded in the initramfs. There are no external dependencies.
+
+## Provisioning
+
+Any file placed under `/boot/firmware/config/` is treated as a provisioning intent. On every boot, the initramfs copies the entire `config/` directory tree into `/data/config/` (overwriting existing files) and then deletes `config/` from the boot partition.
+
+This means:
+
+- **First boot:** place `config/bootconf.yaml` on the SD card; it is moved to `/data/config/bootconf.yaml` and consumed.
+- **Re-provisioning** (e.g. WiFi credentials changed): plug the SD card into any computer, create `config/` with the new file(s), reboot. The device picks up the change and the boot partition is clean again.
+- **Normal boots** (no `config/` directory): the step is skipped; `/data/config/` is untouched.
+
+The `config/` directory path mirrors `/data/config/` exactly. For example, to replace the WiFi config, place `config/wifi/wpa_supplicant.conf` on the boot partition.
 
 ## Overlayfs design
 
@@ -83,28 +104,28 @@ After a successful A/B slot switch, the old slot's overlay directory is left as-
 
 ## First boot
 
-When the data partition has no filesystem (fresh SD card write), the initramfs detects this and hands off to `expand-data.sh` in the early boot sequence instead of continuing normally.
+On first boot the data partition is formatted and resized by `expand-data.service` before anything else starts. Systemd boot order is:
 
-`expand-data.sh` (from `offlinelab-base`):
+```
+clock-load.service      ← loads fake hardware clock from /data
+  └─ expand-data.service   ← resizes + formats /data if needed (first boot only)
+       └─ bootconf.service  ← applies /data/config/bootconf.yaml
+            └─ network, wifi, ssh, and all other services
+```
 
-1. Resizes the data partition to fill the remaining SD card space using `parted` and `resize2fs`.
-2. Formats and mounts the partition.
-3. Creates the `/data` directory structure: `config/`, `home/app/`, `portable/`.
-4. Creates the app user's `.bashrc`.
+`expand-data.service` resizes the data partition to fill the remaining SD card space using `parted` and `resize2fs`, then creates the `/data` directory structure. It is a no-op on subsequent boots if `/data` is already formatted and mounted.
 
-After `expand-data.sh` completes, boot continues normally.
+**First boot duration scales with card size.** `resize2fs` must initialise the entire partition. On an 8 GB card this takes a few seconds; on large cards (512 GB–1 TB) it can take several minutes on the Zero 2W. The device will reach the login prompt once it finishes; no intervention needed.
 
-**First boot duration scales with card size.** `resize2fs` must initialise the entire partition. On an 8 GB card this takes a few seconds; on large cards (512 GB–1 TB) it can take several minutes on the Zero 2W. The device will reach the login prompt once it finishes — no intervention needed, just wait.
-
-First-boot provisioning (WiFi credentials, SSH keys) runs as separate systemd services after the data partition is available. See [Configuration](configuration.md).
+Boot-time provisioning (WiFi credentials, SSH keys) is applied by `bootconf` after `expand-data`. See [Boot configuration](bootconf.md) and [Configuration](configuration.md).
 
 ## Boot partition contents
 
 ```
 /boot/firmware/
-├── config/                     # user-supplied config (provisioned on first boot)
-│   ├── authorized_keys         # optional — SSH public keys
-│   └── wpa_supplicant.conf     # optional — WiFi credentials
+├── bootconf.yaml.example       # template — copy to config/bootconf.yaml to activate
+├── config/                     # provisioning inbox (consumed by initramfs on boot)
+│   └── bootconf.yaml           # present only before first boot or when re-provisioning
 ├── overlays/                   # RPi device tree overlays
 ├── bcm2710-rpi-zero-2-w.dtb    # device tree blob
 ├── bootcode.bin                # RPi first-stage bootloader
@@ -117,11 +138,11 @@ First-boot provisioning (WiFi credentials, SSH keys) runs as separate systemd se
 └── u-boot.bin                  # U-Boot
 ```
 
-The boot partition is mounted read-only at `/boot/firmware` by `boot-firmware.mount`. It is not written to at runtime.
+The boot partition is mounted by the initramfs read-write (for provisioning), then remounted read-only before `switch_root`. Systemd adopts the existing mount via `boot-firmware.mount`; no remount occurs. The partition is not written to after `switch_root`.
 
 ## Trade-offs
 
-**Shared bootloader.** U-Boot lives on the boot partition and is shared between slots. A bad U-Boot update affects both slots. This is a known limitation — per-slot bootloaders would require a more complex partition layout.
+**Shared bootloader.** U-Boot lives on the boot partition and is shared between slots. A bad U-Boot update affects both slots. This is a known limitation; per-slot bootloaders would require a more complex partition layout.
 
 **Kernel per slot.** Each slot has its own kernel squashfs, so a kernel update is contained to the inactive slot and follows the same A/B rollback path as a rootfs update.
 
