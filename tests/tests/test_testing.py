@@ -11,8 +11,8 @@ def test_admin_home_exists(host):
     assert d.exists and d.is_directory
 
 
-def test_admin_authorized_keys_installed(host):
-    f = host.file("/home/admin/.ssh/authorized_keys")
+def test_admin_authorized_keys_installed(sudo_host):
+    f = sudo_host.file("/home/admin/.ssh/authorized_keys")
     assert f.exists, "/home/admin/.ssh/authorized_keys missing"
     content = f.content_string.strip()
     assert content and not content.startswith("#"), (
@@ -20,20 +20,20 @@ def test_admin_authorized_keys_installed(host):
     )
 
 
-def test_admin_ssh_dir_permissions(host):
-    ssh_dir = host.file("/home/admin/.ssh")
+def test_admin_ssh_dir_permissions(sudo_host):
+    ssh_dir = sudo_host.file("/home/admin/.ssh")
     assert ssh_dir.exists and ssh_dir.is_directory
     assert oct(ssh_dir.mode) == "0o700", f"/home/admin/.ssh mode: {oct(ssh_dir.mode)}"
 
 
-def test_admin_sudoers_installed(host):
-    f = host.file("/etc/sudoers.d/admin")
+def test_admin_sudoers_installed(sudo_host):
+    f = sudo_host.file("/etc/sudoers.d/admin")
     assert f.exists, "/etc/sudoers.d/admin missing"
     assert "admin" in f.content_string
 
 
-def test_admin_sudoers_is_nopasswd(host):
-    content = host.file("/etc/sudoers.d/admin").content_string
+def test_admin_sudoers_is_nopasswd(sudo_host):
+    content = sudo_host.file("/etc/sudoers.d/admin").content_string
     assert "NOPASSWD" in content, (
         "admin sudoers should be NOPASSWD (no password is set for admin)"
     )
@@ -75,14 +75,14 @@ def test_testuser_ssh_dir_permissions(host):
     assert oct(ssh_dir.mode) == "0o700", f"/home/testuser/.ssh mode: {oct(ssh_dir.mode)}"
 
 
-def test_testuser_sudoers_installed(host):
-    f = host.file("/etc/sudoers.d/testuser")
+def test_testuser_sudoers_installed(sudo_host):
+    f = sudo_host.file("/etc/sudoers.d/testuser")
     assert f.exists, "/etc/sudoers.d/testuser missing"
     assert "testuser" in f.content_string
 
 
-def test_testuser_sudoers_is_nopasswd(host):
-    content = host.file("/etc/sudoers.d/testuser").content_string
+def test_testuser_sudoers_is_nopasswd(sudo_host):
+    content = sudo_host.file("/etc/sudoers.d/testuser").content_string
     assert "NOPASSWD" in content, (
         "testuser sudoers should be NOPASSWD (required for test suite)"
     )

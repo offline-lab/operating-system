@@ -52,7 +52,7 @@ mkdir -p "${TARGET_DIR}/boot/firmware"
 
 if [[ -f "${TARGET_DIR}/usr/lib/libnss_disco.so.2" ]]; then
     if [[ -f "${TARGET_DIR}/etc/nsswitch.conf" ]]; then
-        sed -i 's/^hosts:.*/hosts: files disco dns/' "${TARGET_DIR}/etc/nsswitch.conf"
+        sed -i '/^hosts:/ s/files/files disco/' "${TARGET_DIR}/etc/nsswitch.conf"
     fi
 fi
 

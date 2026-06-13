@@ -50,9 +50,9 @@ def test_disco_daemon_running(host):
 
 
 def test_disco_daemon_runs_as_disco_user(host):
-    result = host.run("ps -o user= -C disco-daemon")
-    assert result.rc == 0, "disco-daemon not running"
-    assert result.stdout.strip() == "disco", f"disco-daemon user: {result.stdout.strip()}"
+    result = host.run("ps -o user,comm | awk '/disco-daemon/ {print $1; exit}'")
+    assert result.rc == 0
+    assert result.stdout.strip() == "disco", f"disco-daemon user: {result.stdout.strip()!r}"
 
 
 def test_disco_daemon_has_cap_net_raw(sudo_host):

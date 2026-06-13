@@ -91,15 +91,33 @@ brew install qemu          # QEMU for macOS
 cd tests && uv sync        # install Python test dependencies
 ```
 
-Your `.config` must have the test SSH key set:
+#### SSH key setup
+
+The test runner connects to the image as `testuser` using `.ssh/builder`. You must generate a dedicated key pair and bake the public half into the image at build time:
+
+```bash
+# Generate a dedicated ed25519 key pair (do this once)
+mkdir -p .ssh
+ssh-keygen -t ed25519 -f .ssh/builder -N "" -C "builder"
+```
+
+Then set the public key in `.config` so it gets installed in `testuser`'s `authorized_keys` at build time:
 
 ```
-BR2_PACKAGE_OFFLINELAB_TESTING_TESTUSER_PUBKEY="ssh-ed25519 AAAA... your-key"
+BR2_PACKAGE_OFFLINELAB_TESTING_TESTUSER_PUBKEY="ssh-ed25519 AAAA... builder"
 ```
 
-This key is intentionally **not** in the defconfig — production builds must not contain developer keys.
+Also set the `admin` user's authorized key (for interactive SSH access during development):
 
-Place your corresponding private key at `.ssh/builder`.
+```
+BR2_PACKAGE_OFFLINELAB_TESTING_ADMIN_PUBKEY="ssh-ed25519 AAAA... you@host"
+```
+
+**Key rules:**
+- Always use **ed25519** keys. The image's Dropbear may be compiled without ECDSA support.
+- `.ssh/builder` is the test runner key (used by `bin/test-qemu` and `bin/buildbox.sh`). It does **not** have to be your personal key.
+- Your personal key goes in `BR2_PACKAGE_OFFLINELAB_TESTING_ADMIN_PUBKEY` so you can SSH as `admin` interactively.
+- Both keys are gitignored. **Never commit keys or their values to the defconfig** — production builds must not contain developer keys.
 
 #### Running the tests
 

@@ -38,11 +38,30 @@ SSH_AUTH_SOCK=/dev/null ssh -i .ssh/builder builder@buildbox
 make offlinelab-framework-dirclean && make offlinelab-framework
 ```
 
+### Buildbox output layout
+
+`build-image.sh` runs on the buildbox. Key paths (board = e.g. `qemu-arm64`):
+
+| Path | What |
+|---|---|
+| `~/buildroot/` | Buildroot source tree |
+| `~/work/` | Synced br2-external + bin/ (`REMOTE_WORK`) |
+| `~/buildroot-<board>/` | Per-board output dir (`O=`) |
+| `~/artifacts/<board>/` | Final images after build |
+
+At the end of each build, `build-image.sh` runs `rm -rf ~/buildroot-<board>/build ~/buildroot-<board>/target` to reclaim disk. **This means `<pkg>-dirclean` is never needed before a fresh build** — the build tree is already gone.
+
+`dirclean` is only needed when you want to force-reinstall one package in an active build session (i.e., the build tree still exists). Run it on the buildbox:
+
+```bash
+SSH_AUTH_SOCK=/dev/null ssh -i .ssh/builder builder@buildbox \
+  "make -C ~/buildroot O=~/buildroot-qemu-arm64 BR2_EXTERNAL=~/work/br2-external offlinelab-testing-dirclean"
+```
+
 ### Constraints
 
 - No binaries or third-party source committed — everything fetched at build time
 - No tmpfs for state — use `/data` bind mounts
-- Run `<pkg>-dirclean` after editing source files under `br2-external/` or `framework/`
 - `framework/` is first-party source — edit it directly in this repo, then rebuild
 - **File edits via Edit/Write tools only** — never `sed -i`, `python`, or `awk` to rewrite working-tree files
 
@@ -56,24 +75,28 @@ Key packages: `offlinelab-base`, `offlinelab-bootconf`, `offlinelab-testing`, `o
 
 ### Integration test suite
 
-The image runtime is tested by the separate **`operating-system-infra-test`** repository at `../operating-system-infra-test/` (sibling of this repo).
+The image runtime is tested by **`tests/`** in this repo (pytest-testinfra, blackbox SSH tests).
 
-**Rule: every build change that installs a file, enables a service, or creates a user must have a corresponding test added or updated in that repo.**
-
-Use the `/infra-test-update` skill to do this after any package change.
+**Rule: every build change that installs a file, enables a service, or creates a user must have a corresponding test added or updated.**
 
 ```bash
-# Run tests against QEMU (auto-started):
-cd ../operating-system-infra-test
-bin/run-tests --board qemu-arm64 \
-              --artifacts ../br2-builder/artifacts/qemu-arm64 \
-              --ssh-key ../br2-builder/.ssh/builder
+# Build qemu-arm64 image, start QEMU, run full test suite:
+bin/test-qemu --build
 
-# Run tests for one package only:
-bin/run-tests ... -k test_firewall
+# Run against already-built artifacts (no rebuild):
+bin/test-qemu
 
-# Reports land in: operating-system-infra-test/reports/
+# Run one module only:
+bin/test-qemu -k test_firewall
+
+# Run tests against a real device over SSH:
+cd tests && bin/run-tests --host ssh://testuser@<ip>
 ```
+
+**Prerequisites for `bin/test-qemu`:**
+- `qemu-system-aarch64` installed (`brew install qemu`)
+- `.ssh/builder` = private key matching `BR2_PACKAGE_OFFLINELAB_TESTING_TESTUSER_PUBKEY` in `.config`
+- `artifacts/qemu-arm64/` populated (or pass `--build`)
 
 **Test file mapping:**
 

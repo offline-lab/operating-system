@@ -326,6 +326,8 @@ function cmd_build() {
     if ! bb_ssh "bash ${REMOTE_WORK}/bin/build-image.sh ${prod_flag} ${board}" 2>&1 | while IFS= read -r line; do
         if [[ "${line}" == *">>>"* ]]; then
             log_dim "${line}"
+        else
+            printf '%s\n' "${line}"
         fi
     done; then
         log_err "${board} build failed"
@@ -397,7 +399,7 @@ function cmd_fetch() {
         # Strip the timestamp suffix to produce the canonical name (e.g. offlinelab-qemu-arm64.img)
         img_name="${img_name%-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9].img}.img"
         log "Decompressing $(basename "${latest_gz}") → ${img_name}..."
-        gunzip -c "${latest_gz}" > "${local_artifacts}/${img_name}"
+        gunzip -c "${latest_gz}" >"${local_artifacts}/${img_name}"
         log "Ready: ${local_artifacts}/${img_name}"
     fi
 }
@@ -497,14 +499,14 @@ function cmd_all() {
         start_time="$(date +%s)"
         log "=== Starting ${board} ==="
         if cmd_build "${board}" && cmd_verify "${board}" && cmd_fetch "${board}"; then
-            log "=== ${board} done in $(( ($(date +%s) - start_time) / 60 ))m ==="
+            log "=== ${board} done in $((($(date +%s) - start_time) / 60))m ==="
         else
             log_err "=== ${board} FAILED ==="
             failed+=("${board}")
         fi
     done
 
-    local elapsed=$(( $(date +%s) - total_start ))
+    local elapsed=$(($(date +%s) - total_start))
     if [[ ${#failed[@]} -gt 0 ]]; then
         log_err "=== All boards done in $((elapsed / 60))m — FAILED: ${failed[*]} ==="
         return 1
@@ -578,20 +580,50 @@ done
 set -- "${_remaining_args[@]}"
 
 case "${1:-}" in
-    all)            shift; cmd_all "${@}" ;;
-    create)         shift; cmd_create "${@}" ;;
-    sync)           shift; cmd_sync "${@}" ;;
-    build)          shift; cmd_build "${@}" ;;
-    verify)         shift; cmd_verify "${@}" ;;
-    fetch)          shift; cmd_fetch "${@}" ;;
-    tail)           shift; cmd_tail "${@}" ;;
-    ssh)            shift; cmd_ssh "${@}" ;;
-    clean-artifacts) shift; cmd_clean_artifacts "${@}" ;;
-    destroy)        shift; cmd_destroy "${@}" ;;
-    -h | --help | help) cmd_usage ;;
-    "") cmd_pipeline ;;
-    *)
-        log_err "Unknown command: ${1}"
-        cmd_usage
-        ;;
+all)
+    shift
+    cmd_all "${@}"
+    ;;
+create)
+    shift
+    cmd_create "${@}"
+    ;;
+sync)
+    shift
+    cmd_sync "${@}"
+    ;;
+build)
+    shift
+    cmd_build "${@}"
+    ;;
+verify)
+    shift
+    cmd_verify "${@}"
+    ;;
+fetch)
+    shift
+    cmd_fetch "${@}"
+    ;;
+tail)
+    shift
+    cmd_tail "${@}"
+    ;;
+ssh)
+    shift
+    cmd_ssh "${@}"
+    ;;
+clean-artifacts)
+    shift
+    cmd_clean_artifacts "${@}"
+    ;;
+destroy)
+    shift
+    cmd_destroy "${@}"
+    ;;
+-h | --help | help) cmd_usage ;;
+"") cmd_pipeline ;;
+*)
+    log_err "Unknown command: ${1}"
+    cmd_usage
+    ;;
 esac

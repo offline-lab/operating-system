@@ -40,8 +40,8 @@ def test_bash_bashrc_exists(host):
     assert host.file("/etc/bash.bashrc").exists
 
 
-def test_root_bashrc_exists(host):
-    assert host.file("/root/.bashrc").exists
+def test_root_bashrc_exists(sudo_host):
+    assert sudo_host.file("/root/.bashrc").exists
 
 
 def test_profile_no_placeholder(host):
