@@ -12,3 +12,4 @@
 # must match an entry here or the build will be rejected.
 #
 sha256  2e49d4e8fe21bfe2acbef46797e9e3f6fcb6d02198278823e3b6567689c567c3  offlinelab-disco-v0.20260605.1.tar.gz
+sha256  14e18d7ea7320cf564627b941dc16bbdc386937f59e4ece0f0dd030955b64a15  offlinelab-disco-v0.20260613.1.tar.gz

@@ -82,7 +82,7 @@ function create_data() {
     mkdir -p "${tmpdir}/apps"
     mkdir -p "${tmpdir}/extensions/sysext"
     mkdir -p "${tmpdir}/extensions/confext"
-    mkdir -p "${tmpdir}/bootconf"
+    mkdir -p "${tmpdir}/config/bootconf"
     mkdir -p "${tmpdir}/config/sudo"
     mkdir -p "${tmpdir}/config/users"
     mkdir -p "${tmpdir}/config/services"

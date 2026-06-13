@@ -27,7 +27,7 @@ if BR2_PACKAGE_OFFLINELAB_BOOTCONF
 
 config BR2_PACKAGE_OFFLINELAB_BOOTCONF_VERSION
 	string "bootconf version (git tag or commit)"
-	default "v0.20260612.1"
+	default "v0.20260613.2"
 	help
 	  Git ref to build. Use a tag (e.g. "v1.0.0") for reproducible builds.
 

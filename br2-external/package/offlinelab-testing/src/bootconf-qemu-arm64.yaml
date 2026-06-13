@@ -26,6 +26,7 @@ services:
   directory: /data/config/services
   services:
   - name: disco
+    unit: disco-daemon
     enabled: true
     sentinel: true
     default_config:
@@ -37,15 +38,10 @@ users:
   enabled: true
   directory: /data/config/users
   users:
-  - name: testuser
-    enabled: true
-    sudo: true
-    home: /home/testuser
-    authorized_keys:
-    - "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBCY1/jmHp/cSIPfG388BbaP/kISOKnsvPiMgLYm/vUsOFIvXfxqPo5Xh5r8wfwUQrjw1iLb3DYp6FWKEzAGpJRs= flip@bigmac.local"
   - name: app
     enabled: true
     sudo: true
     home: /data/home/app
     authorized_keys:
-    - "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBCY1/jmHp/cSIPfG388BbaP/kISOKnsvPiMgLYm/vUsOFIvXfxqPo5Xh5r8wfwUQrjw1iLb3DYp6FWKEzAGpJRs= flip@bigmac.local"
+    - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFgvmVCzpEWeir0DAEeoqlXHj095JqaEqqY5BrZv8JQU flip@bigmac.local"
+    - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAdC6YkMF9jPXpanXbbt1G045p8mzOIUngIYXSswogCz builder"

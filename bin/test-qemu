@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+################################################################################
+#         ____  ___________               __          __                       #
+#        / __ \/ __/ __/ (_)___  ___     / /   ____ _/ /_                      #
+#       / / / / /_/ /_/ / / __ \/ _ \   / /   / __ `/ __ \                     #
+#      / /_/ / __/ __/ / / / / /  __/  / /___/ /_/ / /_/ /                     #
+#      \____/_/ /_/ /_/_/_/ /_/\___/  /_____/\__,_/_.___/                      #
+#                                                                              #
+#      Copyright (C) 2025-2026 Offline Lab                                     #
+#      Contact: info@offline-lab.com                                           #
+#      SPDX-License-Identifier: AGPL-3.0-only                                  #
+################################################################################
+
+# vi: ft=bash
+# shellcheck shell=bash
+
+# Usage:
+#   bin/test-qemu [--build] [pytest-args...]
+#
+# Runs the integration test suite against a QEMU arm64 image. The conftest
+# manages the QEMU lifecycle — no need to start it separately.
+#
+# Options:
+#   --build        Build and fetch the qemu-arm64 image via buildbox first.
+#
+# Prerequisites:
+#   - qemu-system-aarch64 installed (brew install qemu)
+#   - .config has BR2_PACKAGE_OFFLINELAB_TESTING_TESTUSER_PUBKEY set
+#   - uv installed (brew install uv) and tests/.venv populated (cd tests && uv sync)
+#   - artifacts/qemu-arm64/ populated (or pass --build)
+
+set -eu -o pipefail
+
+REPO_ROOT="$(cd "$(dirname "${0}")/.." && pwd)"
+ARTIFACTS="${REPO_ROOT}/artifacts/qemu-arm64"
+SSH_KEY="${REPO_ROOT}/.ssh/builder"
+
+BUILD=0
+EXTRA_ARGS=()
+for arg in "$@"; do
+    case "${arg}" in
+        --build) BUILD=1 ;;
+        *)       EXTRA_ARGS+=("${arg}") ;;
+    esac
+done
+
+if [[ "${BUILD}" -eq 1 ]]; then
+    printf 'Building qemu-arm64 image on buildbox...\n'
+    "${REPO_ROOT}/bin/buildbox.sh" build qemu-arm64
+    "${REPO_ROOT}/bin/buildbox.sh" fetch qemu-arm64
+fi
+
+if [[ ! -f "${ARTIFACTS}/u-boot.bin" ]]; then
+    printf 'ERROR: artifacts not found at %s\n' "${ARTIFACTS}" >&2
+    printf 'Run: bin/test-qemu --build\n' >&2
+    exit 1
+fi
+
+if [[ ! -f "${SSH_KEY}" ]]; then
+    printf 'ERROR: SSH key not found at %s\n' "${SSH_KEY}" >&2
+    printf 'Expected: .ssh/builder\n' >&2
+    exit 1
+fi
+
+export OL_ARTIFACTS="${ARTIFACTS}"
+export OL_SSH_KEY="${SSH_KEY}"
+
+cd "${REPO_ROOT}/tests"
+exec bin/run-tests \
+    --board qemu-arm64 \
+    "${EXTRA_ARGS[@]}"

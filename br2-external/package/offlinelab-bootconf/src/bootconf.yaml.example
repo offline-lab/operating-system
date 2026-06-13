@@ -48,6 +48,7 @@ services:
   directory: /data/config/services
   services:
   - name: disco
+    unit: disco-daemon
     enabled: true
     sentinel: true
     default_config:

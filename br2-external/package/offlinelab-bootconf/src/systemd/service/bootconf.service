@@ -13,8 +13,8 @@
 [Unit]
 Description=Bootconf — boot-time configuration
 Documentation=https://github.com/offline-lab/bootconf
-After=local-fs.target boot-firmware.mount expand-data.service
-Wants=boot-firmware.mount expand-data.service
+After=local-fs.target boot-firmware.mount
+Wants=boot-firmware.mount
 ConditionPathExists=/data/config/bootconf.yaml
 Before=network.target
 

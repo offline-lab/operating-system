@@ -42,13 +42,22 @@ if [[ ! -f "${IMAGES_DIR}/u-boot.bin" ]]; then
     exit 1
 fi
 
-if [[ ! -f "${IMAGES_DIR}/qemu.img" ]]; then
-    printf 'ERROR: qemu.img not found in %s\n' "${IMAGES_DIR}" >&2
+QEMU_IMG=""
+for _candidate in "${IMAGES_DIR}"/offlinelab-qemu-arm64.img "${IMAGES_DIR}"/qemu.img; do
+    if [[ -f "${_candidate}" ]]; then
+        QEMU_IMG="${_candidate}"
+        break
+    fi
+done
+if [[ -z "${QEMU_IMG}" ]]; then
+    printf 'ERROR: no QEMU disk image found in %s\n' "${IMAGES_DIR}" >&2
+    printf 'Expected: offlinelab-qemu-arm64.img\n' >&2
     exit 1
 fi
 
 printf 'Starting Offline Lab OS (QEMU arm64)...\n'
-printf 'SSH: ssh admin@localhost -p 2222\n'
+printf 'Image: %s\n' "${QEMU_IMG}"
+printf 'SSH: ssh -i .ssh/builder testuser@localhost -p 2222\n'
 printf 'Exit: Ctrl-A X\n\n'
 
 exec qemu-system-aarch64 \
@@ -57,7 +66,7 @@ exec qemu-system-aarch64 \
     -m 512M \
     -smp 4 \
     -bios "${IMAGES_DIR}/u-boot.bin" \
-    -drive "file=${IMAGES_DIR}/qemu.img,format=raw,if=virtio,id=hd0" \
+    -drive "file=${QEMU_IMG},format=raw,if=virtio,id=hd0" \
     -netdev "user,id=net0,hostfwd=tcp::2222-:22" \
     -device "virtio-net-pci,netdev=net0" \
     -serial mon:stdio \

@@ -50,7 +50,8 @@ define OFFLINELAB_BASE_INSTALL_TARGET_CMDS
 	mkdir -p $(TARGET_DIR)/etc/systemd/system/getty.target.wants
 	mkdir -p $(TARGET_DIR)/etc/systemd/network
 
-	# Mount point directories for sysext/confext bind-mounts
+	# Mount point directories for boot firmware and sysext/confext bind-mounts
+	mkdir -p $(TARGET_DIR)/boot/firmware
 	mkdir -p $(TARGET_DIR)/var/lib/extensions
 	mkdir -p $(TARGET_DIR)/etc/extensions
 
@@ -126,6 +127,9 @@ define OFFLINELAB_BASE_INSTALL_TARGET_CMDS
 
 	$(INSTALL) -D -m 0644 $(@D)/skel/bashrc \
 		$(TARGET_DIR)/etc/skel/.bashrc
+	mkdir -p $(TARGET_DIR)/root
+	rm -f $(TARGET_DIR)/root/.bashrc
+	ln -s /etc/skel/.bashrc $(TARGET_DIR)/root/.bashrc
 
 	# Sudo: system-wide defaults, sudo group rule, and include for bootconf-managed rules
 	$(INSTALL) -D -m 0440 $(@D)/sudoers/defaults.conf \

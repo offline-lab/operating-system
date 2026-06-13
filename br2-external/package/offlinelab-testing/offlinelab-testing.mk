@@ -28,9 +28,10 @@ OFFLINELAB_TESTING_LICENSE     = AGPL-3.0-only
 
 OFFLINELAB_TESTING_DEPENDENCIES = offlinelab-base
 
-OFFLINELAB_TESTING_USERS = \
-	admin 1000 admin 1000 ! /home/admin /bin/bash sudo,systemd-journal Admin \
-	testuser 1001 testuser 1001 ! /home/testuser /bin/bash sudo,systemd-journal Testuser
+define OFFLINELAB_TESTING_USERS
+admin 1000 admin 1000 =offlinelab /home/admin /bin/bash wheel,dialout,sudo,audio,video,bluetooth,netdev,systemd-journal,disco Admin
+testuser 1001 testuser 1001 ! /home/testuser /bin/bash sudo,systemd-journal Testuser
+endef
 
 OFFLINELAB_TESTING_PERMISSIONS = \
 	/home/admin d 0755 1000 1000 - - - - - \
@@ -52,7 +53,7 @@ define OFFLINELAB_TESTING_INSTALL_TARGET_CMDS
 	$(INSTALL) -d -m 0755 $(TARGET_DIR)/home/admin
 	$(INSTALL) -d -m 0700 $(TARGET_DIR)/home/admin/.ssh
 	echo "$(call qstrip,$(BR2_PACKAGE_OFFLINELAB_TESTING_ADMIN_PUBKEY))" \
-		> $(TARGET_DIR)/home/admin/.ssh/authorized_keys
+		>> $(TARGET_DIR)/home/admin/.ssh/authorized_keys
 	$(INSTALL) -D -m 0440 $(@D)/sudoers/admin \
 		$(TARGET_DIR)/etc/sudoers.d/admin
 
@@ -60,7 +61,7 @@ define OFFLINELAB_TESTING_INSTALL_TARGET_CMDS
 	$(INSTALL) -d -m 0755 $(TARGET_DIR)/home/testuser
 	$(INSTALL) -d -m 0700 $(TARGET_DIR)/home/testuser/.ssh
 	echo "$(call qstrip,$(BR2_PACKAGE_OFFLINELAB_TESTING_TESTUSER_PUBKEY))" \
-		> $(TARGET_DIR)/home/testuser/.ssh/authorized_keys
+		>> $(TARGET_DIR)/home/testuser/.ssh/authorized_keys
 	$(INSTALL) -D -m 0440 $(@D)/sudoers/testuser \
 		$(TARGET_DIR)/etc/sudoers.d/testuser
 

@@ -34,6 +34,9 @@ define OFFLINELAB_PORTABLE_INSTALL_TARGET_CMDS
 	mkdir -p $(TARGET_DIR)/etc/systemd/system/multi-user.target.wants
 	ln -sf /etc/systemd/system/restore-apps.service \
 		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/restore-apps.service
+
+	mkdir -p $(TARGET_DIR)/var/lib
+	ln -sf /data/apps $(TARGET_DIR)/var/lib/portables
 endef
 
 $(eval $(generic-package))

@@ -60,6 +60,8 @@ On every boot the initramfs clears the overlay upper directory and restores `/et
 
 ## Verification
 
+### Static checks
+
 `bin/verify.sh` runs 200+ checks against the build artifacts without requiring hardware:
 
 ```bash
@@ -77,6 +79,63 @@ Checks include:
 - A/B boot logic assertions
 
 Add new checks to `bin/verify.sh` when adding new packages or changing the image structure.
+
+### End-to-end tests (QEMU)
+
+`bin/test-qemu` boots the QEMU arm64 image and runs the full pytest-testinfra test suite against it over SSH. This catches runtime issues that static checks cannot: service failures, user creation, firewall rules, filesystem mounts, and package-level integration.
+
+#### Prerequisites
+
+```bash
+brew install qemu          # QEMU for macOS
+cd tests && uv sync        # install Python test dependencies
+```
+
+Your `.config` must have the test SSH key set:
+
+```
+BR2_PACKAGE_OFFLINELAB_TESTING_TESTUSER_PUBKEY="ssh-ed25519 AAAA... your-key"
+```
+
+This key is intentionally **not** in the defconfig — production builds must not contain developer keys.
+
+Place your corresponding private key at `.ssh/builder`.
+
+#### Running the tests
+
+```bash
+bin/test-qemu                  # run full suite against existing artifacts
+bin/test-qemu --build          # build and fetch artifacts first, then test
+bin/test-qemu -k firewall      # run only tests matching 'firewall'
+bin/test-qemu -x               # stop on first failure
+```
+
+Reports are written to `tests/reports/report.html` and `tests/reports/junit.xml`.
+
+#### Against a real device or manually-started QEMU
+
+```bash
+cd tests
+bin/run-tests --host ssh://testuser@<device-ip>
+bin/run-tests --host ssh://testuser@localhost:2222   # bin/run-qemu uses port 2222
+```
+
+#### Test structure
+
+Tests live in `tests/tests/` and are grouped by package:
+
+| File | Covers |
+|---|---|
+| `test_boot.py` | Systemd target, failed units, mounts, kernel |
+| `test_base.py` | Users, groups, services, sudoers, framework |
+| `test_firewall.py` | nftables rules, service state |
+| `test_bootconf.py` | bootconf binary, service, sysusers, provisioned users |
+| `test_resources.py` | offlinelab-resources oneshot service |
+| `test_portable.py` | portablectl, sysext, AppArmor, /var/lib/portables symlink |
+| `test_disco.py` | disco-daemon binary, service, NSS, capabilities |
+| `test_testing.py` | admin/testuser accounts (offlinelab-testing package only) |
+
+The `offlinelab-testing` package (enabled via `BR2_PACKAGE_OFFLINELAB_TESTING=y`) is required for the test suite to run. It creates `testuser` (uid 1001) with NOPASSWD sudo and installs the test SSH key. It must never be included in production builds.
 
 ## Adding a package
 

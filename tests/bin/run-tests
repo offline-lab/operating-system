@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Run the Offline Lab OS integration test suite.
+#
+# Usage:
+#   # Against an already-running QEMU (started manually with bin/run.sh):
+#   bin/run-tests --host ssh://testuser@localhost:2222 --ssh-key ../br2-builder/.ssh/builder
+#
+#   # Auto-start QEMU from artifacts:
+#   bin/run-tests --board qemu-arm64 \
+#                 --artifacts ../br2-builder/artifacts/qemu-arm64 \
+#                 --ssh-key ../br2-builder/.ssh/builder
+#
+#   # Real device:
+#   bin/run-tests --host ssh://testuser@192.168.1.100 --ssh-key ~/.ssh/id_ed25519
+#
+#   # Only run one package's tests:
+#   bin/run-tests --board qemu-arm64 --artifacts ... -k test_firewall
+#
+#   # With HTML + JUnit reports (default output dir: reports/):
+#   bin/run-tests --board qemu-arm64 --artifacts ... --html reports/report.html
+set -euo pipefail
+
+REPO="$(cd "$(dirname "${0}")/.." && pwd)"
+REPORTS="${REPO}/reports"
+mkdir -p "${REPORTS}"
+
+cd "${REPO}"
+
+exec uv run pytest \
+    --html="${REPORTS}/report.html" \
+    --junit-xml="${REPORTS}/junit.xml" \
+    --self-contained-html \
+    "${@}"

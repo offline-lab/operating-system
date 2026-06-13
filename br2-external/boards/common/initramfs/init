@@ -87,6 +87,10 @@ mount -t ext4 -o rw,noatime "${DATA_DEV}" /data
 # Ensure sysext/confext storage dirs exist — systemd-sysext.service runs Before=sysinit.target,
 # which is before tmpfiles, so these must exist before switch_root.
 mkdir -p /data/extensions/sysext /data/extensions/confext
+# bootconf checks writability of its status directory before running. The directory is
+# created by status.Write *after* modules run, so on first boot (fresh /data) it doesn't
+# exist yet. Pre-create it here so the isWritable probe file write succeeds.
+mkdir -p /data/config/bootconf
 
 # Provision /data/config from /boot/firmware/config if present.
 # Files are copied then deleted — presence in /boot/firmware/config is an explicit
@@ -106,9 +110,11 @@ mount -o remount,ro /boot/firmware
 # Mount overlay partition
 mount -t ext4 -o rw,noatime "${OVERLAY_DEV}" /overlay
 
-# Clear the slot upper on every boot for a clean /etc state.
-# Only explicitly persisted files (restored below) survive across reboots.
-rm -rf "/overlay/${SLOT}/upper"
+# Clear the entire slot dir on every boot for a clean /etc state.
+# Clearing both upper AND work prevents stale OverlayFS inode-index entries
+# (work/index stores inode references to the lower squashfs; when the squashfs
+# is rebuilt between boots those references go stale, causing ESTALE on mount).
+rm -rf "/overlay/${SLOT}"
 mkdir -p "/overlay/${SLOT}/upper" "/overlay/${SLOT}/work"
 
 # Restore machine-id from /data so it is stable across slot switches
@@ -119,10 +125,18 @@ if [ -f "/data/config/system/machine-id" ]; then
     echo "offlinelab: restored machine-id from /data"
 fi
 
-# Mount overlayfs (rootfs + per-slot upper)
-mount -t overlay overlay \
-    -o "lowerdir=/mnt,upperdir=/overlay/${SLOT}/upper,workdir=/overlay/${SLOT}/work" \
-    /newroot
+# Mount overlayfs (rootfs + per-slot upper).
+# index=off: we clear upper on every boot so the inode index adds no value
+# and only creates stale-xattr failures when the lower squashfs is rebuilt.
+if ! mount -t overlay overlay \
+    -o "lowerdir=/mnt,upperdir=/overlay/${SLOT}/upper,workdir=/overlay/${SLOT}/work,index=off" \
+    /newroot; then
+    echo "************************************************************"
+    echo "** FATAL - overlayfs mount failed"
+    echo "************************************************************"
+    cat /proc/mounts
+    exec sh
+fi
 
 # Keep overlay partition accessible after switch_root
 mkdir -p /newroot/mnt/overlay

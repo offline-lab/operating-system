@@ -13,7 +13,7 @@
 [Unit]
 Description=Load fake hardware clock
 After=local-fs.target
-Before=expand-data.service bootconf.service
+Before=bootconf.service
 
 [Service]
 Type=oneshot

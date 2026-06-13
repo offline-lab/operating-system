@@ -16,7 +16,6 @@ Documentation=https://github.com/offline-lab/bootconf
 After=bootconf.service
 Wants=bootconf.service
 ConditionPathIsDirectory=/data/config/users
-ConditionPathIsNotEmpty=/data/config/users
 
 [Service]
 Type=oneshot

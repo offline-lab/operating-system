@@ -24,6 +24,9 @@ OFFLINELAB_DISCO_SITE = $(call github,offline-lab,disco,$(OFFLINELAB_DISCO_VERSI
 OFFLINELAB_DISCO_LICENSE       = MIT
 OFFLINELAB_DISCO_LICENSE_FILES = LICENSE
 
+OFFLINELAB_DISCO_USERS = \
+	disco 800 disco 800 !* /nonexistent /bin/false - Disco daemon
+
 OFFLINELAB_DISCO_DEPENDENCIES = host-go systemd
 OFFLINELAB_DISCO_SRC_DIR = $(BR2_EXTERNAL_OFFLINELAB_PATH)/package/offlinelab-disco/src
 
@@ -70,6 +73,7 @@ define OFFLINELAB_DISCO_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0644 $(OFFLINELAB_DISCO_SRC_DIR)/config/config.yaml \
 		$(BINARIES_DIR)/disco/config.yaml
 
+	mkdir -p $(TARGET_DIR)/etc/disco
 	ln -sf /data/config/disco/config.yaml $(TARGET_DIR)/etc/disco/config.yaml
 
 	$(INSTALL) -D -m 0644 $(OFFLINELAB_DISCO_SRC_DIR)/systemd/service/disco-daemon.service \

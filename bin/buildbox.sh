@@ -386,6 +386,20 @@ function cmd_fetch() {
 
     log "Artifacts saved to ${local_artifacts}/"
     ls -lh "${local_artifacts}/"*.img.gz 2>/dev/null || true
+
+    # Decompress the latest .img.gz to a fixed name so bin/run.sh and the test
+    # suite can reference it without timestamp-based glob matching.
+    local latest_gz
+    latest_gz="$(ls -t "${local_artifacts}/"*.img.gz 2>/dev/null | head -1)"
+    if [[ -n "${latest_gz}" ]]; then
+        local img_name
+        img_name="$(basename "${latest_gz%.gz}")"
+        # Strip the timestamp suffix to produce the canonical name (e.g. offlinelab-qemu-arm64.img)
+        img_name="${img_name%-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9].img}.img"
+        log "Decompressing $(basename "${latest_gz}") → ${img_name}..."
+        gunzip -c "${latest_gz}" > "${local_artifacts}/${img_name}"
+        log "Ready: ${local_artifacts}/${img_name}"
+    fi
 }
 
 ################################################################################
